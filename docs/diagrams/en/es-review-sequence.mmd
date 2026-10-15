@@ -1,0 +1,15 @@
+sequenceDiagram
+  actor U as Student
+  participant App as iOS / Web
+  participant API as Azure Functions
+  participant DB as Cosmos DB
+  participant AI as Azure OpenAI
+  U->>App: Writes entry sheet, taps "Review"
+  App->>API: POST /es/{id}/review (with token)
+  API->>API: Validate token, check rate limit
+  API->>DB: Load draft and profile
+  API->>AI: Prompt (keigo, structure, STAR)
+  AI-->>API: Issues and suggestions (JSON)
+  API->>DB: Save review
+  API-->>App: Result
+  App-->>U: Highlights issues (FR/EN explanations)

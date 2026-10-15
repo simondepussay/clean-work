@@ -1,0 +1,13 @@
+flowchart TD
+  A(["Open the app"]) --> B{"Signed in?"}
+  B -- No --> C["Sign in with Entra ID"] --> D
+  B -- Yes --> D["Home: next deadline"]
+  D --> E{"What to do?"}
+  E -- Profile --> F["Enter education, work, certifications"] --> G["Generate résumé PDF"] --> H(["Save / submit PDF"])
+  E -- Applications --> I["Add a company"] --> J["Update selection step"] --> K{"Deadline in 1 day?"}
+  K -- Yes --> L["Push notification"] --> D
+  K -- No --> D
+  E -- Entry sheet --> M["Write the entry sheet"] --> N["AI review"] --> O{"Satisfied?"}
+  O -- No --> M
+  O -- Yes --> P(["Submit entry sheet"])
+  E -- "Interview practice (v1.1)" --> Q["Answer questions out loud"] --> R["AI feedback"] --> D

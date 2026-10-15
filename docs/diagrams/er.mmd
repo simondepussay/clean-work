@@ -1,0 +1,46 @@
+erDiagram
+  USER ||--|| PROFILE : "持つ"
+  USER ||--o{ APPLICATION : "応募する"
+  APPLICATION ||--o{ STEP : "選考ステップ"
+  APPLICATION ||--o{ ES_DRAFT : "ES"
+  ES_DRAFT ||--o{ REVIEW : "AIレビュー"
+  USER {
+    string id PK
+    string entraOid
+    string locale
+  }
+  PROFILE {
+    string userId FK
+    string nameKanji
+    string nameKana
+    date birthDate
+    string photoBlobUrl
+  }
+  APPLICATION {
+    string id PK
+    string userId FK
+    string company
+    string status
+    date nextDeadline
+  }
+  STEP {
+    string id PK
+    string applicationId FK
+    string type
+    date dueDate
+    bool done
+  }
+  ES_DRAFT {
+    string id PK
+    string applicationId FK
+    string question
+    int charLimit
+    string body
+  }
+  REVIEW {
+    string id PK
+    string draftId FK
+    int score
+    string feedback
+    datetime createdAt
+  }

@@ -1,0 +1,22 @@
+flowchart LR
+  subgraph Client["Clients"]
+    direction TB
+    IOS["iOS app<br/>SwiftUI"]
+    WEB["Web app<br/>Static Web Apps"]
+  end
+  ENTRA["Microsoft Entra ID<br/>auth · issues tokens"]
+  FN["Azure Functions<br/>API · TypeScript"]
+  subgraph Data["Data & AI (Azure)"]
+    direction TB
+    COS[("Cosmos DB<br/>profiles · applications")]
+    BLOB[("Blob Storage<br/>résumé PDFs")]
+    AOAI["Azure OpenAI<br/>entry-sheet review"]
+    SPEECH["Azure AI Speech<br/>interview practice v1.1"]
+  end
+  MON["Application Insights<br/>monitoring"]
+  APNS["APNs<br/>push to iPhone"]
+  Client -->|1 sign in| ENTRA
+  Client -->|2 HTTPS + token| FN
+  FN --> Data
+  FN -.->|logs| MON
+  FN -->|deadline alerts| APNS

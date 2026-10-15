@@ -1,0 +1,22 @@
+flowchart LR
+  subgraph Client["クライアント"]
+    direction TB
+    IOS["iOSアプリ<br/>SwiftUI"]
+    WEB["Webアプリ<br/>Static Web Apps"]
+  end
+  ENTRA["Microsoft Entra ID<br/>認証・トークン発行"]
+  FN["Azure Functions<br/>API・TypeScript"]
+  subgraph Data["データ・AI（Azure）"]
+    direction TB
+    COS[("Cosmos DB<br/>プロフィール・応募")]
+    BLOB[("Blob Storage<br/>履歴書PDF")]
+    AOAI["Azure OpenAI<br/>ESレビュー"]
+    SPEECH["Azure AI Speech<br/>面接練習 v1.1"]
+  end
+  MON["Application Insights<br/>監視"]
+  APNS["APNs<br/>iPhoneへプッシュ通知"]
+  Client -->|1 サインイン| ENTRA
+  Client -->|2 HTTPS＋トークン| FN
+  FN --> Data
+  FN -.->|ログ| MON
+  FN -->|締切通知| APNS

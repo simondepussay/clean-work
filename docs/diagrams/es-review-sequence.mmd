@@ -1,0 +1,15 @@
+sequenceDiagram
+  actor U as 学生
+  participant App as iOS / Web
+  participant API as Azure Functions
+  participant DB as Cosmos DB
+  participant AI as Azure OpenAI
+  U->>App: ESを書いて「レビュー」を押す
+  App->>API: POST /es/{id}/review（トークン付き）
+  API->>API: トークン検証・回数制限チェック
+  API->>DB: 下書きとプロフィールを取得
+  API->>AI: プロンプト（敬語・構成・STAR）
+  AI-->>API: 指摘と改善案（JSON）
+  API->>DB: レビューを保存
+  API-->>App: 結果
+  App-->>U: 指摘をハイライト（FR/EN解説つき）
