@@ -1,0 +1,26 @@
+{
+  "name": "shukatsu-pilot-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shukatsu Pilot API (Azure Functions v4, TypeScript)",
+  "main": "dist/src/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && func start",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.10.1",
+    "@azure/functions": "^4.16.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "5.8",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,16 @@
+:root {
+  --bg: #fbfaf7;
+  --fg: #1e2328;
+  --muted: #68707a;
+  --accent: #2f6fde;
+  color-scheme: light dark;
+  font: 16px/1.6 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #15181c; --fg: #e6e8eb; --muted: #9aa3ad; --accent: #6ea0ff; }
+}
+body { margin: 0; background: var(--bg); color: var(--fg); }
+.shell { max-width: 720px; margin: 0 auto; padding: 48px 16px; }
+h1 { margin: 0; font-size: 32px; }
+.tagline { color: var(--muted); margin: 4px 0 24px; }
+.status { font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: var(--accent); }
