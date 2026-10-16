@@ -5,9 +5,11 @@ name: Tests et déploiement
 on:
   push:
     branches: [main]
+    paths-ignore: ["docs/**", "journal/**", "planning/**", "tools/**", "README.md"]
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches: [main]
+    paths-ignore: ["docs/**", "journal/**", "planning/**", "tools/**", "README.md"]
 
 permissions:
   contents: read
