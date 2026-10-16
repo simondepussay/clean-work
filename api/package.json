@@ -16,6 +16,7 @@
   "dependencies": {
     "@azure/cosmos": "^4.10.1",
     "@azure/functions": "^4.16.5",
+    "jose": "^5.10.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

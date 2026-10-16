@@ -12,6 +12,8 @@ param webLocation string = 'eastasia'
 param suffix string = uniqueString(resourceGroup().id)
 
 var databaseName = 'shukatsu'
+// Écrit par infra/identity.mjs. Vide tant que l'annuaire n'existe pas : l'API répond alors 503 aux routes protégées.
+var identity = loadJsonContent('identity.json')
 // Toutes les données sont partitionnées par utilisateur (voir api/src/lib/models.ts).
 var containerNames = [ 'profiles', 'applications', 'drafts', 'reviews' ]
 var tags = { project: 'shukatsu-pilot' }
@@ -68,6 +70,8 @@ resource webSettings 'Microsoft.Web/staticSites/config@2024-04-01' = {
     COSMOS_ENDPOINT: cosmos.properties.documentEndpoint
     COSMOS_KEY: cosmos.listKeys().primaryMasterKey
     COSMOS_DATABASE: databaseName
+    ENTRA_TENANT_ID: identity.tenantId
+    ENTRA_API_CLIENT_ID: identity.apiClientId
   }
 }
 

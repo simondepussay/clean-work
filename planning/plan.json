@@ -297,6 +297,18 @@
       "story": "就活生（自分）として、作り方を企業に見せたい。面接で話せるように。",
       "title_en": "“How it's built” page on my portfolio",
       "story_en": "As a job seeker (me), I want to show companies how I built it, so I can talk about it in interviews."
+    },
+    {
+      "id": "S25",
+      "epic": "E0",
+      "pts": 3,
+      "moscow": "Must",
+      "release": "MVP",
+      "title": "アカウント削除（App Storeの必須要件）",
+      "story": "学生として、アプリの中で自分のアカウントとデータを削除したい。いつでもやめられるように。",
+      "title_en": "Account deletion (App Store requirement)",
+      "story_en": "As a student, I want to delete my account and data from inside the app, so I can leave at any time.",
+      "added": "2026-10-16"
     }
   ],
   "events": [
@@ -386,7 +398,8 @@
       "from": 2,
       "to": 3,
       "stories": [
-        "S02"
+        "S02",
+        "S25"
       ],
       "solo": true,
       "name_en": "Authentication"

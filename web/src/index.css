@@ -14,3 +14,8 @@ body { margin: 0; background: var(--bg); color: var(--fg); }
 h1 { margin: 0; font-size: 32px; }
 .tagline { color: var(--muted); margin: 4px 0 24px; }
 .status { font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: var(--accent); }
+.muted { color: var(--muted); }
+button { font: inherit; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--muted); background: transparent; color: var(--fg); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.account { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.status { margin-top: 32px; }
