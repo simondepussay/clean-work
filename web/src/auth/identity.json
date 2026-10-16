@@ -1,1 +1,7 @@
-{ "configured": false }
+{
+  "configured": true,
+  "tenantId": "8b36fa73-5876-491f-a486-65bdbf79c252",
+  "tenantSubdomain": "shukatsupilot",
+  "webClientId": "54ffa0e6-3778-4a11-ab58-5e3353c93f24",
+  "apiScope": "api://32d9ab54-b203-4930-8763-429163e4f47b/access"
+}
