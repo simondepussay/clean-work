@@ -19,7 +19,7 @@ web/                      ← app web : Vite + React + TypeScript
 api/                      ← API : Azure Functions v4 en TypeScript (intégrée à Static Web Apps)
 infra/main.bicep          ← infrastructure Azure en code (Cosmos DB, Static Web Apps)
 .github/workflows/        ← tests, déploiement, vérification de la version en ligne
-journal/AAAA-MM-JJ.md     ← journal de chaque journée (japonais + anglais dans le même fichier)
+journal/day-NN.md         ← journal de chaque journée de travail (japonais + anglais dans le même fichier)
 tools/build_journal.py    ← génère docs/journal.html (bouton 日本語 / English)
 planning/plan.json        ← source unique : stories, points, dépendances
 tools/build_plan.py       ← calcule PERT, chemin critique, planning 1 dev, sprints
