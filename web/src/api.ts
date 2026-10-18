@@ -19,3 +19,9 @@ export async function fetchMe(token: string, fetcher: typeof fetch = fetch): Pro
   const res = await fetcher("/api/me", { headers: { [TOKEN_HEADER]: token } });
   return res.ok ? ((await res.json()) as Me) : null;
 }
+
+/** Supprime le compte et toutes ses données (S25). */
+export async function deleteAccount(token: string, fetcher: typeof fetch = fetch): Promise<boolean> {
+  const res = await fetcher("/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: token } });
+  return res.ok;
+}

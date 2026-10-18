@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchHealth, fetchMe, TOKEN_HEADER } from "./api";
+import { deleteAccount, fetchHealth, fetchMe, TOKEN_HEADER } from "./api";
 import App from "./App";
 import { AuthContext, type Auth } from "./auth/auth";
 
@@ -88,5 +88,43 @@ describe("App", () => {
     const auth = renderWith({ state: { status: "signedIn", email: "s@example.com", name: "Simon" }, getToken: async () => "jeton" });
     await userEvent.click(screen.getByRole("button", { name: /Sign out/ }));
     expect(auth.signOut).toHaveBeenCalled();
+  });
+});
+
+describe("suppression du compte (S25)", () => {
+  const signedIn = { state: { status: "signedIn", email: "s@example.com", name: "Simon" } as const, getToken: async () => "jeton" };
+
+  it("deleteAccount envoie DELETE /api/me avec le jeton", async () => {
+    const fake = vi.fn().mockResolvedValue({ ok: true });
+    expect(await deleteAccount("jeton", fake as unknown as typeof fetch)).toBe(true);
+    expect(fake).toHaveBeenCalledWith("/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: "jeton" } });
+  });
+
+  it("ne supprime rien si l'utilisateur annule", async () => {
+    const fetchMock = stubApi();
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    const auth = renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/me", expect.objectContaining({ method: "DELETE" }));
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it("supprime puis déconnecte après confirmation", async () => {
+    const fetchMock = stubApi();
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const auth = renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
+    expect(fetchMock).toHaveBeenCalledWith("/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: "jeton" } });
+    expect(auth.signOut).toHaveBeenCalled();
+  });
+
+  it("reste connecté et prévient si la suppression échoue", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) =>
+      init?.method === "DELETE" ? json({ error: "deletion_not_configured" }, false) : url === "/api/me" ? json({ hasProfile: false }) : json(health)));
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const auth = renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
+    expect(await screen.findByText(/Could not delete/)).toBeInTheDocument();
+    expect(auth.signOut).not.toHaveBeenCalled();
   });
 });

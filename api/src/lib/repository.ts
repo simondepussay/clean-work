@@ -76,4 +76,13 @@ export class Repository {
   deleteApplication(userId: string, id: string) {
     return this.store.remove(containers.applications, userId, id);
   }
+
+  // -------------------------------------------------------------- suppression du compte (S25)
+
+  /** Efface toutes les données de l'utilisateur, conteneur par conteneur ; renvoie le nombre de documents. */
+  async deleteAllData(userId: string) {
+    let count = 0;
+    for (const container of Object.values(containers)) count += await this.store.removeAll(container, userId);
+    return count;
+  }
 }

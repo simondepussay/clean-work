@@ -4,5 +4,6 @@
   "apiClientId": "32d9ab54-b203-4930-8763-429163e4f47b",
   "apiScope": "api://32d9ab54-b203-4930-8763-429163e4f47b/access",
   "webClientId": "54ffa0e6-3778-4a11-ab58-5e3353c93f24",
-  "iosClientId": "a4837883-e8be-4db5-b6d9-63a5204707cc"
+  "iosClientId": "a4837883-e8be-4db5-b6d9-63a5204707cc",
+  "graphClientId": "b8249597-e684-4483-beb9-97abbf0ec9f5"
 }

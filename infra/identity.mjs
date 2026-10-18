@@ -4,6 +4,7 @@
 //   • « Shukatsu Web » est l'app web (application monopage, connexion par redirection) ;
 //   • « Shukatsu iOS » est l'app iPhone, client public, authentification native activée ;
 //   • le consentement administrateur évite tout écran d'autorisation à l'utilisateur ;
+//   • « Shukatsu Suppression de comptes » permet à l'API de supprimer un compte (S25) ;
 //   • le code par email est activé (« mot de passe oublié » en dépend) ;
 //   • le parcours d'inscription et de connexion « email + mot de passe ».
 //
@@ -38,6 +39,9 @@ const WEB_NAME = "Shukatsu Web";
 const IOS_NAME = "Shukatsu iOS";
 const FLOW_NAME = "Shukatsu - email et mot de passe";
 const SCOPE = "access";
+// Abonnement et Static Web Apps où l'API lit ses réglages (compte HAL).
+const AZURE_SUBSCRIPTION = "eb020e02-d673-4a15-81f6-f8a50ab8c5b1";
+const WEB_APP_NAME = "swa-shukatsu-ijdqobb4nlsxu";
 
 const MS_GRAPH_APP_ID = "00000003-0000-0000-c000-000000000000";
 const OPENID_SCOPE_ID = "37f7f235-527c-4136-accd-4a02d197296e";
@@ -193,6 +197,54 @@ for (const client of [webPrincipal, iosPrincipal]) {
   await grantConsent(client, apiPrincipal, SCOPE);
 }
 
+// MARK: - Application qui supprime les comptes (S25)
+
+// « Supprimer mon compte » doit aussi effacer le compte dans l'annuaire, ce
+// qu'Apple exige. L'API le fait avec sa propre identité d'application.
+const GRAPH_APP_NAME = "Shukatsu Suppression de comptes";
+console.log(`▶ ${GRAPH_APP_NAME}`);
+
+const graphPrincipalInfo = (await graph("GET", `/servicePrincipals?${filter(`appId eq '${MS_GRAPH_APP_ID}'`)}`)).value[0];
+const userReadWriteAll = graphPrincipalInfo.appRoles.find((r) => r.value === "User.ReadWrite.All");
+const deletionApp = await upsertApp({
+  displayName: GRAPH_APP_NAME,
+  signInAudience: "AzureADMyOrg",
+  requiredResourceAccess: [{ resourceAppId: MS_GRAPH_APP_ID, resourceAccess: [{ id: userReadWriteAll.id, type: "Role" }] }],
+});
+const deletionPrincipal = await ensureServicePrincipal(deletionApp.appId);
+console.log(`  client ID : ${deletionApp.appId}`);
+
+// Consentement administrateur côté application : sans lui, le droit est demandé mais pas accordé.
+const roles = await graph("GET", `/servicePrincipals/${deletionPrincipal}/appRoleAssignments`);
+if (!roles.value.some((a) => a.appRoleId === userReadWriteAll.id)) {
+  await optionalStep(
+    () => graph("POST", `/servicePrincipals/${deletionPrincipal}/appRoleAssignments`, {
+      principalId: deletionPrincipal, resourceId: graphPrincipalInfo.id, appRoleId: userReadWriteAll.id,
+    }),
+    `Dans le portail Entra : Inscriptions d'applications > ${GRAPH_APP_NAME} > Autorisations d'API > Accorder le consentement administrateur.`,
+  );
+}
+
+// Un secret n'est lisible qu'à sa création. Il va directement dans les réglages de
+// l'API (abonnement Azure for Students, session HAL d'Azure CLI) : jamais affiché,
+// jamais écrit sur disque.
+const existingSecrets = (await graph("GET", `/applications/${deletionApp.id}`)).passwordCredentials ?? [];
+if (existingSecrets.length === 0) {
+  const created = await graph("POST", `/applications/${deletionApp.id}/addPassword`, {
+    passwordCredential: { displayName: "API Shukatsu", endDateTime: new Date(Date.now() + 365 * 86400e3).toISOString() },
+  });
+  try {
+    az(["staticwebapp", "appsettings", "set", "--subscription", AZURE_SUBSCRIPTION, "-g", "rg-shukatsu-pilot",
+      "-n", WEB_APP_NAME, "--setting-names", `ENTRA_GRAPH_SECRET=${created.secretText}`, "-o", "none"]);
+    console.log("  secret créé et posé sur l'API (valable 1 an)");
+  } catch {
+    console.log("  ⚠︎ Secret créé mais impossible à poser sur l'API : supprime-le dans le portail et relance ce script");
+    console.log("    après `az login --tenant 8d41d6d7-36ce-4e0c-8c6d-cf2c54c39039` (compte HAL).");
+  }
+} else {
+  console.log("  secret déjà présent (pour le renouveler : supprime-le dans le portail et relance)");
+}
+
 // MARK: - Code par email
 
 console.log("▶ Code par email (nécessaire à « mot de passe oublié »)");
@@ -256,7 +308,7 @@ if (flows) {
 // MARK: - Résultat
 
 const apiScope = `api://${apiApp.appId}/${SCOPE}`;
-const infra = { tenantId: TENANT_ID, tenantSubdomain: subdomain, apiClientId: apiApp.appId, apiScope, webClientId: webApp.appId, iosClientId: iosApp.appId };
+const infra = { tenantId: TENANT_ID, tenantSubdomain: subdomain, apiClientId: apiApp.appId, apiScope, webClientId: webApp.appId, iosClientId: iosApp.appId, graphClientId: deletionApp.appId };
 const web = { configured: true, tenantId: TENANT_ID, tenantSubdomain: subdomain, webClientId: webApp.appId, apiScope };
 
 writeFileSync(join(ROOT, "infra", "identity.json"), `${JSON.stringify(infra, null, 2)}\n`);
@@ -264,6 +316,6 @@ writeFileSync(join(ROOT, "web", "src", "auth", "identity.json"), `${JSON.stringi
 
 console.log("\n✅ Annuaire prêt. Identifiants écrits dans infra/identity.json et web/src/auth/identity.json :");
 console.log(infra);
-console.log("\nEnsuite, reconnecte Azure CLI à l'abonnement et redéploie l'infrastructure (réglages de l'API) :");
-console.log("  az login --tenant 8d41d6d7-36ce-4e0c-8c6d-cf2c54c39039");
-console.log("  az deployment group create -g rg-shukatsu-pilot -f infra/main.bicep");
+console.log("\nEnsuite, sur l'abonnement (compte HAL), pose les autres réglages de l'API :");
+console.log("  az account set --subscription " + AZURE_SUBSCRIPTION);
+console.log("  node infra/settings.mjs");

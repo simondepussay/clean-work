@@ -19,3 +19,6 @@ button { font: inherit; padding: 8px 16px; border-radius: 8px; border: 1px solid
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .account { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .status { margin-top: 32px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+button.danger { border-color: #d4483b; color: #d4483b; }
+button:disabled { opacity: .5; cursor: default; }

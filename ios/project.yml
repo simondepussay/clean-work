@@ -1,0 +1,64 @@
+# Projet Xcode généré par XcodeGen : `xcodegen generate` dans ce dossier.
+# Le .xcodeproj n'est pas versionné, c'est ce fichier qui fait foi.
+name: ShukatsuPilot
+options:
+  bundleIdPrefix: com.simondepussay
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: QC5N2H4TK6
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  MSAL:
+    url: https://github.com/AzureAD/microsoft-authentication-library-for-objc
+    from: 2.15.0
+targets:
+  ShukatsuPilot:
+    type: application
+    platform: iOS
+    sources: [ShukatsuPilot]
+    dependencies:
+      - package: MSAL
+    entitlements:
+      path: ShukatsuPilot/ShukatsuPilot.entitlements
+      properties:
+        # MSAL range ses jetons dans le trousseau partagé « adalcache ».
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.simondepussay.ShukatsuPilot
+          - $(AppIdentifierPrefix)com.microsoft.adalcache
+    info:
+      path: ShukatsuPilot/Info.plist
+      properties:
+        CFBundleDisplayName: 就活パイロット
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # Identifiants publics de l'annuaire (copiés de infra/identity.json) et adresse de l'API.
+        EntraClientID: a4837883-e8be-4db5-b6d9-63a5204707cc
+        EntraTenantSubdomain: shukatsupilot
+        EntraAPIScope: api://32d9ab54-b203-4930-8763-429163e4f47b/access
+        APIBaseURL: https://blue-rock-008b52800.2.azurestaticapps.net
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.simondepussay.ShukatsuPilot
+        TARGETED_DEVICE_FAMILY: "1"
+  ShukatsuPilotTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [ShukatsuPilotTests]
+    dependencies:
+      - target: ShukatsuPilot
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ShukatsuPilot:
+    build:
+      targets:
+        ShukatsuPilot: all
+        ShukatsuPilotTests: [test]
+    test:
+      targets: [ShukatsuPilotTests]

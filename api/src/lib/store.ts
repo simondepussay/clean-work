@@ -12,6 +12,8 @@ export interface DocStore {
   list<T extends Doc>(container: ContainerName, userId: string): Promise<T[]>;
   put<T extends Doc>(container: ContainerName, doc: T): Promise<T>;
   remove(container: ContainerName, userId: string, id: string): Promise<boolean>;
+  /** Supprime tous les documents de l'utilisateur dans le conteneur ; renvoie leur nombre. */
+  removeAll(container: ContainerName, userId: string): Promise<number>;
   ping(): Promise<void>;
 }
 
@@ -43,6 +45,12 @@ export class MemoryStore implements DocStore {
 
   async remove(container: ContainerName, userId: string, id: string) {
     return this.data.delete(this.key(container, userId, id));
+  }
+
+  async removeAll(container: ContainerName, userId: string) {
+    const docs = await this.list(container, userId);
+    for (const d of docs) this.data.delete(this.key(container, userId, d.id));
+    return docs.length;
   }
 
   async ping() {}
@@ -86,6 +94,16 @@ export class CosmosStore implements DocStore {
       if ((e as { code?: number }).code === 404) return false;
       throw e;
     }
+  }
+
+  async removeAll(container: ContainerName, userId: string) {
+    const { resources } = await this.db
+      .container(container)
+      .items.query<{ id: string }>({ query: "SELECT c.id FROM c WHERE c.userId = @u", parameters: [{ name: "@u", value: userId }] },
+        { partitionKey: userId })
+      .fetchAll();
+    for (const { id } of resources) await this.remove(container, userId, id);
+    return resources.length;
   }
 
   async ping() {

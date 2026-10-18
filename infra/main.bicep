@@ -1,4 +1,7 @@
-// Infrastructure Shukatsu Pilot (S01).
+// Infrastructure Shukatsu Pilot (S01) : les ressources seulement.
+// Les réglages de l'API (Cosmos, annuaire, secret de suppression) sont posés par
+// infra/settings.mjs et infra/identity.mjs, qui les ajoutent sans écraser les autres :
+// un bloc « appsettings » ici remplacerait tout à chaque déploiement, secret compris.
 // Régions limitées par la politique de l'abonnement (Azure for Students) :
 // Japon interdit → Cosmos DB en Corée Centre, Static Web Apps en Asie de l'Est (pas proposé en Corée).
 
@@ -12,8 +15,6 @@ param webLocation string = 'eastasia'
 param suffix string = uniqueString(resourceGroup().id)
 
 var databaseName = 'shukatsu'
-// Écrit par infra/identity.mjs. Vide tant que l'annuaire n'existe pas : l'API répond alors 503 aux routes protégées.
-var identity = loadJsonContent('identity.json')
 // Toutes les données sont partitionnées par utilisateur (voir api/src/lib/models.ts).
 var containerNames = [ 'profiles', 'applications', 'drafts', 'reviews' ]
 var tags = { project: 'shukatsu-pilot' }
@@ -60,19 +61,6 @@ resource web 'Microsoft.Web/staticSites@2024-04-01' = {
   tags: tags
   sku: { name: 'Free', tier: 'Free' }
   properties: {}
-}
-
-// Réglages lus par l'API (fonctions intégrées à Static Web Apps).
-resource webSettings 'Microsoft.Web/staticSites/config@2024-04-01' = {
-  parent: web
-  name: 'appsettings'
-  properties: {
-    COSMOS_ENDPOINT: cosmos.properties.documentEndpoint
-    COSMOS_KEY: cosmos.listKeys().primaryMasterKey
-    COSMOS_DATABASE: databaseName
-    ENTRA_TENANT_ID: identity.tenantId
-    ENTRA_API_CLIENT_ID: identity.apiClientId
-  }
 }
 
 output webName string = web.name

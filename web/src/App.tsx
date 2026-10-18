@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchHealth, fetchMe, type Health, type Me } from "./api";
+import { deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
@@ -7,6 +7,21 @@ type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { k
 function Account() {
   const auth = useAuth();
   const [me, setMe] = useState<Me | null | "error">(null);
+  const [deleting, setDeleting] = useState<"idle" | "busy" | "error">("idle");
+
+  async function removeAccount() {
+    const ok = window.confirm(
+      "アカウントとすべてのデータを削除します。元に戻せません。\nDelete your account and all your data? This cannot be undone.",
+    );
+    if (!ok) return;
+    setDeleting("busy");
+    const token = await auth.getToken();
+    if (token && (await deleteAccount(token).catch(() => false))) {
+      await auth.signOut();
+    } else {
+      setDeleting("error");
+    }
+  }
 
   useEffect(() => {
     if (auth.state.status !== "signedIn") return;
@@ -39,7 +54,13 @@ function Account() {
             )}
             {me === "error" && <span className="muted"> · API エラー / API error</span>}
           </p>
-          <button onClick={() => auth.signOut()}>サインアウト / Sign out</button>
+          <div className="actions">
+            <button onClick={() => auth.signOut()}>サインアウト / Sign out</button>
+            <button className="danger" disabled={deleting === "busy"} onClick={removeAccount}>
+              アカウント削除 / Delete account
+            </button>
+          </div>
+          {deleting === "error" && <p className="muted">削除できませんでした / Could not delete the account</p>}
         </div>
       );
   }

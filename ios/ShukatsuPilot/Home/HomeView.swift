@@ -1,0 +1,57 @@
+import SwiftUI
+
+/// Accueil une fois connecté (S02). Le contenu (profil, candidatures) arrive avec S05 et S07.
+struct HomeView: View {
+    @Environment(AppModel.self) private var model
+    @State private var confirmingDeletion = false
+    @State private var deleting = false
+    @State private var deletionFailed = false
+
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ようこそ、\(model.displayName ?? model.email ?? "")")
+                        .font(.title2.bold())
+                    if let email = model.email { Text(email).foregroundStyle(.secondary) }
+                }
+                profileStatus
+            }
+            Section {
+                Button("サインアウト / Sign out") { model.signOut() }
+            }
+            Section {
+                Button("アカウント削除 / Delete account", role: .destructive) { confirmingDeletion = true }
+                    .disabled(deleting)
+            } footer: {
+                if deletionFailed { Text("削除できませんでした / Could not delete the account").foregroundStyle(.red) }
+            }
+        }
+        .confirmationDialog("アカウントとすべてのデータを削除します。元に戻せません。\nDelete your account and all your data? This cannot be undone.",
+                            isPresented: $confirmingDeletion, titleVisibility: .visible) {
+            Button("削除する / Delete", role: .destructive) {
+                deleting = true
+                Task {
+                    do { try await model.deleteAccount() } catch { deletionFailed = true }
+                    deleting = false
+                }
+            }
+        }
+        .navigationTitle("就活パイロット")
+        .refreshable { await model.refreshMe() }
+        .task { await model.refreshMe() }
+    }
+
+    @ViewBuilder private var profileStatus: some View {
+        switch model.me {
+        case .idle, .loading:
+            ProgressView()
+        case .loaded(let me):
+            Label(me.hasProfile ? "プロフィール登録済み / Profile saved" : "プロフィール未登録 / No profile yet",
+                  systemImage: me.hasProfile ? "checkmark.circle" : "person.crop.circle.badge.plus")
+        case .failed:
+            Label("API エラー / API error", systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+        }
+    }
+}
