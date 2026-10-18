@@ -17,7 +17,10 @@
 ```
 web/                      ← app web : Vite + React + TypeScript
 api/                      ← API : Azure Functions v4 en TypeScript (intégrée à Static Web Apps)
+ios/                      ← app iPhone : SwiftUI + MSAL (projet généré : `cd ios && xcodegen generate`)
 infra/main.bicep          ← infrastructure Azure en code (Cosmos DB, Static Web Apps)
+infra/identity.mjs        ← annuaire External ID (apps, parcours, app de suppression et son secret)
+infra/settings.mjs        ← réglages de l'API, ajoutés sans écraser le secret
 .github/workflows/        ← tests, déploiement, vérification de la version en ligne
 journal/day-NN.md         ← journal de chaque journée de travail (japonais + anglais dans le même fichier)
 tools/build_journal.py    ← génère docs/journal.html (bouton 日本語 / English)
@@ -47,8 +50,11 @@ Tests : `npm test` dans `api/` et dans `web/`.
 Régions imposées par la politique de l'abonnement (le Japon est interdit) : Cosmos DB en **Corée Centre**, Static Web Apps en **Asie de l'Est**. Groupe de ressources : `rg-shukatsu-pilot`.
 
 ```bash
-az deployment group create -g rg-shukatsu-pilot -f infra/main.bicep
+az deployment group create -g rg-shukatsu-pilot -f infra/main.bicep   # ressources
+node infra/settings.mjs                                                # réglages de l'API
 ```
+
+L'annuaire External ID (`shukatsupilot`) est dans un autre tenant : `node infra/identity.mjs <tenant>` s'exécute connecté à ce tenant.
 
 ## Régénérer le plan et le journal
 
