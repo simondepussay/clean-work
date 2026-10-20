@@ -99,6 +99,29 @@ struct APIClient {
         }
     }
 
+    // MARK: 履歴書 PDF (S11)
+
+    struct ResumeOptions: Encodable, Equatable {
+        enum Era: String, Encodable, CaseIterable { case western, japanese }
+        var era: Era = .western
+        var appeal: String?
+        var wishes: String?
+    }
+
+    enum ResumeError: Error, Equatable { case profileMissing, invalid, failed }
+
+    /// Le PDF et son nom de fichier (japonais), ou la raison de l'échec.
+    func resume(_ options: ResumeOptions) async throws -> Result<(data: Data, filename: String), ResumeError> {
+        let (data, status) = try await raw("POST", "api/resume", body: try JSONEncoder().encode(options))
+        switch status {
+        case 200: return .success((data, "履歴書.pdf"))
+        case 401: throw APIError.unauthorized
+        case 404: return .failure(.profileMissing)
+        case 400: return .failure(.invalid)
+        default: return .failure(.failed)
+        }
+    }
+
     /// Supprime le compte et toutes ses données (S25).
     func deleteAccount() async throws {
         try await send("DELETE", "api/me")

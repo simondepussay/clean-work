@@ -115,3 +115,35 @@ final class LegalLinksTests: XCTestCase {
         XCTAssertEqual(url.lastPathComponent, "privacy.html")
     }
 }
+
+@MainActor
+final class ResumeTests: XCTestCase {
+    private func api() -> APIClient {
+        APIClient(baseURL: URL(string: "https://example.test")!, session: StubURLProtocol.session(), token: { "jeton" })
+    }
+
+    override func tearDown() {
+        StubURLProtocol.handler = nil
+        StubURLProtocol.lastRequest = nil
+    }
+
+    func testReturnsThePDFAndSendsOptions() async throws {
+        StubURLProtocol.handler = { _ in (200, Data("%PDF-1.7".utf8)) }
+        let result = try await api().resume(.init(era: .japanese, appeal: "強み", wishes: nil))
+        guard case .success(let pdf) = result else { return XCTFail("PDF attendu") }
+        XCTAssertEqual(String(decoding: pdf.data.prefix(5), as: UTF8.self), "%PDF-")
+        XCTAssertEqual(StubURLProtocol.lastRequest?.url?.path, "/api/resume")
+    }
+
+    func testMissingProfile() async throws {
+        StubURLProtocol.handler = { _ in (404, Data(#"{"error":"profile_missing"}"#.utf8)) }
+        let result = try await api().resume(.init())
+        guard case .failure(let error) = result else { return XCTFail("échec attendu") }
+        XCTAssertEqual(error, .profileMissing)
+    }
+
+    func testOptionsEncodeWithoutEmptyFields() throws {
+        let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(APIClient.ResumeOptions(era: .western))) as? [String: String]
+        XCTAssertEqual(json, ["era": "western"])
+    }
+}

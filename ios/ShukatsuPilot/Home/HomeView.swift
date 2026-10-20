@@ -25,6 +25,11 @@ struct HomeView: View {
                         Label("プロフィール / Profile", systemImage: "person.text.rectangle")
                     }
                     NavigationLink {
+                        ResumeView(api: api)
+                    } label: {
+                        Label("履歴書PDF / Résumé PDF", systemImage: "doc.richtext")
+                    }
+                    NavigationLink {
                         EsListView(model: EsModel(api: api, guideURL: AppConfig.apiBaseURL?.appending(path: "es-guide.json")))
                     } label: {
                         Label("ES・AI添削 / Entry sheets", systemImage: "doc.text.magnifyingglass")
