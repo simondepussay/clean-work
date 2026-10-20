@@ -20,6 +20,7 @@ export const messages = {
   kana: "ひらがなかカタカナで入力してください / Use hiragana or katakana",
   email: "メールアドレスが正しくありません / Invalid email address",
   url: "URLが正しくありません / Invalid URL",
+  choice: "選択してください / Please choose",
 } as const;
 
 const isoDate = z.string({ required_error: messages.required }).regex(/^\d{4}-\d{2}-\d{2}$/, messages.date);
@@ -48,6 +49,27 @@ export const workSchema = z.object({
   description: text(1000).optional(),
 });
 
+/** Langues proposées (codes ISO 639-1) ; « other » pour le reste. */
+export const languageCodes = ["ja", "en", "zh", "ko", "vi", "ne", "id", "th", "fr", "es", "de", "pt", "other"] as const;
+/** Niveaux habituels d'un 履歴書 : ネイティブ, ビジネス, 日常会話, 基礎. */
+export const languageLevels = ["native", "business", "conversational", "basic"] as const;
+/** Catégories de certification : 語学, IT, ビジネス, 学位・学校, 運転免許, その他. */
+export const certificationCategories = ["language", "it", "business", "degree", "driving", "other"] as const;
+
+const choice = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.enum(values, { errorMap: () => ({ message: messages.choice }) });
+
+export const certificationSchema = z.object({
+  category: choice(certificationCategories).default("other"),
+  name: required(100),
+  date: yearMonth,
+});
+
+export const languageSchema = z.object({
+  language: choice(languageCodes),
+  level: choice(languageLevels),
+});
+
 export const profileInputSchema = z.object({
   nameKanji: required(50),
   // Le 履歴書 attend la lecture du nom en kana (ふりがな).
@@ -59,8 +81,8 @@ export const profileInputSchema = z.object({
   address: text(200).optional(),
   education: z.array(educationSchema).max(20).default([]),
   work: z.array(workSchema).max(30).default([]),
-  certifications: z.array(z.object({ name: required(100), date: yearMonth })).max(30).default([]),
-  languages: z.array(z.object({ language: required(30), level: text(50) })).max(10).default([]),
+  certifications: z.array(certificationSchema).max(30).default([]),
+  languages: z.array(languageSchema).max(10).default([]),
 });
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;

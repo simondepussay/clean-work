@@ -120,7 +120,7 @@ describe("ふりがな et messages", () => {
   });
 
   it("donne des messages en japonais et en anglais, jamais ceux de zod", async () => {
-    const found = await issues({ nameKanji: "", education: [{ school: "", start: "avril", status: "enrolled" }], certifications: [{ name: "FE" }] });
+    const found = await issues({ nameKanji: "", education: [{ school: "", start: "avril", status: "enrolled" }], certifications: [{ category: "it", name: "FE" }] });
     expect(found).toEqual([
       { path: "nameKanji", message: "入力してください / Required" },
       { path: "nameKana", message: "入力してください / Required" },
@@ -128,5 +128,36 @@ describe("ふりがな et messages", () => {
       { path: "education.0.start", message: "YYYY-MM の形式で入力してください / Use the format YYYY-MM" },
       { path: "certifications.0.date", message: "入力してください / Required" },
     ]);
+  });
+});
+
+describe("langues et certifications : listes de choix", () => {
+  const base = { nameKanji: "シモン", nameKana: "しもん" };
+
+  it("enregistre langue, niveau et catégorie", async () => {
+    const p = await repo().saveProfile("u1", {
+      ...base,
+      languages: [{ language: "fr", level: "native" }, { language: "ja", level: "business" }],
+      certifications: [{ category: "language", name: "JLPT N2", date: "2025-12" }],
+    });
+    expect(p.languages).toEqual([{ language: "fr", level: "native" }, { language: "ja", level: "business" }]);
+    expect(p.certifications[0]).toEqual({ category: "language", name: "JLPT N2", date: "2025-12" });
+  });
+
+  it("met « other » comme catégorie par défaut", async () => {
+    const p = await repo().saveProfile("u1", { ...base, certifications: [{ name: "珠算", date: "2015-03" }] });
+    expect(p.certifications[0].category).toBe("other");
+  });
+
+  it("refuse une langue, un niveau ou une catégorie hors liste, avec un message lisible", async () => {
+    const r = repo();
+    for (const bad of [
+      { languages: [{ language: "日本語", level: "business" }] },
+      { languages: [{ language: "ja", level: "N2" }] },
+      { certifications: [{ category: "sport", name: "x", date: "2020-01" }] },
+    ]) {
+      const err = await r.saveProfile("u1", { ...base, ...bad }).catch((e: ZodError) => e);
+      expect((err as ZodError).issues[0].message).toBe("選択してください / Please choose");
+    }
   });
 });

@@ -51,13 +51,35 @@ struct Profile: Codable, Equatable {
 
     struct Certification: Codable, Equatable, Identifiable {
         var id = UUID()
+        /// Code de ProfileChoices.certificationCategories ; vide = pas encore choisi.
+        var category = ""
         var name = ""
         var date = ""
-        enum CodingKeys: String, CodingKey { case name, date }
+        enum CodingKeys: String, CodingKey { case category, name, date }
+
+        init(category: String = "", name: String = "", date: String = "") {
+            self.category = category; self.name = name; self.date = date
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            category = try c.decodeIfPresent(String.self, forKey: .category) ?? ""
+            name = try c.decode(String.self, forKey: .name)
+            date = try c.decode(String.self, forKey: .date)
+        }
+
+        /// Une catégorie non choisie n'est pas envoyée : l'API met « other ».
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            if !category.isEmpty { try c.encode(category, forKey: .category) }
+            try c.encode(name, forKey: .name)
+            try c.encode(date, forKey: .date)
+        }
     }
 
     struct Language: Codable, Equatable, Identifiable {
         var id = UUID()
+        /// Codes de ProfileChoices.languages et ProfileChoices.levels.
         var language = ""
         var level = ""
         enum CodingKeys: String, CodingKey { case language, level }

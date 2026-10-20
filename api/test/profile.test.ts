@@ -22,7 +22,7 @@ const valid = {
   nameKana: "デプセ シモン",
   nameLatin: "Simon Depussay",
   education: [{ school: "HAL東京", faculty: "情報処理", start: "2026-04", status: "enrolled" }],
-  languages: [{ language: "日本語", level: "JLPT N2" }],
+  languages: [{ language: "ja", level: "business" }],
 };
 
 describe("/api/profile", () => {

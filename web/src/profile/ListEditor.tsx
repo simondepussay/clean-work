@@ -5,6 +5,10 @@ export type Field<T> = {
   label: string;
   type?: "text" | "month" | "select" | "textarea";
   options?: { value: string; label: string }[];
+  /** Pour une liste : texte de l'option vide (« choisir »), qui oblige à faire un choix. */
+  placeholder?: string;
+  /** Pour un texte : suggestions selon la ligne (par exemple selon la catégorie). */
+  suggestions?: (item: T) => string[];
   required?: boolean;
 };
 
@@ -36,12 +40,21 @@ export function ListEditor<T extends Record<string, unknown>>({ title, name, ite
                 <span>{f.label}{f.required && " *"}</span>
                 {f.type === "select" ? (
                   <select value={value} onChange={(e) => update(i, f.key, e.target.value)}>
+                    {f.placeholder && <option value="">{f.placeholder}</option>}
                     {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 ) : f.type === "textarea" ? (
                   <textarea value={value} onChange={(e) => update(i, f.key, e.target.value)} rows={2} />
                 ) : (
-                  <input type={f.type ?? "text"} value={value} onChange={(e) => update(i, f.key, e.target.value)} />
+                  <>
+                    <input type={f.type ?? "text"} value={value} list={f.suggestions ? `${id}.list` : undefined}
+                      onChange={(e) => update(i, f.key, e.target.value)} />
+                    {f.suggestions && (
+                      <datalist id={`${id}.list`}>
+                        {f.suggestions(item).map((s) => <option key={s} value={s} />)}
+                      </datalist>
+                    )}
+                  </>
                 )}
                 {error && <small role="alert">{error}</small>}
               </label>

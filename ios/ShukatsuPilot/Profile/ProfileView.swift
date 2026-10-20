@@ -88,7 +88,17 @@ struct ProfileView: View {
         Section("資格 / Certifications") {
             ForEach(Array($model.profile.certifications.enumerated()), id: \.element.id) { index, $item in
                 VStack(alignment: .leading) {
-                    field("資格名 / Name *", text: $item.name, path: "certifications.\(index).name")
+                    choice("分類 / Category *", selection: $item.category, options: ProfileChoices.certificationCategories,
+                           path: "certifications.\(index).category")
+                    HStack {
+                        field("資格名 / Name *", text: $item.name, path: "certifications.\(index).name")
+                        let suggestions = ProfileChoices.certificationSuggestions[item.category] ?? []
+                        if !suggestions.isEmpty {
+                            Menu {
+                                ForEach(suggestions, id: \.self) { name in Button(name) { item.name = name } }
+                            } label: { Image(systemName: "list.bullet").accessibilityLabel("候補 / Suggestions") }
+                        }
+                    }
                     month("取得 / Date *", text: $item.date, path: "certifications.\(index).date")
                 }
             }
@@ -101,8 +111,10 @@ struct ProfileView: View {
         Section("語学 / Languages") {
             ForEach(Array($model.profile.languages.enumerated()), id: \.element.id) { index, $item in
                 VStack(alignment: .leading) {
-                    field("言語 / Language *", text: $item.language, path: "languages.\(index).language")
-                    field("レベル / Level", text: $item.level, path: "languages.\(index).level")
+                    choice("言語 / Language *", selection: $item.language, options: ProfileChoices.languages,
+                           path: "languages.\(index).language")
+                    choice("レベル / Level *", selection: $item.level, options: ProfileChoices.levels,
+                           path: "languages.\(index).level")
                 }
             }
             .onDelete { model.profile.languages.remove(atOffsets: $0) }
@@ -117,6 +129,19 @@ struct ProfileView: View {
             TextField(label, text: text)
                 .keyboardType(keyboard)
                 .textInputAutocapitalization(keyboard == .emailAddress ? .never : .sentences)
+            if let error = model.error(path) {
+                Text(error).font(.caption).foregroundStyle(.red)
+            }
+        }
+    }
+
+    /// Liste de choix ; l'option vide oblige à choisir (l'API répond « 選択してください » sinon).
+    private func choice(_ label: String, selection: Binding<String>, options: [ProfileChoices.Choice], path: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Picker(label, selection: selection) {
+                Text("選択 / Choose").tag("")
+                ForEach(options, id: \.value) { Text($0.label).tag($0.value) }
+            }
             if let error = model.error(path) {
                 Text(error).font(.caption).foregroundStyle(.red)
             }

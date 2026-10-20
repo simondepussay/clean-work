@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { getProfile, saveProfile, type Certification, type Education, type Issue, type Language, type ProfileInput, type Work } from "../api";
 import { useAuth } from "../auth/auth";
+import { certificationCategories, certificationSuggestions, languages, levels } from "./choices";
 import { ListEditor, type Field } from "./ListEditor";
 
 const emptyProfile: ProfileInput = { nameKanji: "", nameKana: "", education: [], work: [], certifications: [], languages: [] };
@@ -26,13 +27,15 @@ const workFields: Field<Work>[] = [
   { key: "end", label: "退社 / End", type: "month" },
   { key: "description", label: "内容 / Description", type: "textarea" },
 ];
+const choose = "選択 / Choose";
 const certificationFields: Field<Certification>[] = [
-  { key: "name", label: "資格名 / Name", required: true },
+  { key: "category", label: "分類 / Category", type: "select", options: certificationCategories, placeholder: choose, required: true },
+  { key: "name", label: "資格名 / Name", required: true, suggestions: (c) => certificationSuggestions[c.category] ?? [] },
   { key: "date", label: "取得 / Date", type: "month", required: true },
 ];
 const languageFields: Field<Language>[] = [
-  { key: "language", label: "言語 / Language", required: true },
-  { key: "level", label: "レベル / Level" },
+  { key: "language", label: "言語 / Language", type: "select", options: languages, placeholder: choose, required: true },
+  { key: "level", label: "レベル / Level", type: "select", options: levels, placeholder: choose, required: true },
 ];
 
 type Status = { kind: "loading" } | { kind: "ready" } | { kind: "saving" } | { kind: "saved" } | { kind: "error" };
@@ -113,7 +116,7 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
       <ListEditor title="職歴 / Work experience" name="work" items={profile.work} fields={workFields}
         empty={{ company: "", start: "" }} errors={errors} onChange={(v) => set("work", v)} />
       <ListEditor title="資格 / Certifications" name="certifications" items={profile.certifications} fields={certificationFields}
-        empty={{ name: "", date: "" }} errors={errors} onChange={(v) => set("certifications", v)} />
+        empty={{ category: "", name: "", date: "" }} errors={errors} onChange={(v) => set("certifications", v)} />
       <ListEditor title="語学 / Languages" name="languages" items={profile.languages} fields={languageFields}
         empty={{ language: "", level: "" }} errors={errors} onChange={(v) => set("languages", v)} />
 

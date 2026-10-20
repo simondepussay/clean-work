@@ -85,4 +85,17 @@ final class ProfileTests: XCTestCase {
         XCTAssertTrue(saved)
         XCTAssertEqual(model.status, .saved)
     }
+
+    func testCertificationWithoutCategoryIsSentWithoutIt() throws {
+        let data = try JSONEncoder().encode(Profile.Certification(name: "珠算", date: "2015-03"))
+        let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: String])
+        XCTAssertEqual(json, ["name": "珠算", "date": "2015-03"])
+    }
+
+    func testOldFreeTextValuesStillDecode() throws {
+        let data = Data(#"{"nameKanji":"シモン","nameKana":"しもん","languages":[{"language":"日本語","level":"N2"}],"certifications":[{"name":"FE","date":"2025-04"}]}"#.utf8)
+        let profile = try JSONDecoder().decode(Profile.self, from: data)
+        XCTAssertEqual(profile.languages.first?.language, "日本語")
+        XCTAssertEqual(profile.certifications.first?.category, "")
+    }
 }

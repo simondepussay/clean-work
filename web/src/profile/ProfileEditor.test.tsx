@@ -83,10 +83,34 @@ describe("ProfileEditor", () => {
   });
 
   it("supprime une ligne", async () => {
-    stub(200, { nameKanji: "シモン", nameKana: "シモン", education: [], work: [], certifications: [], languages: [{ language: "日本語", level: "N2" }] }, () => ({ status: 200, body: {} }));
+    stub(200, { nameKanji: "シモン", nameKana: "シモン", education: [], work: [], certifications: [], languages: [{ language: "ja", level: "business" }] }, () => ({ status: 200, body: {} }));
     renderEditor();
     const languages = await screen.findByRole("group", { name: "語学 / Languages" });
     await userEvent.click(within(languages).getByRole("button", { name: /Remove/ }));
-    expect(screen.queryByDisplayValue("日本語")).toBeNull();
+    expect(screen.queryByDisplayValue("日本語 / Japanese")).toBeNull();
+  });
+
+  it("choisit langue et niveau dans des listes", async () => {
+    let sent: { languages?: unknown } = {};
+    stub(200, { nameKanji: "シモン", nameKana: "しもん", education: [], work: [], certifications: [], languages: [] },
+      (body) => { sent = body as typeof sent; return { status: 200, body }; });
+    renderEditor();
+    const group = await screen.findByRole("group", { name: "語学 / Languages" });
+    await userEvent.click(within(group).getByRole("button", { name: /Add/ }));
+    await userEvent.selectOptions(within(group).getByLabelText(/言語/), "fr");
+    await userEvent.selectOptions(within(group).getByLabelText(/レベル/), "native");
+    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await screen.findByText("保存しました / Saved");
+    expect(sent.languages).toEqual([{ language: "fr", level: "native" }]);
+  });
+
+  it("propose des noms de certification selon la catégorie", async () => {
+    stub(200, { nameKanji: "シモン", nameKana: "しもん", education: [], work: [], languages: [],
+      certifications: [{ category: "it", name: "", date: "" }] }, () => ({ status: 200, body: {} }));
+    const { container } = render(<AuthContext.Provider value={auth}><ProfileEditor /></AuthContext.Provider>);
+    await screen.findByRole("group", { name: "資格 / Certifications" });
+    const options = [...container.querySelectorAll("datalist option")].map((o) => o.getAttribute("value"));
+    expect(options).toContain("基本情報技術者試験");
+    expect(options).not.toContain("日本語能力試験 N2");
   });
 });
