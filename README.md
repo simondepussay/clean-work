@@ -21,6 +21,7 @@ ios/                      ← app iPhone : SwiftUI + MSAL (projet généré : `c
 infra/main.bicep          ← infrastructure Azure en code (Cosmos DB, Static Web Apps)
 infra/identity.mjs        ← annuaire External ID (apps, parcours, app de suppression et son secret)
 infra/settings.mjs        ← réglages de l'API, ajoutés sans écraser le secret
+infra/restore-account.mjs ← corbeille (--list) et restauration d'un compte supprimé depuis moins de 30 jours
 .github/workflows/        ← tests, déploiement, vérification de la version en ligne
 journal/day-NN.md         ← journal de chaque journée de travail (japonais + anglais dans le même fichier)
 tools/build_journal.py    ← génère docs/journal.html (bouton 日本語 / English)
