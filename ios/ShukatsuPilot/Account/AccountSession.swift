@@ -1,5 +1,9 @@
 import Foundation
 import MSAL
+import os
+
+/// Temps d'initialisation de MSAL (mesuré : environ 0,04 s), pour repérer une régression.
+let launchLog = Logger(subsystem: "com.simondepussay.ShukatsuPilot", category: "launch")
 
 // Adapté de Kanji Otter (même principe, autre annuaire) : MSAL travaille par
 // délégués, chaque étape est enveloppée ici en async/await pour que les écrans
@@ -50,6 +54,8 @@ final class AccountSession: AccountService {
     private var account: MSALNativeAuthUserAccountResult?
 
     private init() {
+        let started = Date()
+        defer { launchLog.info("MSAL prêt en \(Date().timeIntervalSince(started), format: .fixed(precision: 3)) s") }
         guard let clientId = AppConfig.entraClientId,
               let subdomain = AppConfig.entraTenantSubdomain else { return }
         do {

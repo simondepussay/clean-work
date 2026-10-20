@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
+import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
 
@@ -11,7 +12,10 @@ function Account() {
 
   async function removeAccount() {
     const ok = window.confirm(
-      "アカウントとすべてのデータを削除します。元に戻せません。\nDelete your account and all your data? This cannot be undone.",
+      `アカウントを削除しますか？データはすぐに見えなくなり、${RETENTION_DAYS}日後に完全に削除されます。` +
+        `${RETENTION_DAYS}日以内なら ${SUPPORT_EMAIL} に連絡すると復元できます。\n\n` +
+        `Delete your account? Your data disappears immediately and is permanently deleted after ${RETENTION_DAYS} days. ` +
+        `Within ${RETENTION_DAYS} days, you can ask ${SUPPORT_EMAIL} to restore it.`,
     );
     if (!ok) return;
     setDeleting("busy");

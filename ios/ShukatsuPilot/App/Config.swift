@@ -8,6 +8,9 @@ enum AppConfig {
     static var entraTenantSubdomain: String? { string("EntraTenantSubdomain") }
     static var entraAPIScope: String? { string("EntraAPIScope") }
     static var apiBaseURL: URL? { string("APIBaseURL").flatMap(URL.init(string:)) }
+    static var supportEmail: String { string("SupportEmail") ?? "" }
+    /// Délai avant la suppression définitive ; identique à RETENTION_DAYS dans l'API.
+    static let retentionDays = 30
 
     /// Faux tant que l'annuaire n'est pas renseigné : l'app affiche alors « bientôt disponible ».
     static var isConfigured: Bool {

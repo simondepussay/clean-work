@@ -28,6 +28,8 @@
 	<string>a4837883-e8be-4db5-b6d9-63a5204707cc</string>
 	<key>EntraTenantSubdomain</key>
 	<string>shukatsupilot</string>
+	<key>SupportEmail</key>
+	<string>depussay.simon@icloud.com</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

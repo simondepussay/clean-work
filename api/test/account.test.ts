@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { deleteAccount, DirectoryUnavailableError } from "../src/lib/account";
+import { deleteAccount, DirectoryUnavailableError, RETENTION_DAYS } from "../src/lib/account";
 import { GraphDirectoryUsers, directoryFromEnv, type DirectoryUsers } from "../src/lib/directory";
 import { Repository } from "../src/lib/repository";
 import { MemoryStore } from "../src/lib/store";
 
 async function seeded() {
   const store = new MemoryStore();
+  lastStore = store;
   const repo = new Repository(store, () => new Date("2026-10-18T00:00:00Z"));
   await repo.saveProfile("u1", { nameKanji: "シモン", nameKana: "シモン" });
   await repo.createApplication("u1", { company: "A" });
@@ -15,21 +16,54 @@ async function seeded() {
   return repo;
 }
 
+let lastStore: MemoryStore;
+
 const fakeDirectory = (): DirectoryUsers & { deleted: string[] } => {
   const deleted: string[] = [];
   return { deleted, deleteUser: async (id) => void deleted.push(id) };
 };
 
 describe("deleteAccount", () => {
-  it("efface toutes les données de l'utilisateur puis son compte d'annuaire", async () => {
+  it("masque toutes les données de l'utilisateur puis supprime son compte d'annuaire", async () => {
     const repo = await seeded();
     const directory = fakeDirectory();
 
-    expect(await deleteAccount("u1", repo, directory)).toEqual({ documents: 3 });
+    expect(await deleteAccount("u1", repo, directory)).toEqual({ documents: 3, retentionDays: 30 });
 
     expect(await repo.getProfile("u1")).toBeNull();
     expect(await repo.listApplications("u1")).toEqual([]);
     expect(directory.deleted).toEqual(["u1"]);
+  });
+
+  it("programme l'effacement par Cosmos DB après 30 jours (ttl en secondes)", async () => {
+    const repo = await seeded();
+    await deleteAccount("u1", repo, fakeDirectory());
+    const marked = [...lastStore.all("profiles", "u1"), ...lastStore.all("applications", "u1")];
+    expect(marked).toHaveLength(3);
+    for (const doc of marked) {
+      expect(doc).toMatchObject({ deletedAt: "2026-10-18T00:00:00.000Z", ttl: RETENTION_DAYS * 86400 });
+    }
+    expect(RETENTION_DAYS * 86400).toBe(2_592_000);
+  });
+
+  it("la restauration rend toutes les données, sans marque de suppression", async () => {
+    const repo = await seeded();
+    await deleteAccount("u1", repo, fakeDirectory());
+
+    expect(await repo.restoreAllData("u1")).toBe(3);
+
+    expect(await repo.getProfile("u1")).toMatchObject({ nameKanji: "シモン" });
+    expect((await repo.listApplications("u1")).map((a) => a.company)).toEqual(["A", "B"]);
+    for (const doc of lastStore.all("applications", "u1")) {
+      expect(doc).not.toHaveProperty("deletedAt");
+      expect(doc).not.toHaveProperty("ttl");
+    }
+  });
+
+  it("une restauration sans suppression ne change rien", async () => {
+    const repo = await seeded();
+    expect(await repo.restoreAllData("u1")).toBe(0);
+    expect(await repo.listApplications("u1")).toHaveLength(2);
   });
 
   it("ne touche pas aux données des autres utilisateurs", async () => {
@@ -45,14 +79,14 @@ describe("deleteAccount", () => {
     expect(await repo.getProfile("u1")).not.toBeNull();
   });
 
-  it("si l'annuaire échoue, les données sont déjà effacées et on peut recommencer", async () => {
+  it("si l'annuaire échoue, les données sont déjà masquées et on peut recommencer", async () => {
     const repo = await seeded();
     const failing: DirectoryUsers = { deleteUser: async () => { throw new Error("Graph 500"); } };
     await expect(deleteAccount("u1", repo, failing)).rejects.toThrow("Graph 500");
     expect(await repo.getProfile("u1")).toBeNull();
 
     const directory = fakeDirectory();
-    expect(await deleteAccount("u1", repo, directory)).toEqual({ documents: 0 });
+    expect(await deleteAccount("u1", repo, directory)).toEqual({ documents: 0, retentionDays: 30 });
     expect(directory.deleted).toEqual(["u1"]);
   });
 });

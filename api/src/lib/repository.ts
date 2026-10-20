@@ -79,10 +79,21 @@ export class Repository {
 
   // -------------------------------------------------------------- suppression du compte (S25)
 
-  /** Efface toutes les données de l'utilisateur, conteneur par conteneur ; renvoie le nombre de documents. */
-  async deleteAllData(userId: string) {
+  /**
+   * Programme la suppression de toutes les données de l'utilisateur : invisibles tout de suite,
+   * effacées par Cosmos DB après `retentionDays` jours. Renvoie le nombre de documents.
+   */
+  async scheduleDeletion(userId: string, retentionDays: number) {
+    const mark = { deletedAt: this.now().toISOString(), ttl: retentionDays * 86400 };
     let count = 0;
-    for (const container of Object.values(containers)) count += await this.store.removeAll(container, userId);
+    for (const container of Object.values(containers)) count += await this.store.markDeleted(container, userId, mark);
+    return count;
+  }
+
+  /** Annule une suppression programmée (après restauration du compte dans l'annuaire). */
+  async restoreAllData(userId: string) {
+    let count = 0;
+    for (const container of Object.values(containers)) count += await this.store.restore(container, userId);
     return count;
   }
 }

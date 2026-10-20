@@ -51,6 +51,9 @@ resource containers 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containe
     resource: {
       id: name
       partitionKey: { paths: [ '/userId' ], kind: 'Hash' }
+      // TTL activé sans durée par défaut : seuls les documents qui portent un « ttl »
+      // (compte supprimé, S25) sont effacés par Cosmos DB à l'échéance.
+      defaultTtl: -1
     }
   }
 }]

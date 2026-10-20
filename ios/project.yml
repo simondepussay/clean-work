@@ -41,6 +41,8 @@ targets:
         EntraTenantSubdomain: shukatsupilot
         EntraAPIScope: api://32d9ab54-b203-4930-8763-429163e4f47b/access
         APIBaseURL: https://blue-rock-008b52800.2.azurestaticapps.net
+        # Adresse pour demander la restauration d'un compte supprimé (moins de 30 jours).
+        SupportEmail: depussay.simon@icloud.com
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.simondepussay.ShukatsuPilot

@@ -1,19 +1,31 @@
 /**
  * Accès aux documents. Toutes les opérations exigent un userId (clé de partition) :
  * il n'existe aucune méthode capable de lire les données d'un autre utilisateur.
+ *
+ * Suppression du compte (S25) : les documents ne sont pas effacés tout de suite mais
+ * marqués (`deletedAt`) avec une durée de vie (`ttl`, en secondes). Les lectures les
+ * ignorent, et Cosmos DB les efface lui-même à l'échéance. D'ici là, `restore` les
+ * rend à nouveau visibles.
  */
 import { CosmosClient, type Database } from "@azure/cosmos";
 import type { ContainerName } from "./models";
 
 export type Doc = { id: string; userId: string };
 
+/** Champs posés sur un document en attente de suppression définitive. */
+export type DeletionMark = { deletedAt: string; ttl: number };
+
+const isDeleted = (doc: object) => "deletedAt" in doc;
+
 export interface DocStore {
   get<T extends Doc>(container: ContainerName, userId: string, id: string): Promise<T | null>;
   list<T extends Doc>(container: ContainerName, userId: string): Promise<T[]>;
   put<T extends Doc>(container: ContainerName, doc: T): Promise<T>;
   remove(container: ContainerName, userId: string, id: string): Promise<boolean>;
-  /** Supprime tous les documents de l'utilisateur dans le conteneur ; renvoie leur nombre. */
-  removeAll(container: ContainerName, userId: string): Promise<number>;
+  /** Marque tous les documents de l'utilisateur comme supprimés ; renvoie leur nombre. */
+  markDeleted(container: ContainerName, userId: string, mark: DeletionMark): Promise<number>;
+  /** Annule la suppression des documents de l'utilisateur ; renvoie leur nombre. */
+  restore(container: ContainerName, userId: string): Promise<number>;
   ping(): Promise<void>;
 }
 
@@ -28,14 +40,17 @@ export class MemoryStore implements DocStore {
 
   async get<T extends Doc>(container: ContainerName, userId: string, id: string) {
     const doc = this.data.get(this.key(container, userId, id));
-    return doc ? (structuredClone(doc) as T) : null;
+    return doc && !isDeleted(doc) ? (structuredClone(doc) as T) : null;
   }
 
   async list<T extends Doc>(container: ContainerName, userId: string) {
+    return this.all(container, userId).filter((d) => !isDeleted(d)) as T[];
+  }
+
+  /** Tous les documents de l'utilisateur, supprimés compris (pour les tests et la restauration). */
+  all(container: ContainerName, userId: string): Doc[] {
     const prefix = `${container}/${userId}/`;
-    return [...this.data.entries()]
-      .filter(([k]) => k.startsWith(prefix))
-      .map(([, v]) => structuredClone(v) as T);
+    return [...this.data.entries()].filter(([k]) => k.startsWith(prefix)).map(([, v]) => structuredClone(v));
   }
 
   async put<T extends Doc>(container: ContainerName, doc: T) {
@@ -47,9 +62,15 @@ export class MemoryStore implements DocStore {
     return this.data.delete(this.key(container, userId, id));
   }
 
-  async removeAll(container: ContainerName, userId: string) {
+  async markDeleted(container: ContainerName, userId: string, mark: DeletionMark) {
     const docs = await this.list(container, userId);
-    for (const d of docs) this.data.delete(this.key(container, userId, d.id));
+    for (const d of docs) await this.put(container, { ...d, ...mark });
+    return docs.length;
+  }
+
+  async restore(container: ContainerName, userId: string) {
+    const docs = this.all(container, userId).filter(isDeleted);
+    for (const d of docs) await this.put(container, withoutMark(d));
     return docs.length;
   }
 
@@ -69,13 +90,17 @@ export class CosmosStore implements DocStore {
 
   async get<T extends Doc>(container: ContainerName, userId: string, id: string) {
     const { resource } = await this.db.container(container).item(id, userId).read<T>();
-    return resource ?? null;
+    return resource && !isDeleted(resource) ? strip(resource) : null;
   }
 
   async list<T extends Doc>(container: ContainerName, userId: string) {
+    return this.query<T>(container, userId, "NOT IS_DEFINED(c.deletedAt)");
+  }
+
+  private async query<T>(container: ContainerName, userId: string, condition: string) {
     const { resources } = await this.db
       .container(container)
-      .items.query<T>({ query: "SELECT * FROM c WHERE c.userId = @u", parameters: [{ name: "@u", value: userId }] },
+      .items.query<T>({ query: `SELECT * FROM c WHERE c.userId = @u AND ${condition}`, parameters: [{ name: "@u", value: userId }] },
         { partitionKey: userId })
       .fetchAll();
     return resources.map(strip);
@@ -96,19 +121,27 @@ export class CosmosStore implements DocStore {
     }
   }
 
-  async removeAll(container: ContainerName, userId: string) {
-    const { resources } = await this.db
-      .container(container)
-      .items.query<{ id: string }>({ query: "SELECT c.id FROM c WHERE c.userId = @u", parameters: [{ name: "@u", value: userId }] },
-        { partitionKey: userId })
-      .fetchAll();
-    for (const { id } of resources) await this.remove(container, userId, id);
-    return resources.length;
+  async markDeleted(container: ContainerName, userId: string, mark: DeletionMark) {
+    const docs = await this.list<Doc>(container, userId);
+    for (const d of docs) await this.put(container, { ...d, ...mark });
+    return docs.length;
+  }
+
+  async restore(container: ContainerName, userId: string) {
+    const docs = await this.query<Doc>(container, userId, "IS_DEFINED(c.deletedAt)");
+    // Sans `ttl`, le document reprend la durée de vie du conteneur (-1 : jamais effacé).
+    for (const d of docs) await this.put(container, withoutMark(d));
+    return docs.length;
   }
 
   async ping() {
     await this.db.read();
   }
+}
+
+function withoutMark<T extends Doc>(doc: T): T {
+  const { deletedAt: _d, ttl: _t, ...rest } = doc as T & Partial<DeletionMark>;
+  return rest as T;
 }
 
 /** Retire les champs système de Cosmos (_rid, _etag, _ts…) avant de renvoyer un document. */

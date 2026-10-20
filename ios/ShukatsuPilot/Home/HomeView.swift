@@ -27,8 +27,7 @@ struct HomeView: View {
                 if deletionFailed { Text("削除できませんでした / Could not delete the account").foregroundStyle(.red) }
             }
         }
-        .confirmationDialog("アカウントとすべてのデータを削除します。元に戻せません。\nDelete your account and all your data? This cannot be undone.",
-                            isPresented: $confirmingDeletion, titleVisibility: .visible) {
+        .confirmationDialog(Self.deletionWarning, isPresented: $confirmingDeletion, titleVisibility: .visible) {
             Button("削除する / Delete", role: .destructive) {
                 deleting = true
                 Task {
@@ -40,6 +39,13 @@ struct HomeView: View {
         .navigationTitle("就活パイロット")
         .refreshable { await model.refreshMe() }
         .task { await model.refreshMe() }
+    }
+
+    static var deletionWarning: String {
+        let days = AppConfig.retentionDays, email = AppConfig.supportEmail
+        return "データはすぐに見えなくなり、\(days)日後に完全に削除されます。\(days)日以内なら \(email) に連絡すると復元できます。\n\n"
+            + "Your data disappears immediately and is permanently deleted after \(days) days. "
+            + "Within \(days) days, you can ask \(email) to restore it."
     }
 
     @ViewBuilder private var profileStatus: some View {

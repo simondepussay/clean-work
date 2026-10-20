@@ -100,6 +100,17 @@ describe("suppression du compte (S25)", () => {
     expect(fake).toHaveBeenCalledWith("/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: "jeton" } });
   });
 
+  it("annonce le délai de 30 jours et l'adresse de restauration", async () => {
+    stubApi();
+    const confirm = vi.fn<(message?: string) => boolean>(() => false);
+    vi.stubGlobal("confirm", confirm);
+    renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
+    expect(confirm.mock.calls[0][0]).toMatch(/30日後に完全に削除/);
+    expect(confirm.mock.calls[0][0]).toMatch(/permanently deleted after 30 days/);
+    expect(confirm.mock.calls[0][0]).toContain("depussay.simon@icloud.com");
+  });
+
   it("ne supprime rien si l'utilisateur annule", async () => {
     const fetchMock = stubApi();
     vi.stubGlobal("confirm", vi.fn(() => false));
