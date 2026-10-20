@@ -80,3 +80,26 @@ export function withoutEmptyFields<T>(value: T): T {
   }
   return value;
 }
+
+// ------------------------------------------------------------------ ES (S13)
+
+export type DraftInput = { company?: string; question: string; charLimit?: number; body: string };
+export type Draft = DraftInput & { id: string; createdAt: string; updatedAt: string };
+
+async function call<T>(token: string, method: string, path: string, body?: unknown, fetcher: typeof fetch = fetch) {
+  const res = await fetcher(path, {
+    method,
+    headers: { [TOKEN_HEADER]: token, ...(body === undefined ? {} : { "content-type": "application/json" }) },
+    body: body === undefined ? undefined : JSON.stringify(withoutEmptyFields(body)),
+  });
+  if (res.status === 400) return { ok: false as const, issues: ((await res.json()) as { issues: Issue[] }).issues };
+  if (!res.ok) throw new Error(`${method} ${path} : ${res.status}`);
+  return { ok: true as const, value: (res.status === 204 ? null : await res.json()) as T };
+}
+
+export const listDrafts = (token: string, f?: typeof fetch) => call<Draft[]>(token, "GET", "/api/drafts", undefined, f);
+export const createDraft = (token: string, d: DraftInput, f?: typeof fetch) => call<Draft>(token, "POST", "/api/drafts", d, f);
+export const updateDraft = (token: string, id: string, d: DraftInput, f?: typeof fetch) =>
+  call<Draft>(token, "PUT", `/api/drafts/${encodeURIComponent(id)}`, d, f);
+export const deleteDraft = (token: string, id: string, f?: typeof fetch) =>
+  call<null>(token, "DELETE", `/api/drafts/${encodeURIComponent(id)}`, undefined, f);

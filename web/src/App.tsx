@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
+import { EsPage } from "./es/EsPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
@@ -10,6 +11,7 @@ function Account() {
   const auth = useAuth();
   const [me, setMe] = useState<Me | null | "error">(null);
   const [deleting, setDeleting] = useState<"idle" | "busy" | "error">("idle");
+  const [tab, setTab] = useState<"profile" | "es">("profile");
 
   async function removeAccount() {
     const ok = window.confirm(
@@ -70,7 +72,11 @@ function Account() {
           </div>
           </div>
           {deleting === "error" && <p className="muted">削除できませんでした / Could not delete the account</p>}
-          <ProfileEditor onSaved={refreshMe} />
+          <nav className="tabs" role="tablist">
+            <button role="tab" aria-selected={tab === "profile"} onClick={() => setTab("profile")}>プロフィール / Profile</button>
+            <button role="tab" aria-selected={tab === "es"} onClick={() => setTab("es")}>ES</button>
+          </nav>
+          {tab === "profile" ? <ProfileEditor onSaved={refreshMe} /> : <EsPage />}
         </div>
       );
   }

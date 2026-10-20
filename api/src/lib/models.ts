@@ -21,6 +21,7 @@ export const messages = {
   email: "メールアドレスが正しくありません / Invalid email address",
   url: "URLが正しくありません / Invalid URL",
   choice: "選択してください / Please choose",
+  number: "1〜5000の数字で入力してください / Enter a number from 1 to 5000",
 } as const;
 
 const isoDate = z.string({ required_error: messages.required }).regex(/^\d{4}-\d{2}-\d{2}$/, messages.date);
@@ -147,14 +148,17 @@ export function nextDeadline(steps: Step[], today: string): string | null {
 // ------------------------------------------------------------------ ES et relectures
 
 export const draftInputSchema = z.object({
-  applicationId: z.string().min(1),
+  /** Candidature concernée ; absent pour une ES « commune » (自己PR utilisé partout). */
+  applicationId: z.string().min(1).optional(),
+  /** L'entreprise, en clair, tant que le suivi des candidatures (S07) n'existe pas. */
+  company: text(100).optional(),
   question: required(300),
-  charLimit: z.number().int().positive().max(5000).optional(),
-  body: z.string().max(5000).default(""),
+  charLimit: z.number({ invalid_type_error: messages.number }).int(messages.number).positive(messages.number).max(5000, messages.number).optional(),
+  body: z.string().max(5000, messages.tooLong(5000)).default(""),
 });
 
 export type DraftInput = z.infer<typeof draftInputSchema>;
-export type Draft = DraftInput & { id: string; userId: string; updatedAt: string };
+export type Draft = DraftInput & { id: string; userId: string; createdAt: string; updatedAt: string };
 
 export type Review = {
   id: string;

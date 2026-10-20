@@ -6,6 +6,8 @@ import { randomUUID } from "node:crypto";
 import {
   applicationInputSchema,
   containers,
+  draftInputSchema,
+  type Draft,
   nextDeadline,
   profileInputSchema,
   type Application,
@@ -75,6 +77,35 @@ export class Repository {
 
   deleteApplication(userId: string, id: string) {
     return this.store.remove(containers.applications, userId, id);
+  }
+
+  // -------------------------------------------------------------- ES (S13)
+
+  async listDrafts(userId: string) {
+    const drafts = await this.store.list<Draft>(containers.drafts, userId);
+    return drafts.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  getDraft(userId: string, id: string) {
+    return this.store.get<Draft>(containers.drafts, userId, id);
+  }
+
+  async createDraft(userId: string, input: unknown) {
+    const data = draftInputSchema.parse(input);
+    const at = this.now().toISOString();
+    return this.store.put<Draft>(containers.drafts, { ...data, id: randomUUID(), userId, createdAt: at, updatedAt: at });
+  }
+
+  async updateDraft(userId: string, id: string, input: unknown) {
+    const current = await this.getDraft(userId, id);
+    if (!current) return null;
+    const { id: _id, userId: _u, createdAt, updatedAt: _t, ...editable } = current;
+    const data = draftInputSchema.parse({ ...editable, ...(input as object) });
+    return this.store.put<Draft>(containers.drafts, { ...data, id, userId, createdAt, updatedAt: this.now().toISOString() });
+  }
+
+  deleteDraft(userId: string, id: string) {
+    return this.store.remove(containers.drafts, userId, id);
   }
 
   // -------------------------------------------------------------- suppression du compte (S25)
