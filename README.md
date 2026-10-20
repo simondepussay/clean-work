@@ -25,6 +25,8 @@ infra/restore-account.mjs ← corbeille (--list) et restauration d'un compte sup
 .github/workflows/        ← tests, déploiement, vérification de la version en ligne
 journal/day-NN.md         ← journal de chaque journée de travail (japonais + anglais dans le même fichier)
 tools/build_journal.py    ← génère docs/journal.html (bouton 日本語 / English)
+tools/otf2ttf.py          ← convertit la police du 履歴書 en TrueType (voir api/assets/fonts/README.md)
+web/public/privacy.html   ← politique de confidentialité et conditions d'utilisation (terms.html), JA + EN
 planning/plan.json        ← source unique : stories, points, dépendances
 tools/build_plan.py       ← calcule PERT, chemin critique, planning 1 dev, sprints
 docs/plan.html            ← plan complet en japonais (généré) — à ouvrir dans un navigateur
