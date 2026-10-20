@@ -57,6 +57,13 @@ struct AuthView: View {
                 Section {
                     Button(mode == .signIn ? "サインイン / Sign in" : "登録 / Create account") { submit() }
                         .disabled(busy || !canSubmit)
+                } footer: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        if mode == .signUp {
+                            Text("登録すると、利用規約とプライバシーポリシーに同意したことになります。/ By creating an account, you agree to the terms and the privacy policy.")
+                        }
+                        LegalLinks()
+                    }
                 }
             }
             if let error {

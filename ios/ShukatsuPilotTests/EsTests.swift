@@ -107,3 +107,11 @@ final class EsEditorModelTests: XCTestCase {
         XCTAssertEqual(model.error("question"), "入力してください / Required")
     }
 }
+
+final class LegalLinksTests: XCTestCase {
+    func testLinksPointToTheSitePages() {
+        let url = LegalLinks.url(URL(string: "https://example.test")!, "privacy.html")
+        XCTAssertEqual(url.host(), "example.test")
+        XCTAssertEqual(url.lastPathComponent, "privacy.html")
+    }
+}

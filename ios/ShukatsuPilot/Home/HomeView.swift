@@ -33,6 +33,8 @@ struct HomeView: View {
             }
             Section {
                 Button("サインアウト / Sign out") { model.signOut() }
+            } footer: {
+                LegalLinks()
             }
             Section {
                 Button("アカウント削除 / Delete account", role: .destructive) { confirmingDeletion = true }

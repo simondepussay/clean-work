@@ -94,6 +94,9 @@ export default function App() {
       <h1>就活パイロット</h1>
       <p className="tagline">Shukatsu Pilot — 留学生の就職活動をサポート</p>
       <Account />
+      <footer className="legal">
+        <a href="/privacy.html">プライバシーポリシー / Privacy</a> · <a href="/terms.html">利用規約 / Terms</a>
+      </footer>
       <p className="status" role="status">
         {health.kind === "loading" && "API…"}
         {health.kind === "offline" && "API: オフライン / offline"}

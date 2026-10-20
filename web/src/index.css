@@ -77,3 +77,4 @@ ins { background: color-mix(in srgb, #2f9e6b 25%, transparent); text-decoration:
 .changes summary { cursor: pointer; }
 .diff { line-height: 1.9; white-space: pre-wrap; }
 del { background: color-mix(in srgb, #d4483b 25%, transparent); }
+.legal { margin-top: 40px; font-size: 13px; color: var(--muted); } .legal a { color: var(--muted); }
