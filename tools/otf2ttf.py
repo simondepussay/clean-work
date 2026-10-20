@@ -37,6 +37,10 @@ def convert(src, dst):
     font["glyf"] = glyf = newTable("glyf")
     glyf.glyphOrder = order
     glyf.glyphs = to_quadratic(font.getGlyphSet())
+    # Chaque glyphe aligné sur 4 octets. Sans cela, certains ont une longueur impaire : quand
+    # pdf-lib découpe la police pour un PDF avec peu de caractères, il choisit des offsets
+    # « courts » (divisés par 2), qui décalent tous les glyphes suivants (caractères manquants).
+    glyf.padding = 4
     del font["CFF "]
     # VORG est propre au CFF ; DSIG (signature de la police d'origine) n'est plus valable.
     for table in ("VORG", "DSIG"):
