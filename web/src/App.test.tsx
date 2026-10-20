@@ -12,7 +12,8 @@ const health = { status: "ok", version: "abc123", database: "ok" };
 
 /** Simule l'API : /api/health et /api/me. */
 function stubApi(me: unknown = { userId: "u1", email: "simon@example.com", name: "Simon", hasProfile: false }) {
-  const fetchMock = vi.fn(async (url: string) => (url === "/api/me" ? json(me) : json(health)));
+  // Comme le vrai serveur : /api/me, une liste d'ES (vide), l'état de l'API pour le reste.
+  const fetchMock = vi.fn(async (url: string) => (url === "/api/me" ? json(me) : url === "/api/drafts" ? json([]) : json(health)));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }

@@ -24,12 +24,13 @@ struct Profile: Codable, Equatable {
         var status: Status = .enrolled
 
         enum Status: String, Codable, CaseIterable {
-            case enrolled, expected, graduated, left
+            case enrolled, expected, graduated, completed, left
             var label: String {
                 switch self {
                 case .enrolled: "在学中 / Enrolled"
                 case .expected: "卒業見込み / Expected"
                 case .graduated: "卒業 / Graduated"
+                case .completed: "修了（日本語学校・留学）/ Completed"
                 case .left: "中退 / Left"
                 }
             }

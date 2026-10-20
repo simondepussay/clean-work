@@ -16,6 +16,7 @@ const educationFields: Field<Education>[] = [
       { value: "enrolled", label: "在学中 / Enrolled" },
       { value: "expected", label: "卒業見込み / Expected" },
       { value: "graduated", label: "卒業 / Graduated" },
+      { value: "completed", label: "修了（日本語学校・留学）/ Completed" },
       { value: "left", label: "中退 / Left" },
     ],
   },

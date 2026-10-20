@@ -28,7 +28,7 @@ export async function deleteAccount(token: string, fetcher: typeof fetch = fetch
 
 // ------------------------------------------------------------------ profil (S05)
 
-export type Education = { school: string; faculty?: string; start: string; end?: string; status: "enrolled" | "graduated" | "expected" | "left" };
+export type Education = { school: string; faculty?: string; start: string; end?: string; status: "enrolled" | "graduated" | "expected" | "completed" | "left" };
 export type Work = { company: string; role?: string; start: string; end?: string; description?: string };
 export type Certification = { category: string; name: string; date: string };
 export type Language = { language: string; languageOther?: string; level: string };
@@ -134,3 +134,22 @@ export async function reviewDraft(token: string, id: string, language: string, f
 export const listReviews = (token: string, id: string, f?: typeof fetch) =>
   call<Review[]>(token, "GET", `/api/drafts/${encodeURIComponent(id)}/reviews`, undefined, f);
 export const getUsage = (token: string, f?: typeof fetch) => call<Usage>(token, "GET", "/api/usage", undefined, f);
+
+// ------------------------------------------------------------------ 履歴書 PDF (S11)
+
+export type ResumeOptions = { era: "western" | "japanese"; appeal?: string; wishes?: string };
+export type ResumeOutcome = { ok: true; pdf: Blob; filename: string } | { ok: false; error: "profile_missing" | "invalid" | "failed" };
+
+export async function downloadResume(token: string, options: ResumeOptions, fetcher: typeof fetch = fetch): Promise<ResumeOutcome> {
+  const res = await fetcher("/api/resume", {
+    method: "POST",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify(withoutEmptyFields(options)),
+  });
+  if (res.status === 404) return { ok: false, error: "profile_missing" };
+  if (res.status === 400) return { ok: false, error: "invalid" };
+  if (!res.ok) return { ok: false, error: "failed" };
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const utf8 = /filename\*=UTF-8''([^;]+)/.exec(disposition)?.[1];
+  return { ok: true, pdf: await res.blob(), filename: utf8 ? decodeURIComponent(utf8) : "rirekisho.pdf" };
+}

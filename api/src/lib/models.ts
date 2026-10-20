@@ -39,7 +39,8 @@ export const educationSchema = z.object({
   faculty: text(100).optional(),
   start: yearMonth,
   end: yearMonth.optional(),
-  status: z.enum(["enrolled", "graduated", "expected", "left"]),
+  // completed : programme terminé sans diplôme au sens strict (日本語学校, échange) → « 修了 ».
+  status: z.enum(["enrolled", "graduated", "expected", "completed", "left"]),
 });
 
 export const workSchema = z.object({

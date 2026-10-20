@@ -78,3 +78,5 @@ ins { background: color-mix(in srgb, #2f9e6b 25%, transparent); text-decoration:
 .diff { line-height: 1.9; white-space: pre-wrap; }
 del { background: color-mix(in srgb, #d4483b 25%, transparent); }
 .legal { margin-top: 40px; font-size: 13px; color: var(--muted); } .legal a { color: var(--muted); }
+.resume { margin-top: 40px; padding-top: 24px; border-top: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); }
+.resume h2 { font-size: 22px; margin: 0 0 4px; }

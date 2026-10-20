@@ -4,6 +4,7 @@ import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
 import { EsPage } from "./es/EsPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
+import { ResumePanel } from "./profile/ResumePanel";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
 
@@ -76,7 +77,7 @@ function Account() {
             <button role="tab" aria-selected={tab === "profile"} onClick={() => setTab("profile")}>プロフィール / Profile</button>
             <button role="tab" aria-selected={tab === "es"} onClick={() => setTab("es")}>ES</button>
           </nav>
-          {tab === "profile" ? <ProfileEditor onSaved={refreshMe} /> : <EsPage />}
+          {tab === "profile" ? <><ProfileEditor onSaved={refreshMe} /><ResumePanel /></> : <EsPage />}
         </div>
       );
   }
