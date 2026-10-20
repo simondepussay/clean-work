@@ -66,7 +66,7 @@ jobs:
           for i in $(seq 1 20); do
             BODY=$(curl -fsS "$SITE/api/health" || true)
             echo "essai $i : $BODY"
-            echo "$BODY" | grep -q "\"version\":\"${GITHUB_SHA::7}\"" && echo "$BODY" | grep -q '"database":"ok"' && exit 0
+            echo "$BODY" | grep -q "\"version\":\"${GITHUB_SHA::7}\"" && echo "$BODY" | grep -q '"database":"ok"' && echo "$BODY" | grep -q '"resume":"ok"' && exit 0
             sleep 15
           done
           echo "La version ${GITHUB_SHA::7} n'est pas en ligne ou la base ne répond pas"; exit 1

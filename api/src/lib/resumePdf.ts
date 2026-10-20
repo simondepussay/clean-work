@@ -30,6 +30,9 @@ const GREY = rgb(0.35, 0.35, 0.35);
 const fontsDir = [join(__dirname, "../../../assets/fonts"), join(__dirname, "../../assets/fonts")].find(existsSync) ?? "";
 let fontBytes: Buffer | null = null;
 
+/** Vrai si la police est bien présente (vérifié par /api/health après chaque déploiement). */
+export const resumeReady = () => existsSync(join(fontsDir, "NotoSerifJP-Regular.ttf"));
+
 export async function renderResume(profile: Profile, options: ResumeOptions): Promise<Uint8Array> {
   fontBytes ??= readFileSync(join(fontsDir, "NotoSerifJP-Regular.ttf"));
   const doc = await PDFDocument.create();
