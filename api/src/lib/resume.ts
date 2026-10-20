@@ -57,8 +57,10 @@ export function historyRows(profile: Profile, era: Era): Row[] {
   for (const e of profile.education) {
     const school = [e.school, e.faculty].filter(Boolean).join("　");
     education.push({ month: e.start, order: 1, text: `${school}　入学` });
-    if (e.end && STATUS_END[e.status]) education.push({ month: e.end, order: 0, text: `${school}　${STATUS_END[e.status]}` });
-    else if (e.status === "enrolled" && !e.end) studying.push(school);
+    // En cours avec une date de fin : c'est une fin prévue → 卒業見込み (signalé le 21/10 : rien ne s'affichait).
+    const status = e.status === "enrolled" && e.end ? "expected" : e.status;
+    if (e.end && STATUS_END[status]) education.push({ month: e.end, order: 0, text: `${school}　${STATUS_END[status]}` });
+    else if (!e.end && (status === "enrolled" || status === "expected")) studying.push(school);
   }
   rows.push(...toRows(education));
   if (studying.length > 0) rows.push({ year: "", month: "", text: "　　現在に至る（在学中）" });

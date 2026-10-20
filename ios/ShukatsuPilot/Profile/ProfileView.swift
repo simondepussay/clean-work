@@ -57,7 +57,7 @@ struct ProfileView: View {
                     field("学校名 / School *", text: $item.school, path: "education.\(index).school")
                     field("学部・学科 / Faculty", text: optional($item.faculty), path: "education.\(index).faculty")
                     month("入学 / Start *", text: $item.start, path: "education.\(index).start")
-                    month("卒業 / End", text: optional($item.end), path: "education.\(index).end")
+                    month("卒業・卒業予定 / End (or expected)", text: optional($item.end), path: "education.\(index).end")
                     Picker("状態 / Status", selection: $item.status) {
                         ForEach(Profile.Education.Status.allCases, id: \.self) { Text($0.label).tag($0) }
                     }

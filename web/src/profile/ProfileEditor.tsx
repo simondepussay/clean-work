@@ -10,7 +10,7 @@ const educationFields: Field<Education>[] = [
   { key: "school", label: "学校名 / School", required: true },
   { key: "faculty", label: "学部・学科 / Faculty" },
   { key: "start", label: "入学 / Start", type: "month", required: true },
-  { key: "end", label: "卒業 / End", type: "month" },
+  { key: "end", label: "卒業・卒業予定 / End (or expected)", type: "month" },
   {
     key: "status", label: "状態 / Status", type: "select", options: [
       { value: "enrolled", label: "在学中 / Enrolled" },

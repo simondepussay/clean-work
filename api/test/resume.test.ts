@@ -61,6 +61,19 @@ describe("学歴・職歴", () => {
   });
 });
 
+describe("学歴 : date de fin", () => {
+  it("« en cours » avec une date de fin → 卒業見込み à cette date", () => {
+    const rows = historyRows(profile({ education: [{ school: "HAL東京", start: "2026-04", end: "2027-03", status: "enrolled" }] }), "western");
+    expect(rows.slice(1, 3).map((r) => `${r.year}/${r.month} ${r.text}`)).toEqual(["2026/4 HAL東京　入学", "2027/3 HAL東京　卒業見込み"]);
+    expect(rows.map((r) => r.text)).not.toContain("　　現在に至る（在学中）");
+  });
+
+  it("卒業見込み sans date de fin → 現在に至る（在学中）", () => {
+    const rows = historyRows(profile({ education: [{ school: "HAL東京", start: "2026-04", status: "expected" }] }), "western");
+    expect(rows[2].text).toBe("　　現在に至る（在学中）");
+  });
+});
+
 describe("学歴 : ordre des événements", () => {
   it("un échange s'insère entre l'entrée et la sortie de l'école principale", () => {
     const rows = historyRows(profile({
