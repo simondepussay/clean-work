@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { createDraft, deleteDraft, listDrafts, updateDraft, type Draft, type DraftInput, type Issue } from "../api";
 import { useAuth } from "../auth/auth";
 import { countChars } from "./count";
+import { GuidePanel, Intro } from "./GuidePanel";
+import { LANGS, useGuide, useHelpLanguage, type GuideType } from "./guide";
 import { ReviewPanel } from "./ReviewPanel";
 
 const blank: DraftInput = { question: "", body: "" };
@@ -14,6 +16,9 @@ export function EsPage() {
   const [form, setForm] = useState<DraftInput>(blank);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [choosing, setChoosing] = useState(false);
+  const guide = useGuide();
+  const [lang, setLang] = useHelpLanguage();
 
   async function token() {
     const t = await auth.getToken();
@@ -27,11 +32,21 @@ export function EsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function open(d: Draft | "new") {
-    setSelected(d === "new" ? "new" : d.id);
-    setForm(d === "new" ? blank : { company: d.company, question: d.question, charLimit: d.charLimit, body: d.body });
+  function open(d: Draft) {
+    setSelected(d.id);
+    setForm({ kind: d.kind, company: d.company, question: d.question, charLimit: d.charLimit, body: d.body });
     setIssues([]);
     setStatus("idle");
+    setChoosing(false);
+  }
+
+  /** Nouvelle ES à partir d'un type de question (ou libre) : question et limite préremplies. */
+  function start(type: GuideType | null) {
+    setSelected("new");
+    setForm(type ? { kind: type.id, question: type.question, charLimit: type.charLimit, body: "" } : { ...blank, kind: "free" });
+    setIssues([]);
+    setStatus("idle");
+    setChoosing(false);
   }
 
   /** Enregistre l'ES ; renvoie son id, ou null si l'API l'a refusée. */
@@ -85,10 +100,22 @@ export function EsPage() {
 
   if (drafts === null) return <p className="muted">…</p>;
 
+  const type = guide?.types.find((t) => t.id === form.kind);
+
   return (
+    <>
+    <div className="help-bar">
+      <label className="inline">
+        <span>解説の言語 / Help language</span>
+        <select value={lang} onChange={(e) => setLang(e.target.value as typeof lang)}>
+          {LANGS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+        </select>
+      </label>
+    </div>
+    {guide && <Intro guide={guide} lang={lang} />}
     <section className="es">
       <aside>
-        <button className="primary" onClick={() => open("new")}>＋ 新しいES / New</button>
+        <button className="primary" onClick={() => setChoosing(true)}>＋ 新しいES / New</button>
         <ul aria-label="ES">
           {drafts.map((d) => (
             <li key={d.id}>
@@ -102,7 +129,24 @@ export function EsPage() {
         </ul>
       </aside>
 
-      {selected !== null && (
+      {choosing && (
+        <div className="kinds" role="group" aria-label="設問のタイプ / Question type">
+          <h3>設問のタイプを選ぶ / Choose the type of question</h3>
+          {guide?.types.map((t) => (
+            <button key={t.id} onClick={() => start(t)}>
+              <strong>{t.label.ja}</strong>
+              <span>{t.label[lang]} · {t.charLimit}字</span>
+              <span className="muted">{t.purpose[lang]}</span>
+            </button>
+          ))}
+          <button onClick={() => start(null)}>
+            <strong>自由 / Other</strong>
+            <span className="muted">設問を自分で入力 / Type the question yourself</span>
+          </button>
+        </div>
+      )}
+
+      {!choosing && selected !== null && (
         <form className="editor" onSubmit={(e) => { e.preventDefault(); save(); }} noValidate>
           <div className="grid">
             <label>
@@ -121,6 +165,7 @@ export function EsPage() {
             <input value={form.question} onChange={(e) => edit({ question: e.target.value })} />
             {error("question") && <small role="alert">{error("question")}</small>}
           </label>
+          {guide && type && <GuidePanel guide={guide} type={type} lang={lang} />}
           <label>
             <span>本文 / Answer</span>
             <textarea rows={12} value={form.body} onChange={(e) => edit({ body: e.target.value })} />
@@ -139,11 +184,13 @@ export function EsPage() {
           </div>
           <ReviewPanel
             draftId={selected === "new" ? null : selected}
+            language={lang}
             prepare={prepare}
             onApply={(quote, suggestion) => edit({ body: form.body.replace(quote, suggestion) })}
           />
         </form>
       )}
     </section>
+    </>
   );
 }

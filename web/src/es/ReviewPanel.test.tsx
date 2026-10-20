@@ -24,7 +24,7 @@ function api(post: { status: number; body: unknown }, usage = { today: 9, month:
 }
 
 function renderPanel(onApply = vi.fn(), prepare = vi.fn(async () => "d1")) {
-  render(<AuthContext.Provider value={auth}><ReviewPanel draftId="d1" prepare={prepare} onApply={onApply} /></AuthContext.Provider>);
+  render(<AuthContext.Provider value={auth}><ReviewPanel draftId="d1" language="fr" prepare={prepare} onApply={onApply} /></AuthContext.Provider>);
   return { onApply, prepare };
 }
 
@@ -38,7 +38,6 @@ describe("ReviewPanel", () => {
   it("enregistre, relit dans la langue choisie et affiche le résultat", async () => {
     const fetchMock = api({ status: 201, body: review });
     const { prepare } = renderPanel();
-    await userEvent.selectOptions(screen.getByLabelText(/Explanations/), "fr");
     await userEvent.click(screen.getByRole("button", { name: /AI review/ }));
 
     expect(await screen.findByText("65")).toBeInTheDocument();

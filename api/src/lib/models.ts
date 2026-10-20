@@ -147,7 +147,11 @@ export function nextDeadline(steps: Step[], today: string): string | null {
 
 // ------------------------------------------------------------------ ES et relectures
 
+/** Types de questions guidés (web/public/es-guide.json) ; « free » pour une question libre. */
+export const draftKinds = ["jikopr", "motivation", "gakuchika", "strengths", "free"] as const;
+
 export const draftInputSchema = z.object({
+  kind: choice(draftKinds).default("free"),
   /** Candidature concernée ; absent pour une ES « commune » (自己PR utilisé partout). */
   applicationId: z.string().min(1).optional(),
   /** L'entreprise, en clair, tant que le suivi des candidatures (S07) n'existe pas. */

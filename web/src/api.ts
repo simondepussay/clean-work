@@ -83,7 +83,7 @@ export function withoutEmptyFields<T>(value: T): T {
 
 // ------------------------------------------------------------------ ES (S13)
 
-export type DraftInput = { company?: string; question: string; charLimit?: number; body: string };
+export type DraftInput = { kind?: string; company?: string; question: string; charLimit?: number; body: string };
 export type Draft = DraftInput & { id: string; createdAt: string; updatedAt: string };
 
 async function call<T>(token: string, method: string, path: string, body?: unknown, fetcher: typeof fetch = fetch) {

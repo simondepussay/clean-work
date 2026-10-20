@@ -1,0 +1,256 @@
+{
+  "intro": {
+    "ja": "ES（エントリーシート）は、企業ごとの設問に文章で答える応募書類です。多くの企業で最初の選考になり、内容だけでなく、敬語・書き言葉・構成・文字数も見られます。履歴書（学歴や資格の一覧）とは別に、企業ごとに書きます。",
+    "en": "An ES (entry sheet) is an application form where you answer each company's questions in writing. For many companies it is the first selection step. They judge not only what you say, but also keigo, written style, structure and length. It is separate from the résumé (rirekisho, the list of your studies and certifications) and is written for each company.",
+    "fr": "L'ES (エントリーシート, « entry sheet ») est un formulaire de candidature où l'on répond par écrit aux questions de chaque entreprise. C'est souvent la première étape de sélection. On juge le fond, mais aussi le keigo, le style écrit, la structure et le nombre de caractères. Elle est différente du 履歴書 (la liste de tes études et certifications) et s'écrit pour chaque entreprise."
+  },
+  "steps": [
+    {
+      "ja": "設問のタイプを選ぶ",
+      "en": "Choose the type of question",
+      "fr": "Choisis le type de question"
+    },
+    {
+      "ja": "書き方と例を読む",
+      "en": "Read how to write it and the example",
+      "fr": "Lis la méthode et l'exemple"
+    },
+    {
+      "ja": "自分の経験で書く（例はコピーしない）",
+      "en": "Write with your own experience (don't copy the example)",
+      "fr": "Écris avec ta propre expérience (ne recopie pas l'exemple)"
+    },
+    {
+      "ja": "AI添削で確認して直す",
+      "en": "Check with the AI review and improve",
+      "fr": "Vérifie avec la relecture IA et corrige"
+    }
+  ],
+  "exampleWarning": {
+    "ja": "例はそのまま使わないでください。同じ表現のESは採用担当者にすぐ分かります。構成と書き方を参考にして、自分の経験で書きましょう。",
+    "en": "Don't use the example as is: recruiters quickly spot identical entry sheets. Borrow the structure and style, and write about your own experience.",
+    "fr": "N'utilise pas l'exemple tel quel : les recruteurs repèrent vite les ES identiques. Inspire-toi de la structure et du style, et raconte ta propre expérience."
+  },
+  "types": [
+    {
+      "id": "jikopr",
+      "label": {
+        "ja": "自己PR",
+        "en": "Self-PR",
+        "fr": "Auto-présentation (自己PR)"
+      },
+      "question": "自己PRをしてください。",
+      "charLimit": 400,
+      "purpose": {
+        "ja": "あなたの強みと、それが入社後にどう役立つかを伝えます。",
+        "en": "Show your main strength and how it will help the company once you join.",
+        "fr": "Montre ton point fort principal et en quoi il servira l'entreprise une fois embauché."
+      },
+      "structure": [
+        {
+          "ja": "結論：私の強みは〇〇です。",
+          "en": "Conclusion: “My strength is …”",
+          "fr": "Conclusion : « Mon point fort est … »"
+        },
+        {
+          "ja": "根拠となるエピソード（状況・課題・行動）",
+          "en": "An episode that proves it (situation, task, action)",
+          "fr": "Un épisode qui le prouve (situation, problème, action)"
+        },
+        {
+          "ja": "結果（できれば数字で）と学び",
+          "en": "The result (with numbers if possible) and what you learned",
+          "fr": "Le résultat (chiffré si possible) et ce que tu en as appris"
+        },
+        {
+          "ja": "入社後にどう活かすか",
+          "en": "How you will use it in the company",
+          "fr": "Comment tu l'utiliseras dans l'entreprise"
+        }
+      ],
+      "tips": [
+        {
+          "ja": "強みは1つに絞る。",
+          "en": "Focus on one strength only.",
+          "fr": "Un seul point fort, pas une liste."
+        },
+        {
+          "ja": "「頑張りました」ではなく、何をどう工夫したかを書く。",
+          "en": "Instead of “I worked hard”, say what you actually did differently.",
+          "fr": "Plutôt que « j'ai fait des efforts », dis concrètement ce que tu as fait."
+        },
+        {
+          "ja": "留学や日本語の勉強も立派なエピソードになる。",
+          "en": "Studying abroad or learning Japanese is a great episode too.",
+          "fr": "Tes études à l'étranger ou ton apprentissage du japonais sont de bons exemples."
+        }
+      ],
+      "example": "私の強みは、目標から逆算して行動を続ける粘り強さです。来日当初、私の日本語は日本語能力試験N3程度でしたが、日本の企業で働くためにN1合格を目標に掲げました。まず、合格までに必要な語彙と文法を洗い出し、毎日2時間の学習計画を立てました。アルバイト先では、接客中に分からなかった表現をメモし、その日のうちに復習しました。また、週に一度は日本人の友人に頼み、敬語を使った会話の練習をしました。模試の点数が伸びず悩んだ時期もありましたが、苦手な読解に絞って過去問を繰り返し解き、間違えた理由をノートにまとめました。その結果、1年半でN1に合格することができました。この経験から、高い目標でも計画を立てて一歩ずつ進めば達成できると学びました。貴社に入社後も、この粘り強さを活かし、新しい業務知識を着実に身につけて成果につなげたいと考えております。"
+    },
+    {
+      "id": "motivation",
+      "label": {
+        "ja": "志望動機",
+        "en": "Motivation",
+        "fr": "Motivation (志望動機)"
+      },
+      "question": "当社を志望する理由を教えてください。",
+      "charLimit": 400,
+      "purpose": {
+        "ja": "なぜこの業界で、なぜ他社ではなくこの会社なのかを伝えます。",
+        "en": "Explain why this industry, and why this company rather than another.",
+        "fr": "Explique pourquoi ce secteur, et pourquoi cette entreprise plutôt qu'une autre."
+      },
+      "structure": [
+        {
+          "ja": "結論：貴社を志望する理由は〇〇だからです。",
+          "en": "Conclusion: “I want to join because …”",
+          "fr": "Conclusion : « Je postule chez vous parce que … »"
+        },
+        {
+          "ja": "そう考えるようになったきっかけ（自分の経験）",
+          "en": "What made you think so (your own experience)",
+          "fr": "Ce qui t'a amené à le penser (ton expérience)"
+        },
+        {
+          "ja": "この会社でなければならない理由（事業・強み・社風）",
+          "en": "Why this company in particular (business, strengths, culture)",
+          "fr": "Pourquoi cette entreprise précisément (activité, points forts, culture)"
+        },
+        {
+          "ja": "入社後にやりたいこと・貢献できること",
+          "en": "What you want to do and contribute after joining",
+          "fr": "Ce que tu veux faire et apporter une fois embauché"
+        }
+      ],
+      "tips": [
+        {
+          "ja": "企業のホームページや説明会で調べた具体的な事実を入れる。",
+          "en": "Include concrete facts from the company's website or info sessions.",
+          "fr": "Cite des faits précis trouvés sur le site de l'entreprise ou en séance d'information."
+        },
+        {
+          "ja": "「成長したい」だけでなく、会社に何を貢献できるかを書く。",
+          "en": "Don't just say you want to grow: say what you can bring.",
+          "fr": "Ne dis pas seulement que tu veux progresser : dis ce que tu peux apporter."
+        },
+        {
+          "ja": "ESは書き言葉なので「御社」ではなく「貴社」。",
+          "en": "An ES is written, so use 貴社, not 御社.",
+          "fr": "Une ES est un écrit : on écrit 貴社, pas 御社."
+        }
+      ],
+      "example": "私が貴社を志望する理由は、言語や文化の壁を越えて人と人をつなぐサービスに携わりたいからです。私は来日後、役所の手続きや病院の予約で言葉が分からず苦労しました。その際、多言語に対応したアプリに何度も助けられ、ITの力で外国人の暮らしを支えたいと考えるようになりました。貴社は在留外国人向けの多言語サービスを展開し、利用者の声を製品に反映させる開発体制を持っている点に強く魅力を感じています。特に、説明会で伺った「外国人社員が企画の段階から参加する」という取り組みに深く共感しました。私は専門学校でWebアプリの開発を学び、留学生向けの生活情報サイトを友人と制作した経験があります。入社後は、自身の経験と3か国語の語学力を活かし、外国人利用者の視点を持つエンジニアとして、誰もが使いやすいサービスづくりに貢献したいと考えております。"
+    },
+    {
+      "id": "gakuchika",
+      "label": {
+        "ja": "ガクチカ",
+        "en": "What you worked hardest on",
+        "fr": "Ton plus grand investissement (ガクチカ)"
+      },
+      "question": "学生時代に最も力を入れたことを教えてください。",
+      "charLimit": 400,
+      "purpose": {
+        "ja": "課題にどう向き合い、どう考えて行動する人なのかを伝えます。結果の大きさより、過程が大切です。",
+        "en": "Show how you face a problem, think and act. The process matters more than how big the result is.",
+        "fr": "Montre comment tu affrontes un problème, réfléchis et agis. Le cheminement compte plus que l'ampleur du résultat."
+      },
+      "structure": [
+        {
+          "ja": "結論：最も力を入れたことは〇〇です。",
+          "en": "Conclusion: “What I worked hardest on was …”",
+          "fr": "Conclusion : « Ce dans quoi je me suis le plus investi, c'est … »"
+        },
+        {
+          "ja": "状況と課題（何が問題だったか）",
+          "en": "Situation and task (what the problem was)",
+          "fr": "Situation et problème (ce qui n'allait pas)"
+        },
+        {
+          "ja": "行動（原因をどう考え、何をしたか）",
+          "en": "Action (how you analysed the cause and what you did)",
+          "fr": "Action (comment tu as analysé la cause et ce que tu as fait)"
+        },
+        {
+          "ja": "結果（数字）と学び",
+          "en": "Result (numbers) and lesson learned",
+          "fr": "Résultat (chiffré) et leçon tirée"
+        }
+      ],
+      "tips": [
+        {
+          "ja": "これがSTAR（状況・課題・行動・結果）の形。",
+          "en": "This is the STAR format (Situation, Task, Action, Result).",
+          "fr": "C'est le format STAR (Situation, Tâche, Action, Résultat)."
+        },
+        {
+          "ja": "アルバイト・サークル・勉強など、身近な経験で大丈夫。",
+          "en": "Everyday experiences are fine: part-time job, club, studies.",
+          "fr": "Une expérience du quotidien suffit : petit boulot, club, études."
+        },
+        {
+          "ja": "「私たち」ではなく「私」が何をしたかを書く。",
+          "en": "Write what “I” did, not what “we” did.",
+          "fr": "Raconte ce que « je » ai fait, pas « nous »."
+        }
+      ],
+      "example": "学生時代に最も力を入れたことは、留学生会の交流イベントの運営です。私が副代表を務めていた当時、日本人学生の参加者が毎回5人程度と少なく、留学生との交流が広がらないことが課題でした。原因を探るため日本人学生20人に話を聞いたところ、「英語が話せないと参加しにくい」という声が多いことが分かりました。そこで、日本語で楽しめる料理教室やボードゲーム会を企画し、ポスターに「日本語だけで大丈夫」と明記しました。また、授業の前に各クラスで直接告知を行い、毎回のアンケート結果を次の企画の改善に活かしました。その結果、半年後には日本人学生の参加者が平均25人に増え、イベント後も交流が続くようになりました。この経験から、相手の立場に立って課題の原因を探ることの大切さを学びました。"
+    },
+    {
+      "id": "strengths",
+      "label": {
+        "ja": "長所と短所",
+        "en": "Strengths and weaknesses",
+        "fr": "Qualités et défauts (長所と短所)"
+      },
+      "question": "あなたの長所と短所を教えてください。",
+      "charLimit": 300,
+      "purpose": {
+        "ja": "自分を客観的に見られるか、短所をどう改善しているかを伝えます。",
+        "en": "Show that you see yourself objectively and how you work on your weak point.",
+        "fr": "Montre que tu te vois avec recul et comment tu travailles sur ton point faible."
+      },
+      "structure": [
+        {
+          "ja": "長所（結論）と、それを示す短いエピソード",
+          "en": "Strength (conclusion) and a short episode showing it",
+          "fr": "Qualité (conclusion) et un court exemple qui la montre"
+        },
+        {
+          "ja": "短所（結論）",
+          "en": "Weakness (conclusion)",
+          "fr": "Défaut (conclusion)"
+        },
+        {
+          "ja": "短所を改善するために今していること",
+          "en": "What you are doing now to improve it",
+          "fr": "Ce que tu fais aujourd'hui pour t'améliorer"
+        },
+        {
+          "ja": "まとめ",
+          "en": "Short wrap-up",
+          "fr": "Courte conclusion"
+        }
+      ],
+      "tips": [
+        {
+          "ja": "短所は、仕事で致命的にならないものを選ぶ（「時間を守れない」などは避ける）。",
+          "en": "Pick a weakness that isn't fatal at work (avoid “I'm often late”).",
+          "fr": "Choisis un défaut qui n'est pas rédhibitoire au travail (évite « je suis souvent en retard »)."
+        },
+        {
+          "ja": "短所は必ず改善の行動とセットで書く。",
+          "en": "Always pair the weakness with what you do to improve.",
+          "fr": "Associe toujours le défaut à ce que tu fais pour progresser."
+        },
+        {
+          "ja": "長所と短所は表裏一体にすると説得力が出る（慎重↔決断が遅い）。",
+          "en": "Two sides of the same trait are convincing (careful ↔ slow to decide).",
+          "fr": "Deux faces d'un même trait, c'est convaincant (prudent ↔ lent à décider)."
+        }
+      ],
+      "example": "私の長所は、周囲の意見を丁寧に聞き、全員が納得できる結論を導けることです。グループ課題で意見が分かれた際には、一人ひとりの考えを整理して共通点を示し、期限内に発表をまとめることができました。一方、短所は物事を慎重に考えすぎて、行動に移すまで時間がかかってしまう点です。この短所を改善するため、作業を始める前に判断の期限を決め、期限までに決めきれない場合は先輩や先生に相談するようにしています。その結果、以前より早く行動に移せるようになりました。今後も長所を活かしつつ、短所の改善を続けていきたいと考えております。"
+    }
+  ]
+}

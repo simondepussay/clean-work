@@ -1,11 +1,21 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import guide from "../../public/es-guide.json";
 import { AuthContext, type Auth } from "../auth/auth";
 import { countChars } from "./count";
 import { EsPage } from "./EsPage";
+import { resetGuideCache } from "./guide";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetGuideCache();
+  // Node 26 expose un localStorage expérimental qui lève une erreur sans configuration :
+  // comme l'app, le test ne compte pas sur le stockage.
+  try {
+    window.localStorage.clear();
+  } catch { /* stockage indisponible */ }
+});
 
 describe("countChars", () => {
   it("compte la ponctuation et les espaces, pas les retours à la ligne", () => {
@@ -32,7 +42,8 @@ function api(initial: unknown[] = []) {
       drafts.unshift(d);
       return { ok: true, status: 201, json: async () => d };
     }
-    return { ok: true, status: 200, json: async () => (url === "/api/drafts" ? drafts : {}) };
+    if (url === "/es-guide.json") return { ok: true, status: 200, json: async () => guide };
+    return { ok: true, status: 200, json: async () => (url === "/api/drafts" ? drafts : url === "/api/usage" ? { today: 10, month: 30 } : []) };
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
@@ -51,6 +62,7 @@ describe("EsPage", () => {
     api();
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: /New/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /自由/ }));
     await userEvent.type(screen.getByLabelText(/Character limit/), "5");
     await userEvent.type(screen.getByLabelText(/Answer/), "あいうえ");
     expect(screen.getByText("4 / 5字")).toBeInTheDocument();
@@ -62,6 +74,7 @@ describe("EsPage", () => {
     const fetchMock = api();
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: /New/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /自由/ }));
     await userEvent.type(screen.getByLabelText(/Company/), "楽天");
     await userEvent.type(screen.getByLabelText(/Question/), "志望動機");
     await userEvent.type(screen.getByLabelText(/Answer/), "貴社を志望する理由は…");
@@ -69,7 +82,28 @@ describe("EsPage", () => {
 
     expect(await screen.findByText("保存しました / Saved")).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST")!;
-    expect(JSON.parse(post[1]!.body as string)).toEqual({ company: "楽天", question: "志望動機", body: "貴社を志望する理由は…" });
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "free", company: "楽天", question: "志望動機", body: "貴社を志望する理由は…" });
     expect(screen.getByRole("list", { name: "ES" })).toHaveTextContent("楽天");
+  });
+
+  it("explique ce qu'est une ES, dans la langue choisie", async () => {
+    api();
+    renderPage();
+    expect(await screen.findByText("ESとは？ / What is an ES?")).toBeInTheDocument();
+    expect(screen.getByText(guide.intro.en)).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText(/Help language/), "fr");
+    expect(screen.getByText(guide.intro.fr)).toBeInTheDocument();
+  });
+
+  it("un type de question préremplit la question et la limite, et affiche son guide", async () => {
+    api();
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: /New/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /ガクチカ/ }));
+    expect(screen.getByLabelText(/Question/)).toHaveValue("学生時代に最も力を入れたことを教えてください。");
+    expect(screen.getByLabelText(/Character limit/)).toHaveValue(400);
+    const panel = screen.getByRole("complementary", { name: /How to write/ });
+    expect(panel).toHaveTextContent("This is the STAR format");
+    expect(panel).toHaveTextContent(/See an example/);
   });
 });

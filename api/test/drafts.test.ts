@@ -23,7 +23,7 @@ describe("/api/drafts", () => {
   it("crée une ES « commune », sans candidature", async () => {
     const res = await call("d1", "POST", undefined, jikoPR);
     expect(res.status).toBe(201);
-    expect(res.jsonBody).toMatchObject({ ...jikoPR, userId: "d1" });
+    expect(res.jsonBody).toMatchObject({ ...jikoPR, userId: "d1", kind: "free" });
     expect(res.jsonBody).not.toHaveProperty("applicationId");
   });
 
@@ -40,6 +40,11 @@ describe("/api/drafts", () => {
     const created = (await call("d3", "POST", undefined, { ...jikoPR, company: "楽天" })).jsonBody as { id: string; createdAt: string };
     const updated = (await call("d3", "PUT", created.id, { body: "新しい本文" })).jsonBody;
     expect(updated).toMatchObject({ question: jikoPR.question, company: "楽天", body: "新しい本文", createdAt: created.createdAt });
+  });
+
+  it("garde le type de question, et refuse un type inconnu", async () => {
+    expect((await call("d7", "POST", undefined, { ...jikoPR, kind: "jikopr" })).jsonBody).toMatchObject({ kind: "jikopr" });
+    expect((await call("d7", "POST", undefined, { ...jikoPR, kind: "poème" })).status).toBe(400);
   });
 
   it("supprime une ES", async () => {

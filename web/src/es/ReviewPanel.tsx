@@ -2,12 +2,6 @@ import { useEffect, useState } from "react";
 import { getUsage, listReviews, reviewDraft, type Review, type ReviewOutcome, type Usage } from "../api";
 import { useAuth } from "../auth/auth";
 
-const LANGUAGES = [
-  { value: "ja", label: "日本語" },
-  { value: "en", label: "English" },
-  { value: "fr", label: "Français" },
-];
-
 const CATEGORY: Record<string, string> = {
   keigo: "敬語 / Keigo",
   grammar: "文法 / Grammar",
@@ -16,14 +10,6 @@ const CATEGORY: Record<string, string> = {
   star: "STAR",
   length: "文字数 / Length",
 };
-
-function savedLanguage() {
-  try {
-    return localStorage.getItem("review-language") ?? "en";
-  } catch {
-    return "en";
-  }
-}
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("ja-JP");
 
@@ -42,13 +28,14 @@ function refusal(outcome: Exclude<ReviewOutcome, { ok: true }>) {
  * Relecture par IA d'une ES (S14). `prepare` enregistre l'ES si besoin et renvoie son id ;
  * `onApply` remplace un passage du texte par la correction proposée.
  */
-export function ReviewPanel({ draftId, prepare, onApply }: {
+export function ReviewPanel({ draftId, language, prepare, onApply }: {
   draftId: string | null;
+  /** Langue des explications : celle de l'aide, choisie en haut de la page. */
+  language: string;
   prepare: () => Promise<string | null>;
   onApply: (quote: string, suggestion: string) => void;
 }) {
   const auth = useAuth();
-  const [language, setLanguage] = useState(savedLanguage);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [review, setReview] = useState<Review | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,13 +58,6 @@ export function ReviewPanel({ draftId, prepare, onApply }: {
     // On recharge quand on change d'ES.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftId]);
-
-  function choose(value: string) {
-    setLanguage(value);
-    try {
-      localStorage.setItem("review-language", value);
-    } catch { /* stockage indisponible : le choix vaut pour cette page */ }
-  }
 
   async function run() {
     setBusy(true);
@@ -108,12 +88,6 @@ export function ReviewPanel({ draftId, prepare, onApply }: {
         <button type="button" className="primary" onClick={run} disabled={busy || usage?.today === 0}>
           {busy ? "添削中… / Reviewing…" : "AI添削 / AI review"}
         </button>
-        <label className="inline">
-          <span>解説 / Explanations</span>
-          <select value={language} onChange={(e) => choose(e.target.value)}>
-            {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-          </select>
-        </label>
         {usage && <span className="muted">残り / Left: 今日 {usage.today} · 今月 {usage.month}</span>}
       </div>
       {message && <p role="alert" className="notice">{message}</p>}
