@@ -184,6 +184,7 @@ export function EsPage() {
           </div>
           <ReviewPanel
             draftId={selected === "new" ? null : selected}
+            body={form.body}
             language={lang}
             prepare={prepare}
             onApply={(quote, suggestion) => edit({ body: form.body.replace(quote, suggestion) })}

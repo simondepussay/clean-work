@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getUsage, listReviews, reviewDraft, type Review, type ReviewOutcome, type Usage } from "../api";
 import { useAuth } from "../auth/auth";
+import { diff, stats } from "./diff";
 
 const CATEGORY: Record<string, string> = {
   keigo: "敬語 / Keigo",
@@ -28,8 +29,10 @@ function refusal(outcome: Exclude<ReviewOutcome, { ok: true }>) {
  * Relecture par IA d'une ES (S14). `prepare` enregistre l'ES si besoin et renvoie son id ;
  * `onApply` remplace un passage du texte par la correction proposée.
  */
-export function ReviewPanel({ draftId, language, prepare, onApply }: {
+export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
   draftId: string | null;
+  /** Texte actuel, pour montrer ce qui a changé depuis une relecture (S15). */
+  body: string;
   /** Langue des explications : celle de l'aide, choisie en haut de la page. */
   language: string;
   prepare: () => Promise<string | null>;
@@ -37,13 +40,17 @@ export function ReviewPanel({ draftId, language, prepare, onApply }: {
 }) {
   const auth = useAuth();
   const [usage, setUsage] = useState<Usage | null>(null);
-  const [review, setReview] = useState<Review | null>(null);
+  /** Toutes les relectures de l'ES, la plus récente d'abord (S15). */
+  const [history, setHistory] = useState<Review[]>([]);
+  const [shown, setShown] = useState(0);
+  const review = history[shown] ?? null;
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [applied, setApplied] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    setReview(null);
+    setHistory([]);
+    setShown(0);
     setApplied(new Set());
     setMessage(null);
     auth.getToken().then(async (t) => {
@@ -52,7 +59,7 @@ export function ReviewPanel({ draftId, language, prepare, onApply }: {
       if (u.ok) setUsage(u.value);
       if (draftId) {
         const r = await listReviews(t, draftId);
-        if (r.ok && r.value.length > 0) setReview(r.value[0]);
+        if (r.ok) setHistory(r.value);
       }
     }).catch(() => {});
     // On recharge quand on change d'ES.
@@ -68,7 +75,8 @@ export function ReviewPanel({ draftId, language, prepare, onApply }: {
       if (!id || !token) throw new Error("ES non enregistrée");
       const outcome = await reviewDraft(token, id, language);
       if (outcome.ok) {
-        setReview(outcome.review);
+        setHistory((h) => [outcome.review, ...h]);
+        setShown(0);
         setApplied(new Set());
       } else {
         setMessage(refusal(outcome));
@@ -91,6 +99,23 @@ export function ReviewPanel({ draftId, language, prepare, onApply }: {
         {usage && <span className="muted">残り / Left: 今日 {usage.today} · 今月 {usage.month}</span>}
       </div>
       {message && <p role="alert" className="notice">{message}</p>}
+
+      {history.length > 0 && (
+        <div className="history" role="group" aria-label="履歴 / History">
+          <span className="muted">履歴 / History</span>
+          {[...history].reverse().map((r, k) => {
+            const index = history.length - 1 - k;
+            return (
+              <button key={r.id} type="button" aria-pressed={index === shown} onClick={() => { setShown(index); setApplied(new Set()); }}
+                title={new Date(r.createdAt).toLocaleString("ja-JP")}>
+                {r.score}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {review && <Changes since={review} body={body} />}
 
       {review && (
         <div className="result">
@@ -115,5 +140,25 @@ export function ReviewPanel({ draftId, language, prepare, onApply }: {
         </div>
       )}
     </section>
+  );
+}
+
+/** Ce qui a changé dans le texte depuis une relecture (S15). */
+function Changes({ since, body }: { since: Review; body: string }) {
+  if (since.bodySnapshot === body) {
+    return <p className="muted changes-none">この添削のあと、本文は変わっていません / No changes since this review</p>;
+  }
+  const parts = diff(since.bodySnapshot, body);
+  const { added, removed } = stats(parts);
+  return (
+    <details className="changes" open>
+      <summary>この添削からの変更 / Changes since this review <span className="muted">+{added} / −{removed}字</span></summary>
+      <p className="diff" lang="ja">
+        {parts.map((p, i) =>
+          p.type === "same" ? <span key={i}>{p.text}</span>
+            : p.type === "add" ? <ins key={i}>{p.text}</ins>
+            : <del key={i}>{p.text}</del>)}
+      </p>
+    </details>
   );
 }

@@ -13,18 +13,18 @@ const review = {
   issues: [{ category: "keigo", quote: "御社", problem: "« 御社 » s'emploie à l'oral.", suggestion: "貴社" }],
 };
 
-function api(post: { status: number; body: unknown }, usage = { today: 9, month: 29 }) {
+function api(post: { status: number; body: unknown }, usage = { today: 9, month: 29 }, past: unknown[] = []) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     if (init?.method === "POST") return { status: post.status, ok: post.status < 300, json: async () => post.body };
-    if (url.endsWith("/reviews")) return { status: 200, ok: true, json: async () => [] };
+    if (url.endsWith("/reviews")) return { status: 200, ok: true, json: async () => past };
     return { status: 200, ok: true, json: async () => usage };
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
 
-function renderPanel(onApply = vi.fn(), prepare = vi.fn(async () => "d1")) {
-  render(<AuthContext.Provider value={auth}><ReviewPanel draftId="d1" language="fr" prepare={prepare} onApply={onApply} /></AuthContext.Provider>);
+function renderPanel(onApply = vi.fn(), prepare = vi.fn(async () => "d1"), body = "御社で働きたい") {
+  render(<AuthContext.Provider value={auth}><ReviewPanel draftId="d1" body={body} language="fr" prepare={prepare} onApply={onApply} /></AuthContext.Provider>);
   return { onApply, prepare };
 }
 
@@ -40,7 +40,7 @@ describe("ReviewPanel", () => {
     const { prepare } = renderPanel();
     await userEvent.click(screen.getByRole("button", { name: /AI review/ }));
 
-    expect(await screen.findByText("65")).toBeInTheDocument();
+    expect(await screen.findByText("/ 100", { exact: false, selector: ".score" })).toHaveTextContent("65 / 100");
     expect(screen.getByText("« 御社 » s'emploie à l'oral.")).toBeInTheDocument();
     expect(prepare).toHaveBeenCalled();
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST")!;
@@ -76,5 +76,26 @@ describe("ReviewPanel", () => {
     renderPanel();
     await screen.findByText(/今日 0/);
     expect(screen.getByRole("button", { name: /AI review/ })).toBeDisabled();
+  });
+
+  it("montre l'évolution de la note et ce qui a changé depuis la relecture choisie (S15)", async () => {
+    const older = { ...review, id: "r0", score: 58, createdAt: "2026-10-19T10:00:00Z", bodySnapshot: "御社で働きたいと思う" };
+    api({ status: 201, body: review }, { today: 9, month: 29 }, [review, older]);
+    renderPanel(vi.fn(), vi.fn(async () => "d1"), "貴社で働きたい");
+
+    const history = await screen.findByRole("group", { name: /History/ });
+    expect(history).toHaveTextContent("58");
+    expect(history).toHaveTextContent("65");
+    expect(screen.getByText(/\+1 \/ −1字/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "58" }));
+    // 御 et と思う ont disparu (4 caractères), 貴 est apparu (1).
+    expect(screen.getByText(/\+1 \/ −4字/)).toBeInTheDocument();
+  });
+
+  it("indique quand le texte n'a pas changé depuis la relecture", async () => {
+    api({ status: 201, body: review }, { today: 9, month: 29 }, [review]);
+    renderPanel(vi.fn(), vi.fn(async () => "d1"), review.bodySnapshot);
+    expect(await screen.findByText(/No changes since this review/)).toBeInTheDocument();
   });
 });

@@ -70,3 +70,10 @@ ins { background: color-mix(in srgb, #2f9e6b 25%, transparent); text-decoration:
 .guide details { margin-top: 10px; } .guide summary { cursor: pointer; color: var(--accent); }
 .guide .warning { color: #c98a12; font-size: 13px; }
 .guide blockquote { margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--muted) 12%, transparent); line-height: 1.8; }
+.history { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 12px 0 4px; }
+.history button { min-width: 44px; padding: 4px 8px; font-variant-numeric: tabular-nums; }
+.history button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.history button + button::before { content: "→ "; color: var(--muted); }
+.changes summary { cursor: pointer; }
+.diff { line-height: 1.9; white-space: pre-wrap; }
+del { background: color-mix(in srgb, #d4483b 25%, transparent); }
