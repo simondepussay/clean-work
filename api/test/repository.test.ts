@@ -97,3 +97,36 @@ describe("candidatures", () => {
     await expect(repo().createApplication("u1", { company: "X", status: "hired" })).rejects.toBeInstanceOf(ZodError);
   });
 });
+
+describe("ふりがな et messages", () => {
+  const base = { nameKanji: "デプセ シモン" };
+  const issues = async (input: object) => {
+    try {
+      await repo().saveProfile("u1", input);
+      return [];
+    } catch (e) {
+      return (e as ZodError).issues.map((i) => ({ path: i.path.join("."), message: i.message }));
+    }
+  };
+
+  it.each(["でぷせ しもん", "デプセ・シモン", "デプセ　シモン", "シモン ー"])("accepte la lecture en kana « %s »", async (nameKana) => {
+    expect(await issues({ ...base, nameKana })).toEqual([]);
+  });
+
+  it.each(["depu", "Simon", "出布施", "でぷせ1"])("refuse une lecture qui n'est pas en kana « %s »", async (nameKana) => {
+    expect(await issues({ ...base, nameKana })).toEqual([
+      { path: "nameKana", message: "ひらがなかカタカナで入力してください / Use hiragana or katakana" },
+    ]);
+  });
+
+  it("donne des messages en japonais et en anglais, jamais ceux de zod", async () => {
+    const found = await issues({ nameKanji: "", education: [{ school: "", start: "avril", status: "enrolled" }], certifications: [{ name: "FE" }] });
+    expect(found).toEqual([
+      { path: "nameKanji", message: "入力してください / Required" },
+      { path: "nameKana", message: "入力してください / Required" },
+      { path: "education.0.school", message: "入力してください / Required" },
+      { path: "education.0.start", message: "YYYY-MM の形式で入力してください / Use the format YYYY-MM" },
+      { path: "certifications.0.date", message: "入力してください / Required" },
+    ]);
+  });
+});

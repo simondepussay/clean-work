@@ -11,14 +11,29 @@
  */
 import { z } from "zod";
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date au format AAAA-MM-JJ");
-const yearMonth = z.string().regex(/^\d{4}-\d{2}$/, "mois au format AAAA-MM");
-const text = (max: number) => z.string().trim().max(max);
+// Messages montrés à l'utilisateur sous le champ concerné : japonais / anglais.
+export const messages = {
+  required: "入力してください / Required",
+  tooLong: (max: number) => `${max}文字以内で入力してください / ${max} characters max`,
+  date: "YYYY-MM-DD の形式で入力してください / Use the format YYYY-MM-DD",
+  month: "YYYY-MM の形式で入力してください / Use the format YYYY-MM",
+  kana: "ひらがなかカタカナで入力してください / Use hiragana or katakana",
+  email: "メールアドレスが正しくありません / Invalid email address",
+  url: "URLが正しくありません / Invalid URL",
+} as const;
+
+const isoDate = z.string({ required_error: messages.required }).regex(/^\d{4}-\d{2}-\d{2}$/, messages.date);
+const yearMonth = z.string({ required_error: messages.required }).regex(/^\d{4}-\d{2}$/, messages.month);
+const text = (max: number) => z.string({ required_error: messages.required }).trim().max(max, messages.tooLong(max));
+const required = (max: number) => text(max).min(1, messages.required);
+
+/** Hiragana, katakana (dont « ー » et « ・ ») et espaces, demi- ou pleine largeur. */
+export const KANA = /^[\u3040-\u309F\u30A0-\u30FF\s\u3000]+$/;
 
 // ------------------------------------------------------------------ profil
 
 export const educationSchema = z.object({
-  school: text(100).min(1),
+  school: required(100),
   faculty: text(100).optional(),
   start: yearMonth,
   end: yearMonth.optional(),
@@ -26,7 +41,7 @@ export const educationSchema = z.object({
 });
 
 export const workSchema = z.object({
-  company: text(100).min(1),
+  company: required(100),
   role: text(100).optional(),
   start: yearMonth,
   end: yearMonth.optional(),
@@ -34,17 +49,18 @@ export const workSchema = z.object({
 });
 
 export const profileInputSchema = z.object({
-  nameKanji: text(50).min(1),
-  nameKana: text(50).min(1),
+  nameKanji: required(50),
+  // Le 履歴書 attend la lecture du nom en kana (ふりがな).
+  nameKana: required(50).regex(KANA, messages.kana),
   nameLatin: text(80).optional(),
   birthDate: isoDate.optional(),
-  email: z.string().email().optional(),
+  email: z.string().email(messages.email).optional(),
   phone: text(30).optional(),
   address: text(200).optional(),
   education: z.array(educationSchema).max(20).default([]),
   work: z.array(workSchema).max(30).default([]),
-  certifications: z.array(z.object({ name: text(100).min(1), date: yearMonth })).max(30).default([]),
-  languages: z.array(z.object({ language: text(30).min(1), level: text(50) })).max(10).default([]),
+  certifications: z.array(z.object({ name: required(100), date: yearMonth })).max(30).default([]),
+  languages: z.array(z.object({ language: required(30), level: text(50) })).max(10).default([]),
 });
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;
@@ -66,7 +82,7 @@ export const stepSchema = z.object({
 });
 
 export const applicationInputSchema = z.object({
-  company: text(100).min(1),
+  company: required(100),
   position: text(100).optional(),
   url: z.string().url().optional(),
   status: z.enum(applicationStatuses).default("interested"),
@@ -100,7 +116,7 @@ export function nextDeadline(steps: Step[], today: string): string | null {
 
 export const draftInputSchema = z.object({
   applicationId: z.string().min(1),
-  question: text(300).min(1),
+  question: required(300),
   charLimit: z.number().int().positive().max(5000).optional(),
   body: z.string().max(5000).default(""),
 });

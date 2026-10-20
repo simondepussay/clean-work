@@ -100,7 +100,7 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
         <legend>基本情報 / Basic information</legend>
         <div className="grid">
           {text("nameKanji", "氏名 / Name (漢字・カタカナ)", "text", true)}
-          {text("nameKana", "ふりがな / Reading", "text", true)}
+          {text("nameKana", "ふりがな（ひらがな・カタカナ）/ Reading in kana", "text", true)}
           {text("nameLatin", "ローマ字 / Name (Latin)")}
           {text("birthDate", "生年月日 / Date of birth", "date")}
           {text("email", "メール / Email", "email")}

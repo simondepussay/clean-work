@@ -41,7 +41,7 @@ struct ProfileView: View {
     private var basics: some View {
         Section("基本情報 / Basic information") {
             field("氏名 / Name *", text: $model.profile.nameKanji, path: "nameKanji")
-            field("ふりがな / Reading *", text: $model.profile.nameKana, path: "nameKana")
+            field("ふりがな（ひらがな・カタカナ）/ Reading in kana *", text: $model.profile.nameKana, path: "nameKana")
             field("ローマ字 / Name (Latin)", text: optional($model.profile.nameLatin), path: "nameLatin")
             field("生年月日 / Date of birth (YYYY-MM-DD)", text: optional($model.profile.birthDate), path: "birthDate", keyboard: .numbersAndPunctuation)
             field("メール / Email", text: optional($model.profile.email), path: "email", keyboard: .emailAddress)
