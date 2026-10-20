@@ -1,6 +1,6 @@
 import { app } from "@azure/functions";
 import { getStore } from "../lib/store";
-import { resumeReady } from "../lib/resumePdf";
+import { fontReady } from "../lib/pdfCanvas";
 import { appVersion } from "../lib/version";
 
 /** GET /api/health — utilisé par la surveillance et par le déploiement pour vérifier la mise en ligne. */
@@ -10,7 +10,7 @@ app.http("health", {
   route: "health",
   handler: async (_req, ctx) => {
     const version = appVersion();
-    const resume = resumeReady() ? "ok" : "error";
+    const resume = fontReady() ? "ok" : "error";
     try {
       await getStore().ping();
       return { status: resume === "ok" ? 200 : 503, jsonBody: { status: resume, version, database: "ok", resume } };

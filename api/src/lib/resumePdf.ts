@@ -1,14 +1,13 @@
 /**
  * Dessin du 履歴書 en PDF (S11), sur le modèle du 厚生労働省 (A4, 2 pages).
  * Le contenu vient de resume.ts ; ici on ne fait que placer cadres et texte.
- * Coordonnées en points (1 mm ≈ 2,83 pt), mesurées depuis le HAUT de la page.
  */
-import fontkit from "@pdf-lib/fontkit";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import type { Profile } from "./models";
+import { A4, Canvas, GREY, newDocument } from "./pdfCanvas";
 import { age, certificationRows, historyRows, yearLabel, type Era, type Row } from "./resume";
+
+const M = 42; // marge
+const W = A4.width - 2 * M;
 
 export type ResumeOptions = {
   era: Era;
@@ -20,33 +19,14 @@ export type ResumeOptions = {
   wishes?: string;
 };
 
-const A4 = { width: 595.28, height: 841.89 };
-const M = 42; // marge
-const W = A4.width - 2 * M;
-const BLACK = rgb(0, 0, 0);
-const GREY = rgb(0.35, 0.35, 0.35);
 
-// Le code compilé est dans dist/src/lib, le code source (tests) dans src/lib : on cherche le dossier.
-const fontsDir = [join(__dirname, "../../../assets/fonts"), join(__dirname, "../../assets/fonts")].find(existsSync) ?? "";
-let fontBytes: Buffer | null = null;
-
-/** Vrai si la police est bien présente (vérifié par /api/health après chaque déploiement). */
-export const resumeReady = () => existsSync(join(fontsDir, "NotoSerifJP-Regular.ttf"));
 
 export async function renderResume(profile: Profile, options: ResumeOptions): Promise<Uint8Array> {
-  fontBytes ??= readFileSync(join(fontsDir, "NotoSerifJP-Regular.ttf"));
-  const doc = await PDFDocument.create();
-  doc.registerFontkit(fontkit);
-  // subset : seuls les caractères utilisés sont embarqués. Police en TrueType (assets/fonts/README.md).
-  const font = await doc.embedFont(fontBytes, { subset: true });
-  doc.setTitle(`履歴書 ${profile.nameKanji}`);
-  doc.setCreator("Shukatsu Pilot");
-  doc.setLanguage("ja");
-
+  const { doc, page } = await newDocument(`履歴書 ${profile.nameKanji}`);
   const history = historyRows(profile, options.era);
-  const page1 = new Canvas(doc.addPage([A4.width, A4.height]), font);
+  const page1 = page();
   const firstRows = drawPage1(page1, profile, options, history);
-  const page2 = new Canvas(doc.addPage([A4.width, A4.height]), font);
+  const page2 = page();
   drawPage2(page2, profile, options, history.slice(firstRows));
   return doc.save();
 }
@@ -169,83 +149,5 @@ function drawTable(c: Canvas, top: number, rows: number, title: string, data: Ro
     if (row.align === "center") c.centered(row.text, textX, rowTop + 16, textW, 10);
     else if (row.align === "right") c.text(row.text, textX + textW - 12 - c.width(row.text, 10), rowTop + 16, 10);
     else c.fit(row.text, textX + 8, rowTop, textW - 14, 24, 10);
-  }
-}
-
-// ------------------------------------------------------------------ outils de dessin
-
-type TextStyle = { color?: ReturnType<typeof rgb> };
-
-class Canvas {
-  constructor(private page: PDFPage, private font: PDFFont) {}
-
-  width(text: string, size: number, _style?: TextStyle) {
-    return this.font.widthOfTextAtSize(text, size);
-  }
-
-  /** Texte dont la ligne de base est à `baseline` depuis le haut. */
-  text(text: string, x: number, baseline: number, size: number, style?: TextStyle) {
-    if (!text) return;
-    this.page.drawText(text, { x, y: A4.height - baseline, size, font: this.font, color: style?.color ?? BLACK });
-  }
-
-  centered(text: string, x: number, baseline: number, w: number, size: number, style?: TextStyle) {
-    this.text(text, x + (w - this.width(text, size, style)) / 2, baseline, size, style);
-  }
-
-  /** Texte centré verticalement dans une bande de hauteur `h`. */
-  middle(text: string, x: number, top: number, h: number, size: number, style?: TextStyle) {
-    this.text(text, x, top + h / 2 + size * 0.35, size, style);
-  }
-
-  /** Comme `middle`, en réduisant la taille si le texte est trop long pour `w`. */
-  fit(text: string, x: number, top: number, w: number, h: number, size: number, style?: TextStyle) {
-    let s = size;
-    while (s > 6 && this.width(text, s, style) > w) s -= 0.5;
-    this.middle(text, x, top, h, s, style);
-  }
-
-  /** Petit intitulé gris à gauche d'une bande. */
-  label(text: string, x: number, top: number, h: number) {
-    this.middle(text, x + 4, top, h, 7, { color: GREY });
-  }
-
-  /**
-   * Texte sur plusieurs lignes, coupé au caractère (le japonais n'a pas d'espaces),
-   * en respectant les retours à la ligne ; au plus `maxLines` lignes.
-   */
-  wrap(text: string, x: number, top: number, w: number, size: number, maxLines: number, lineHeight = size * 1.5) {
-    const lines: string[] = [];
-    for (const paragraph of text.split(/\r?\n/)) {
-      let line = "";
-      for (const ch of paragraph) {
-        if (this.width(line + ch, size) > w) {
-          lines.push(line);
-          line = ch;
-        } else {
-          line += ch;
-        }
-      }
-      lines.push(line);
-    }
-    lines.slice(0, maxLines).forEach((l, i) => this.text(l, x, top + size + i * lineHeight, size));
-  }
-
-  box(x: number, top: number, w: number, h: number, opts: { dash?: boolean } = {}) {
-    this.page.drawRectangle({
-      x, y: A4.height - top - h, width: w, height: h, borderColor: BLACK, borderWidth: 0.9,
-      borderDashArray: opts.dash ? [3, 2] : undefined,
-    });
-  }
-
-  hline(x: number, top: number, w: number, opts: { dash?: boolean; thin?: boolean } = {}) {
-    this.page.drawLine({
-      start: { x, y: A4.height - top }, end: { x: x + w, y: A4.height - top }, color: BLACK,
-      thickness: opts.thin ? 0.4 : 0.6, dashArray: opts.dash ? [2, 2] : undefined,
-    });
-  }
-
-  vline(x: number, top: number, h: number) {
-    this.page.drawLine({ start: { x, y: A4.height - top }, end: { x, y: A4.height - top - h }, color: BLACK, thickness: 0.6 });
   }
 }

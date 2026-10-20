@@ -108,16 +108,33 @@ struct APIClient {
         var wishes: String?
     }
 
-    enum ResumeError: Error, Equatable { case profileMissing, invalid, failed }
+    /// 職務経歴書 (S12)
+    struct WorkHistoryOptions: Encodable, Equatable {
+        var era: ResumeOptions.Era = .western
+        var summary: String?
+        var skills: String?
+        var selfPr: String?
+    }
+
+    enum ResumeError: Error, Equatable { case profileMissing, noWork, invalid, failed }
 
     /// Le PDF et son nom de fichier (japonais), ou la raison de l'échec.
     func resume(_ options: ResumeOptions) async throws -> Result<(data: Data, filename: String), ResumeError> {
-        let (data, status) = try await raw("POST", "api/resume", body: try JSONEncoder().encode(options))
+        try await pdf("api/resume", options, filename: "履歴書.pdf")
+    }
+
+    func workHistory(_ options: WorkHistoryOptions) async throws -> Result<(data: Data, filename: String), ResumeError> {
+        try await pdf("api/work-history", options, filename: "職務経歴書.pdf")
+    }
+
+    private func pdf(_ path: String, _ options: some Encodable, filename: String) async throws -> Result<(data: Data, filename: String), ResumeError> {
+        let (data, status) = try await raw("POST", path, body: try JSONEncoder().encode(options))
         switch status {
-        case 200: return .success((data, "履歴書.pdf"))
+        case 200: return .success((data, filename))
         case 401: throw APIError.unauthorized
         case 404: return .failure(.profileMissing)
-        case 400: return .failure(.invalid)
+        case 400:
+            return .failure((try? JSONDecoder().decode(ErrorBody.self, from: data))?.error == "no_work" ? .noWork : .invalid)
         default: return .failure(.failed)
         }
     }
@@ -157,6 +174,9 @@ struct APIClient {
         }
     }
 }
+
+/// Corps d'erreur de l'API : { "error": "…" }.
+private struct ErrorBody: Decodable { let error: String? }
 
 extension ISO8601DateFormatter {
     /// Dates de l'API (« 2026-10-21T00:00:00.000Z »), avec les millisecondes.

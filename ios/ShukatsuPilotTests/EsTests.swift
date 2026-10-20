@@ -147,3 +147,17 @@ final class ResumeTests: XCTestCase {
         XCTAssertEqual(json, ["era": "western"])
     }
 }
+
+@MainActor
+final class WorkHistoryTests: XCTestCase {
+    override func tearDown() { StubURLProtocol.handler = nil }
+
+    func testNoWorkIsExplained() async throws {
+        StubURLProtocol.handler = { _ in (400, Data(#"{"error":"no_work"}"#.utf8)) }
+        let api = APIClient(baseURL: URL(string: "https://example.test")!, session: StubURLProtocol.session(), token: { "jeton" })
+        let result = try await api.workHistory(.init(summary: "要約"))
+        guard case .failure(let error) = result else { return XCTFail("échec attendu") }
+        XCTAssertEqual(error, .noWork)
+        XCTAssertEqual(StubURLProtocol.lastRequest?.url?.path, "/api/work-history")
+    }
+}

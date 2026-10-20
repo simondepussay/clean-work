@@ -138,16 +138,26 @@ export const getUsage = (token: string, f?: typeof fetch) => call<Usage>(token, 
 // ------------------------------------------------------------------ 履歴書 PDF (S11)
 
 export type ResumeOptions = { era: "western" | "japanese"; appeal?: string; wishes?: string };
-export type ResumeOutcome = { ok: true; pdf: Blob; filename: string } | { ok: false; error: "profile_missing" | "invalid" | "failed" };
+/** 職務経歴書 (S12) */
+export type WorkHistoryOptions = { era: "western" | "japanese"; summary?: string; skills?: string; selfPr?: string };
+export type ResumeOutcome = { ok: true; pdf: Blob; filename: string } | { ok: false; error: "profile_missing" | "no_work" | "invalid" | "failed" };
 
-export async function downloadResume(token: string, options: ResumeOptions, fetcher: typeof fetch = fetch): Promise<ResumeOutcome> {
-  const res = await fetcher("/api/resume", {
+export const downloadResume = (token: string, options: ResumeOptions, fetcher: typeof fetch = fetch) =>
+  downloadPdf(token, "/api/resume", options, fetcher);
+export const downloadWorkHistory = (token: string, options: WorkHistoryOptions, fetcher: typeof fetch = fetch) =>
+  downloadPdf(token, "/api/work-history", options, fetcher);
+
+async function downloadPdf(token: string, path: string, options: object, fetcher: typeof fetch): Promise<ResumeOutcome> {
+  const res = await fetcher(path, {
     method: "POST",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(withoutEmptyFields(options)),
   });
   if (res.status === 404) return { ok: false, error: "profile_missing" };
-  if (res.status === 400) return { ok: false, error: "invalid" };
+  if (res.status === 400) {
+    const body = await res.json().catch(() => ({}));
+    return { ok: false, error: body.error === "no_work" ? "no_work" : "invalid" };
+  }
   if (!res.ok) return { ok: false, error: "failed" };
   const disposition = res.headers.get("content-disposition") ?? "";
   const utf8 = /filename\*=UTF-8''([^;]+)/.exec(disposition)?.[1];

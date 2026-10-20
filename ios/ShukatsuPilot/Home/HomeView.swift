@@ -27,7 +27,7 @@ struct HomeView: View {
                     NavigationLink {
                         ResumeView(api: api)
                     } label: {
-                        Label("履歴書PDF / Résumé PDF", systemImage: "doc.richtext")
+                        Label("応募書類PDF / Application documents", systemImage: "doc.richtext")
                     }
                     NavigationLink {
                         EsListView(model: EsModel(api: api, guideURL: AppConfig.apiBaseURL?.appending(path: "es-guide.json")))

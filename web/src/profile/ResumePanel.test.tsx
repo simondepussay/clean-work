@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { downloadResume } from "../api";
+import { downloadResume, downloadWorkHistory } from "../api";
 import { AuthContext, type Auth } from "../auth/auth";
 import { ResumePanel } from "./ResumePanel";
 
@@ -41,7 +41,7 @@ describe("ResumePanel", () => {
     });
 
     render(<AuthContext.Provider value={auth}><ResumePanel /></AuthContext.Provider>);
-    await userEvent.selectOptions(await screen.findByLabelText(/Fill from an ES/), "d1");
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: /Fill from an ES/ }), "d1");
     expect(screen.getByLabelText(/Motivation/)).toHaveValue("私の強みは粘り強さです。");
     await userEvent.selectOptions(screen.getByLabelText(/Years/), "japanese");
     await userEvent.click(screen.getByRole("button", { name: /Download PDF/ }));
@@ -52,5 +52,28 @@ describe("ResumePanel", () => {
     click.mockRestore();
     const post = fetchMock.mock.calls.find(([url]) => url === "/api/resume") as unknown as [string, RequestInit];
     expect(JSON.parse(post[1].body as string)).toEqual({ era: "japanese", appeal: "私の強みは粘り強さです。", wishes: "貴社の規定に従います。" });
+  });
+
+  it("職務経歴書 : autres champs, autre adresse, message si pas d'expérience", async () => {
+    const fetchMock = vi.fn(async (url: string) => (url === "/api/drafts"
+      ? new Response("[]")
+      : new Response(JSON.stringify({ error: "no_work" }), { status: 400 })));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AuthContext.Provider value={auth}><ResumePanel /></AuthContext.Provider>);
+    await userEvent.selectOptions(screen.getByLabelText(/Document/), "workHistory");
+    await userEvent.type(screen.getByLabelText(/Summary/), "日仏間の事務を経験");
+    expect(screen.queryByLabelText(/Your requests/)).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /Download PDF/ }));
+    expect(await screen.findByText(/Add work experience/)).toBeInTheDocument();
+    const post = fetchMock.mock.calls.find(([url]) => url === "/api/work-history") as unknown as [string, RequestInit];
+    expect(JSON.parse(post[1].body as string)).toEqual({ era: "western", summary: "日仏間の事務を経験" });
+  });
+});
+
+describe("downloadWorkHistory", () => {
+  it("appelle /api/work-history", async () => {
+    const fetcher = vi.fn(async () => new Response(new Blob(["%PDF"]), { status: 200 }));
+    await downloadWorkHistory("t", { era: "western" }, fetcher as unknown as typeof fetch);
+    expect((fetcher.mock.calls[0] as unknown as [string])[0]).toBe("/api/work-history");
   });
 });
