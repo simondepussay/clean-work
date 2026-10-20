@@ -11,9 +11,10 @@ export type AuthedHandler = (req: HttpRequest, user: SignedInUser, ctx: Invocati
 
 let shared: IdentityVerifier | null | undefined;
 
-export function withUser(handler: AuthedHandler, verifier: () => IdentityVerifier | null = () => (shared ??= verifierFromEnv())) {
+export function withUser(handler: AuthedHandler, verifier?: () => IdentityVerifier | null) {
+  const resolve = verifier ?? (() => (shared ??= verifierFromEnv()));
   return async (req: HttpRequest, ctx: InvocationContext): Promise<HttpResponseInit> => {
-    const v = verifier();
+    const v = resolve();
     if (!v) return { status: 503, jsonBody: { error: "auth_not_configured" } };
 
     const user = await v.verify(req.headers.get(TOKEN_HEADER));

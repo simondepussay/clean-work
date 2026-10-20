@@ -72,6 +72,9 @@ final class AppModel {
         me = .idle
     }
 
+    /// Accès à l'API pour les écrans (profil…), nil si l'app n'est pas configurée.
+    var apiClient: APIClient? { api }
+
     /// Supprime le compte (données puis annuaire, côté API), puis déconnecte (S25).
     func deleteAccount() async throws {
         guard let api else { throw AccountError.notConfigured }

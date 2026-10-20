@@ -1,0 +1,58 @@
+/** Liste éditable (scolarité, expérience, certifications, langues) décrite par ses champs. */
+
+export type Field<T> = {
+  key: keyof T & string;
+  label: string;
+  type?: "text" | "month" | "select" | "textarea";
+  options?: { value: string; label: string }[];
+  required?: boolean;
+};
+
+type Props<T> = {
+  title: string;
+  name: string;
+  items: T[];
+  fields: Field<T>[];
+  empty: T;
+  errors: Map<string, string>;
+  onChange: (items: T[]) => void;
+};
+
+export function ListEditor<T extends Record<string, unknown>>({ title, name, items, fields, empty, errors, onChange }: Props<T>) {
+  const update = (index: number, key: keyof T, value: string) =>
+    onChange(items.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
+
+  return (
+    <fieldset className="list">
+      <legend>{title}</legend>
+      {items.map((item, i) => (
+        <div className="row" key={i} role="group" aria-label={`${title} ${i + 1}`}>
+          {fields.map((f) => {
+            const id = `${name}.${i}.${f.key}`;
+            const value = (item[f.key] as string | undefined) ?? "";
+            const error = errors.get(id);
+            return (
+              <label key={f.key} className={error ? "invalid" : undefined}>
+                <span>{f.label}{f.required && " *"}</span>
+                {f.type === "select" ? (
+                  <select value={value} onChange={(e) => update(i, f.key, e.target.value)}>
+                    {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                ) : f.type === "textarea" ? (
+                  <textarea value={value} onChange={(e) => update(i, f.key, e.target.value)} rows={2} />
+                ) : (
+                  <input type={f.type ?? "text"} value={value} onChange={(e) => update(i, f.key, e.target.value)} />
+                )}
+                {error && <small role="alert">{error}</small>}
+              </label>
+            );
+          })}
+          <button type="button" className="remove" onClick={() => onChange(items.filter((_, j) => j !== i))}>
+            削除 / Remove
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...items, { ...empty }])}>＋ 追加 / Add</button>
+    </fieldset>
+  );
+}

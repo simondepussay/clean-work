@@ -17,6 +17,15 @@ struct HomeView: View {
                 }
                 profileStatus
             }
+            if let api = model.apiClient {
+                Section {
+                    NavigationLink {
+                        ProfileView(model: ProfileModel(api: api), onSaved: { await model.refreshMe() })
+                    } label: {
+                        Label("プロフィール / Profile", systemImage: "person.text.rectangle")
+                    }
+                }
+            }
             Section {
                 Button("サインアウト / Sign out") { model.signOut() }
             }

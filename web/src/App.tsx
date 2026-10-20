@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
+import { ProfileEditor } from "./profile/ProfileEditor";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
 
@@ -27,12 +28,14 @@ function Account() {
     }
   }
 
-  useEffect(() => {
-    if (auth.state.status !== "signedIn") return;
+  const refreshMe = () =>
     auth.getToken()
       .then((token) => (token ? fetchMe(token) : null))
       .then((m) => setMe(m ?? "error"))
       .catch(() => setMe("error"));
+
+  useEffect(() => {
+    if (auth.state.status === "signedIn") refreshMe();
     // On ne relance que quand l'état de connexion change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.state.status]);
@@ -50,7 +53,8 @@ function Account() {
       );
     case "signedIn":
       return (
-        <div className="account">
+        <div>
+          <div className="account">
           <p>
             ようこそ、<strong>{auth.state.name ?? auth.state.email}</strong>
             {me && me !== "error" && (
@@ -64,7 +68,9 @@ function Account() {
               アカウント削除 / Delete account
             </button>
           </div>
+          </div>
           {deleting === "error" && <p className="muted">削除できませんでした / Could not delete the account</p>}
+          <ProfileEditor onSaved={refreshMe} />
         </div>
       );
   }

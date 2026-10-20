@@ -22,3 +22,16 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 button.danger { border-color: #d4483b; color: #d4483b; }
 button:disabled { opacity: .5; cursor: default; }
+.profile { margin-top: 32px; }
+.profile h2 { font-size: 22px; margin: 0 0 12px; }
+fieldset { border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 12px; padding: 12px 16px 16px; margin: 0 0 16px; }
+legend { font-weight: 600; padding: 0 6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 16px; }
+label { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 14px; }
+label > span { color: var(--muted); font-size: 13px; }
+input, select, textarea { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent); background: transparent; color: var(--fg); }
+label.invalid input, label.invalid select { border-color: #d4483b; }
+label small { color: #d4483b; }
+.list .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0 12px; align-items: end;
+  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed color-mix(in srgb, var(--muted) 30%, transparent); }
+.list .remove { justify-self: start; margin-bottom: 8px; font-size: 13px; }
