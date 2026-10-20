@@ -35,6 +35,7 @@ const certificationFields: Field<Certification>[] = [
 ];
 const languageFields: Field<Language>[] = [
   { key: "language", label: "言語 / Language", type: "select", options: languages, placeholder: choose, required: true },
+  { key: "languageOther", label: "どの言語？ / Which language?", required: true, visible: (l) => l.language === "other" },
   { key: "level", label: "レベル / Level", type: "select", options: levels, placeholder: choose, required: true },
 ];
 

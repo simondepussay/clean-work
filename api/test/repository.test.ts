@@ -160,4 +160,19 @@ describe("langues et certifications : listes de choix", () => {
       expect((err as ZodError).issues[0].message).toBe("選択してください / Please choose");
     }
   });
+
+  it("« other » demande le nom de la langue", async () => {
+    const r = repo();
+    const err = await r.saveProfile("u1", { ...base, languages: [{ language: "other", level: "basic" }] }).catch((e: ZodError) => e);
+    expect((err as ZodError).issues).toMatchObject([{ path: ["languages", 0, "languageOther"], message: "入力してください / Required" }]);
+
+    const p = await r.saveProfile("u1", { ...base, languages: [{ language: "other", languageOther: "タガログ語", level: "basic" }] });
+    expect(p.languages).toEqual([{ language: "other", languageOther: "タガログ語", level: "basic" }]);
+  });
+
+  it("ne garde pas un nom de langue saisi si la langue n'est plus « other »", async () => {
+    const p = await repo().saveProfile("u1", { ...base, languages: [{ language: "en", languageOther: "reste", level: "basic" }] });
+    expect(p.languages).toEqual([{ language: "en", level: "basic" }]);
+  });
 });
+

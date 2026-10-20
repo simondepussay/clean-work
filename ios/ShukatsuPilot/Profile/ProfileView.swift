@@ -113,6 +113,9 @@ struct ProfileView: View {
                 VStack(alignment: .leading) {
                     choice("言語 / Language *", selection: $item.language, options: ProfileChoices.languages,
                            path: "languages.\(index).language")
+                    if item.language == "other" {
+                        field("どの言語？ / Which language? *", text: optional($item.languageOther), path: "languages.\(index).languageOther")
+                    }
                     choice("レベル / Level *", selection: $item.level, options: ProfileChoices.levels,
                            path: "languages.\(index).level")
                 }

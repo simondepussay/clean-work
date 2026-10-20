@@ -65,10 +65,20 @@ export const certificationSchema = z.object({
   date: yearMonth,
 });
 
-export const languageSchema = z.object({
-  language: choice(languageCodes),
-  level: choice(languageLevels),
-});
+export const languageSchema = z
+  .object({
+    language: choice(languageCodes),
+    /** Nom de la langue quand `language` vaut « other ». */
+    languageOther: text(30).optional(),
+    level: choice(languageLevels),
+  })
+  .superRefine((l, ctx) => {
+    if (l.language === "other" && !l.languageOther) {
+      ctx.addIssue({ code: "custom", path: ["languageOther"], message: messages.required });
+    }
+  })
+  // Un nom saisi puis abandonné (langue changée) n'est pas gardé.
+  .transform(({ languageOther, ...rest }) => (rest.language === "other" ? { ...rest, languageOther } : rest));
 
 export const profileInputSchema = z.object({
   nameKanji: required(50),

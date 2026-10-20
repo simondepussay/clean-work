@@ -81,8 +81,10 @@ struct Profile: Codable, Equatable {
         var id = UUID()
         /// Codes de ProfileChoices.languages et ProfileChoices.levels.
         var language = ""
+        /// Nom de la langue quand `language` vaut « other ».
+        var languageOther: String?
         var level = ""
-        enum CodingKeys: String, CodingKey { case language, level }
+        enum CodingKeys: String, CodingKey { case language, languageOther, level }
     }
 
     // L'API renvoie aussi id, userId et updatedAt : on les ignore à la lecture.

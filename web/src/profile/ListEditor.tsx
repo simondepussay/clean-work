@@ -10,6 +10,8 @@ export type Field<T> = {
   /** Pour un texte : suggestions selon la ligne (par exemple selon la catégorie). */
   suggestions?: (item: T) => string[];
   required?: boolean;
+  /** Affiche le champ seulement si la condition est vraie (par exemple langue « その他 »). */
+  visible?: (item: T) => boolean;
 };
 
 type Props<T> = {
@@ -31,7 +33,7 @@ export function ListEditor<T extends Record<string, unknown>>({ title, name, ite
       <legend>{title}</legend>
       {items.map((item, i) => (
         <div className="row" key={i} role="group" aria-label={`${title} ${i + 1}`}>
-          {fields.map((f) => {
+          {fields.filter((f) => f.visible?.(item) ?? true).map((f) => {
             const id = `${name}.${i}.${f.key}`;
             const value = (item[f.key] as string | undefined) ?? "";
             const error = errors.get(id);

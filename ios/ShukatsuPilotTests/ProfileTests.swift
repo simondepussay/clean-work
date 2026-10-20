@@ -98,4 +98,14 @@ final class ProfileTests: XCTestCase {
         XCTAssertEqual(profile.languages.first?.language, "日本語")
         XCTAssertEqual(profile.certifications.first?.category, "")
     }
+
+    func testOtherLanguageNameIsSentOnlyWhenWritten() throws {
+        let other = Profile.Language(language: "other", languageOther: "タガログ語", level: "basic")
+        let named = try XCTUnwrap(try JSONSerialization.jsonObject(with: JSONEncoder().encode(other)) as? [String: String])
+        XCTAssertEqual(named["languageOther"], "タガログ語")
+
+        let english = Profile.Language(language: "en", level: "basic")
+        let plain = try XCTUnwrap(try JSONSerialization.jsonObject(with: JSONEncoder().encode(english)) as? [String: String])
+        XCTAssertNil(plain["languageOther"])
+    }
 }

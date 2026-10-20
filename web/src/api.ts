@@ -31,7 +31,7 @@ export async function deleteAccount(token: string, fetcher: typeof fetch = fetch
 export type Education = { school: string; faculty?: string; start: string; end?: string; status: "enrolled" | "graduated" | "expected" | "left" };
 export type Work = { company: string; role?: string; start: string; end?: string; description?: string };
 export type Certification = { category: string; name: string; date: string };
-export type Language = { language: string; level: string };
+export type Language = { language: string; languageOther?: string; level: string };
 
 export type ProfileInput = {
   nameKanji: string;

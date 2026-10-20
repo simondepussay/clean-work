@@ -104,6 +104,23 @@ describe("ProfileEditor", () => {
     expect(sent.languages).toEqual([{ language: "fr", level: "native" }]);
   });
 
+  it("« その他 » fait apparaître un champ pour écrire la langue", async () => {
+    let sent: { languages?: unknown } = {};
+    stub(200, { nameKanji: "シモン", nameKana: "しもん", education: [], work: [], certifications: [], languages: [] },
+      (body) => { sent = body as typeof sent; return { status: 200, body }; });
+    renderEditor();
+    const group = await screen.findByRole("group", { name: "語学 / Languages" });
+    await userEvent.click(within(group).getByRole("button", { name: /Add/ }));
+    expect(within(group).queryByLabelText(/Which language/)).toBeNull();
+
+    await userEvent.selectOptions(within(group).getByLabelText(/言語/), "other");
+    await userEvent.type(within(group).getByLabelText(/Which language/), "タガログ語");
+    await userEvent.selectOptions(within(group).getByLabelText(/レベル/), "basic");
+    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await screen.findByText("保存しました / Saved");
+    expect(sent.languages).toEqual([{ language: "other", languageOther: "タガログ語", level: "basic" }]);
+  });
+
   it("propose des noms de certification selon la catégorie", async () => {
     stub(200, { nameKanji: "シモン", nameKana: "しもん", education: [], work: [], languages: [],
       certifications: [{ category: "it", name: "", date: "" }] }, () => ({ status: 200, body: {} }));
