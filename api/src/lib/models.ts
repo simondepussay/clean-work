@@ -160,13 +160,21 @@ export const draftInputSchema = z.object({
 export type DraftInput = z.infer<typeof draftInputSchema>;
 export type Draft = DraftInput & { id: string; userId: string; createdAt: string; updatedAt: string };
 
+/** Une relecture par IA (S14), avec le texte relu tel qu'il était (pour comparer, S15). */
 export type Review = {
   id: string;
   userId: string;
   draftId: string;
-  score: number;
-  issues: { quote: string; problem: string; suggestion: string }[];
   createdAt: string;
+  model: string;
+  language: string;
+  bodySnapshot: string;
+  score: number;
+  summary: string;
+  strengths: string[];
+  issues: { category: string; quote: string; problem: string; suggestion: string }[];
+  /** Citations écartées parce qu'introuvables dans le texte (le modèle les a inventées). */
+  discarded: number;
 };
 
 // ------------------------------------------------------------------ conteneurs Cosmos
@@ -176,6 +184,8 @@ export const containers = {
   applications: "applications",
   drafts: "drafts",
   reviews: "reviews",
+  /** Compteurs d'utilisation de l'IA (S16) : un document par utilisateur et par mois. */
+  usage: "usage",
 } as const;
 
 export type ContainerName = (typeof containers)[keyof typeof containers];

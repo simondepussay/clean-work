@@ -20,7 +20,7 @@ const identity = JSON.parse(readFileSync(join(ROOT, "infra", "identity.json"), "
 
 const SUBSCRIPTION = "eb020e02-d673-4a15-81f6-f8a50ab8c5b1";
 const RG = "rg-shukatsu-pilot";
-const CONTAINERS = ["profiles", "applications", "drafts", "reviews"];
+const CONTAINERS = ["profiles", "applications", "drafts", "reviews", "usage"];
 const RETENTION_DAYS = 30;
 
 const az = (args) => execFileSync("az", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();

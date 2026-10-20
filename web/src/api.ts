@@ -103,3 +103,34 @@ export const updateDraft = (token: string, id: string, d: DraftInput, f?: typeof
   call<Draft>(token, "PUT", `/api/drafts/${encodeURIComponent(id)}`, d, f);
 export const deleteDraft = (token: string, id: string, f?: typeof fetch) =>
   call<null>(token, "DELETE", `/api/drafts/${encodeURIComponent(id)}`, undefined, f);
+
+// ------------------------------------------------------------------ relecture IA (S14, S16)
+
+export type ReviewIssue = { category: string; quote: string; problem: string; suggestion: string };
+export type Review = {
+  id: string; draftId: string; createdAt: string; language: string; bodySnapshot: string;
+  score: number; summary: string; strengths: string[]; issues: ReviewIssue[];
+};
+export type Usage = { today: number; month: number };
+export type ReviewOutcome =
+  | { ok: true; review: Review }
+  | { ok: false; error: "limit"; reason: "day" | "month" | "budget"; retryAfter: string }
+  | { ok: false; error: "ai_failed" | "ai_not_configured" | "empty" };
+
+export async function reviewDraft(token: string, id: string, language: string, fetcher: typeof fetch = fetch): Promise<ReviewOutcome> {
+  const res = await fetcher(`/api/drafts/${encodeURIComponent(id)}/review`, {
+    method: "POST",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify({ language }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (res.status === 201) return { ok: true, review: body as Review };
+  if (res.status === 429 || body.error === "limit") return { ok: false, error: "limit", reason: body.reason, retryAfter: body.retryAfter };
+  if (res.status === 400) return { ok: false, error: "empty" };
+  if (body.error === "ai_not_configured") return { ok: false, error: "ai_not_configured" };
+  return { ok: false, error: "ai_failed" };
+}
+
+export const listReviews = (token: string, id: string, f?: typeof fetch) =>
+  call<Review[]>(token, "GET", `/api/drafts/${encodeURIComponent(id)}/reviews`, undefined, f);
+export const getUsage = (token: string, f?: typeof fetch) => call<Usage>(token, "GET", "/api/usage", undefined, f);

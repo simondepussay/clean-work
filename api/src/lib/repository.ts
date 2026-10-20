@@ -11,6 +11,7 @@ import {
   nextDeadline,
   profileInputSchema,
   type Application,
+  type Review,
   type Profile,
 } from "./models";
 import type { DocStore } from "./store";
@@ -106,6 +107,18 @@ export class Repository {
 
   deleteDraft(userId: string, id: string) {
     return this.store.remove(containers.drafts, userId, id);
+  }
+
+  // -------------------------------------------------------------- relectures (S14, S15)
+
+  saveReview(review: Review) {
+    return this.store.put<Review>(containers.reviews, review);
+  }
+
+  /** Relectures d'une ES, la plus récente d'abord. */
+  async listReviews(userId: string, draftId: string) {
+    const all = await this.store.list<Review>(containers.reviews, userId);
+    return all.filter((r) => r.draftId === draftId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   // -------------------------------------------------------------- suppression du compte (S25)

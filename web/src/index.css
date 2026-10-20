@@ -46,3 +46,14 @@ label small { color: #d4483b; }
 .es aside li button.current { border-color: var(--accent); }
 .count { font-family: ui-monospace, Menlo, monospace; text-align: right; margin: 0; }
 .count.over { color: #d4483b; font-weight: 700; }
+.review { margin-top: 24px; border-top: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); padding-top: 16px; }
+.review-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+label.inline { flex-direction: row; align-items: center; gap: 6px; margin: 0; }
+.notice { color: #c98a12; }
+.score { font-size: 15px; } .score strong { font-size: 32px; }
+.strengths { list-style: none; padding: 0; color: #2f9e6b; }
+.issues { padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
+.issues p { margin: 4px 0; }
+.issues .tag { font-size: 12px; border: 1px solid var(--muted); border-radius: 999px; padding: 1px 8px; }
+mark { background: color-mix(in srgb, #d4483b 25%, transparent); color: inherit; text-decoration: line-through; }
+ins { background: color-mix(in srgb, #2f9e6b 25%, transparent); text-decoration: none; }

@@ -16,7 +16,7 @@ param suffix string = uniqueString(resourceGroup().id)
 
 var databaseName = 'shukatsu'
 // Toutes les données sont partitionnées par utilisateur (voir api/src/lib/models.ts).
-var containerNames = [ 'profiles', 'applications', 'drafts', 'reviews' ]
+var containerNames = [ 'profiles', 'applications', 'drafts', 'reviews', 'usage' ]
 var tags = { project: 'shukatsu-pilot' }
 
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' = {
@@ -66,6 +66,32 @@ resource web 'Microsoft.Web/staticSites@2024-04-01' = {
   properties: {}
 }
 
+// Relecture des ES par IA (S14). « GlobalStandard » est le seul type de déploiement proposé
+// en Corée Centre pour ce modèle : les textes peuvent être traités dans n'importe quelle région
+// d'Azure (à indiquer dans la politique de confidentialité, S04).
+resource ai 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
+  name: 'oai-shukatsu-${suffix}'
+  location: dataLocation
+  tags: tags
+  kind: 'OpenAI'
+  sku: { name: 'S0' }
+  properties: {
+    customSubDomainName: 'oai-shukatsu-${suffix}'
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+resource reviewModel 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+  parent: ai
+  name: 'review'
+  sku: { name: 'GlobalStandard', capacity: 20 }
+  properties: {
+    model: { format: 'OpenAI', name: 'gpt-5-mini', version: '2025-08-07' }
+  }
+}
+
 output webName string = web.name
 output webHostname string = web.properties.defaultHostname
 output cosmosName string = cosmos.name
+output aiName string = ai.name
+output aiEndpoint string = ai.properties.endpoint

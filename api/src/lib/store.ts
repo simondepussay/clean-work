@@ -26,6 +26,11 @@ export interface DocStore {
   markDeleted(container: ContainerName, userId: string, mark: DeletionMark): Promise<number>;
   /** Annule la suppression des documents de l'utilisateur ; renvoie leur nombre. */
   restore(container: ContainerName, userId: string): Promise<number>;
+  /**
+   * Ajoute (ou retire) des quantités à des champs numériques, de façon atomique, et renvoie
+   * les nouvelles valeurs. Le document est créé s'il n'existe pas, avec la durée de vie `ttl`.
+   */
+  increment(container: ContainerName, userId: string, id: string, deltas: Record<string, number>, ttl?: number): Promise<Record<string, number>>;
   ping(): Promise<void>;
 }
 
@@ -72,6 +77,15 @@ export class MemoryStore implements DocStore {
     const docs = this.all(container, userId).filter(isDeleted);
     for (const d of docs) await this.put(container, withoutMark(d));
     return docs.length;
+  }
+
+  async increment(container: ContainerName, userId: string, id: string, deltas: Record<string, number>, ttl?: number) {
+    const key = this.key(container, userId, id);
+    const doc = (this.data.get(key) ?? { id, userId, ...(ttl ? { ttl } : {}) }) as Doc & Record<string, number>;
+    const result: Record<string, number> = {};
+    for (const [field, delta] of Object.entries(deltas)) result[field] = doc[field] = (doc[field] ?? 0) + delta;
+    this.data.set(key, doc);
+    return result;
   }
 
   async ping() {}
@@ -132,6 +146,27 @@ export class CosmosStore implements DocStore {
     // Sans `ttl`, le document reprend la durée de vie du conteneur (-1 : jamais effacé).
     for (const d of docs) await this.put(container, withoutMark(d));
     return docs.length;
+  }
+
+  async increment(container: ContainerName, userId: string, id: string, deltas: Record<string, number>, ttl?: number) {
+    const item = this.db.container(container).item(id, userId);
+    const operations = Object.entries(deltas).map(([field, value]) => ({ op: "incr" as const, path: `/${field}`, value }));
+    const read = (doc: Record<string, unknown>) => Object.fromEntries(Object.keys(deltas).map((f) => [f, Number(doc[f] ?? 0)]));
+    try {
+      const { resource } = await item.patch(operations);
+      return read(resource);
+    } catch (e) {
+      if ((e as { code?: number }).code !== 404) throw e;
+    }
+    // Premier compteur du mois : on crée le document. Si une autre requête l'a créé entre-temps (409), on réessaie le patch.
+    try {
+      const { resource } = await this.db.container(container).items.create({ id, userId, ...(ttl ? { ttl } : {}), ...deltas });
+      return read(resource as unknown as Record<string, unknown>);
+    } catch (e) {
+      if ((e as { code?: number }).code !== 409) throw e;
+      const { resource } = await item.patch(operations);
+      return read(resource);
+    }
   }
 
   async ping() {

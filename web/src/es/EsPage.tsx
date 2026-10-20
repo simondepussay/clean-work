@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createDraft, deleteDraft, listDrafts, updateDraft, type Draft, type DraftInput, type Issue } from "../api";
 import { useAuth } from "../auth/auth";
 import { countChars } from "./count";
+import { ReviewPanel } from "./ReviewPanel";
 
 const blank: DraftInput = { question: "", body: "" };
 
@@ -33,7 +34,8 @@ export function EsPage() {
     setStatus("idle");
   }
 
-  async function save() {
+  /** Enregistre l'ES ; renvoie son id, ou null si l'API l'a refusée. */
+  async function save(): Promise<string | null> {
     setStatus("saving");
     try {
       const t = await token();
@@ -41,16 +43,24 @@ export function EsPage() {
       if (!result.ok) {
         setIssues(result.issues);
         setStatus("idle");
-        return;
+        return null;
       }
       const saved = result.value;
       setDrafts((all) => [saved, ...(all ?? []).filter((d) => d.id !== saved.id)]);
       setSelected(saved.id);
       setIssues([]);
       setStatus("saved");
+      return saved.id;
     } catch {
       setStatus("error");
+      return null;
     }
+  }
+
+  /** Avant une relecture : enregistre si le texte a changé depuis le dernier enregistrement. */
+  async function prepare() {
+    if (selected !== "new" && selected !== null && status === "saved") return selected;
+    return save();
   }
 
   async function remove() {
@@ -127,6 +137,11 @@ export function EsPage() {
               {status === "error" && "エラー / Error"}
             </span>
           </div>
+          <ReviewPanel
+            draftId={selected === "new" ? null : selected}
+            prepare={prepare}
+            onApply={(quote, suggestion) => edit({ body: form.body.replace(quote, suggestion) })}
+          />
         </form>
       )}
     </section>
