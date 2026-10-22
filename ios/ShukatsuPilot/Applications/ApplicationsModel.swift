@@ -13,6 +13,7 @@ final class ApplicationsModel {
 
     func load() async {
         applications = (try? await api.applications()) ?? []
+        await DeadlineReminderScheduler.shared.reschedule(applications ?? [])
     }
 
     /// Sections non vides, dans l'ordre du parcours ; refus et désistements à la fin.
@@ -27,16 +28,21 @@ final class ApplicationsModel {
         failed = false
         do {
             replace(try await api.moveApplication(app.id, to: status))
+            await DeadlineReminderScheduler.shared.reschedule(applications ?? [])
         } catch {
             failed = true
         }
     }
 
-    func saved(_ app: JobApplication) { replace(app) }
+    func saved(_ app: JobApplication) {
+        replace(app)
+        Task { await DeadlineReminderScheduler.shared.reschedule(applications ?? []) }
+    }
 
     func delete(_ app: JobApplication) async {
         guard (try? await api.deleteApplication(app.id)) != nil else { failed = true; return }
         applications?.removeAll { $0.id == app.id }
+        await DeadlineReminderScheduler.shared.reschedule(applications ?? [])
     }
 
     private func replace(_ app: JobApplication) {

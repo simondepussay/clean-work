@@ -4,6 +4,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppModel.self) private var model
     @State private var confirmingDeletion = false
+    @State private var upcoming: [Deadline] = []
     @State private var deleting = false
     @State private var deletionFailed = false
 
@@ -16,6 +17,19 @@ struct HomeView: View {
                     if let email = model.email { Text(email).foregroundStyle(.secondary) }
                 }
                 profileStatus
+            }
+            if !upcoming.isEmpty {
+                Section("近い締切 / Upcoming deadlines") {
+                    ForEach(upcoming.prefix(5), id: \.stepId) { d in
+                        HStack {
+                            Text(SelectionStage.deadlineLabel(d.days))
+                                .font(.caption.weight(d.days <= 3 ? .bold : .regular))
+                                .foregroundStyle(d.days <= 3 ? .red : .secondary)
+                                .frame(width: 120, alignment: .leading)
+                            Text("\(d.company)　\(Deadlines.stepName(d.step))")
+                        }
+                    }
+                }
             }
             if let api = model.apiClient {
                 Section {
@@ -64,7 +78,17 @@ struct HomeView: View {
         }
         .navigationTitle("就活パイロット")
         .refreshable { await model.refreshMe() }
-        .task { await model.refreshMe() }
+        .task {
+            await model.refreshMe()
+            await loadDeadlines()
+        }
+    }
+
+    /// Échéances des 14 prochains jours, et rappels reprogrammés à chaque ouverture de l'accueil.
+    private func loadDeadlines() async {
+        guard let api = model.apiClient, let apps = try? await api.applications() else { return }
+        upcoming = Deadlines.upcoming(apps, within: 14)
+        await DeadlineReminderScheduler.shared.reschedule(apps)
     }
 
     static var deletionWarning: String {

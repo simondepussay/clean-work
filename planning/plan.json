@@ -309,6 +309,19 @@
       "title_en": "Account deletion (App Store requirement)",
       "story_en": "As a student, I want to delete my account and data from inside the app, so I can leave at any time.",
       "added": "2026-10-16"
+    },
+    {
+      "id": "S26",
+      "epic": "E2",
+      "pts": 5,
+      "moscow": "Must",
+      "release": "MVP",
+      "title": "サーバーからのプッシュ通知（APNs）",
+      "story": "学生として、アプリを開いていなくても、締切が変わったときにも確実に通知を受け取りたい。",
+      "title_en": "Server push notifications (APNs)",
+      "story_en": "As a student, I want reliable notifications even when I haven't opened the app, including when a deadline changes.",
+      "added": "2026-10-22",
+      "note": "ユーザーの要望で追加（重要）。ローカル通知（S09）は残し、オフラインでも届く予備にする。Apple Developer で APNs キーの作成が必要。"
     }
   ],
   "events": [
@@ -445,7 +458,8 @@
       "from": 5,
       "to": 7,
       "stories": [
-        "S09"
+        "S09",
+        "S26"
       ],
       "solo": true,
       "name_en": "Reminders"
