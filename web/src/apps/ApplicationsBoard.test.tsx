@@ -110,4 +110,24 @@ describe("ApplicationsBoard", () => {
     await userEvent.click(screen.getByRole("button", { name: /Save/ }));
     expect(await screen.findByRole("alert")).toHaveTextContent("入力してください");
   });
+
+  it("liste les échéances des 14 prochains jours et exporte un .ics", async () => {
+    server([app({ id: "a1", company: "楽天", steps: [{ id: "s1", type: "es", dueDate: iso(1), done: false }] })]);
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() }));
+    let file = "";
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { file = this.download; });
+    renderBoard();
+    const upcoming = await screen.findByRole("region", { name: /Upcoming deadlines/ });
+    expect(within(upcoming).getByText("楽天")).toBeInTheDocument();
+    expect(within(upcoming).getByText(/明日/)).toBeInTheDocument();
+    await userEvent.click(within(upcoming).getByRole("button", { name: /Add to calendar/ }));
+    expect(file).toBe("shukatsu-deadlines.ics");
+    click.mockRestore();
+  });
+
+  it("bouton d'export désactivé sans échéance", async () => {
+    server([app({ id: "a1", company: "楽天" })]);
+    renderBoard();
+    expect(await screen.findByRole("button", { name: /Add to calendar/ })).toBeDisabled();
+  });
 });

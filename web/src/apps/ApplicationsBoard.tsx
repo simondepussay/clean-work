@@ -5,6 +5,7 @@ import {
 } from "../api";
 import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
+import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
 import { CLOSED, COLUMNS, STEP_TYPES, daysUntil, deadlineLabel, neighbour, statusLabel } from "./statuses";
 
 const stepFields: Field<Step>[] = [
@@ -87,6 +88,19 @@ export function ApplicationsBoard() {
 
   if (apps === null) return <p className="muted">…</p>;
 
+  const soon = upcomingDeadlines(apps, new Date(), 14);
+  const allUpcoming = upcomingDeadlines(apps);
+
+  /** Toutes les échéances à venir dans un fichier .ics (Google Agenda, Apple Calendar, Outlook). */
+  function exportCalendar() {
+    const url = URL.createObjectURL(new Blob([toICalendar(allUpcoming)], { type: "text/calendar;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "shukatsu-deadlines.ics";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
+
   const errors = new Map(issues.map((i) => [i.path, i.message]));
   const set = (patch: Partial<ApplicationInput>) => setEditing((ed) => (ed ? { ...ed, form: { ...ed.form, ...patch } } : ed));
   const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", statuses: CLOSED.map((c) => c.status) }];
@@ -98,6 +112,29 @@ export function ApplicationsBoard() {
         <span className="muted">{apps.length}社 / {apps.length} companies</span>
         {error && <span role="alert" className="notice">保存できませんでした / Could not save</span>}
       </div>
+
+      <section className="upcoming" aria-label="近い締切 / Upcoming deadlines">
+        <div className="upcoming-head">
+          <h3>近い締切 <span>Upcoming deadlines · 14日 / 14 days</span></h3>
+          <button type="button" onClick={exportCalendar} disabled={allUpcoming.length === 0}
+            title="Google カレンダー・Apple カレンダー・Outlook に読み込めます / Import into Google, Apple or Outlook calendar">
+            📅 カレンダーに追加 / Add to calendar (.ics)
+          </button>
+        </div>
+        {soon.length === 0 ? (
+          <p className="muted">14日以内の締切はありません / No deadlines in the next 14 days</p>
+        ) : (
+          <ul>
+            {soon.map((d) => (
+              <li key={d.stepId} className={d.days <= 3 ? "soon" : undefined}>
+                <span className="when">{deadlineLabel(d.days)}</span>
+                <strong>{d.company}</strong> {stepName(d.step)}
+                <span className="muted"> · {d.date}{d.note ? ` · ${d.note}` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="board" role="list" aria-label="選考状況 / Selection board">
         {columns.map((col) => {
