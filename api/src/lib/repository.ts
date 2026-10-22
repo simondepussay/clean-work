@@ -102,7 +102,10 @@ export class Repository {
     if (!current) return null;
     const { id: _id, userId: _u, createdAt, updatedAt: _t, ...editable } = current;
     const data = draftInputSchema.parse({ ...editable, ...(input as object) });
-    return this.store.put<Draft>(containers.drafts, { ...data, id, userId, createdAt, updatedAt: this.now().toISOString() });
+    // applicationId: null dans la requête délie l'ES (le schéma le transforme en « absent »).
+    const { applicationId, ...rest } = data;
+    const draft: Draft = { ...rest, ...(applicationId ? { applicationId } : {}), id, userId, createdAt, updatedAt: this.now().toISOString() };
+    return this.store.put<Draft>(containers.drafts, draft);
   }
 
   deleteDraft(userId: string, id: string) {

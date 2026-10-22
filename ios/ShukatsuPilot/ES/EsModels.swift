@@ -4,6 +4,7 @@ import Foundation
 struct Draft: Codable, Equatable, Identifiable {
     var id: String
     var kind: String
+    var applicationId: String?
     var company: String?
     var question: String
     var charLimit: Int?
@@ -14,6 +15,8 @@ struct Draft: Codable, Equatable, Identifiable {
 /// Ce qu'on envoie pour créer ou modifier une ES (champs vides = absents).
 struct DraftInput: Encodable, Equatable {
     var kind = "free"
+    /// Candidature reliée ; nil = ES commune (envoyé comme null pour délier).
+    var applicationId: String?
     var company: String?
     var question = ""
     var charLimit: Int?
@@ -25,6 +28,21 @@ struct DraftInput: Encodable, Equatable {
 
     init(_ draft: Draft) {
         self.init(kind: draft.kind, company: draft.company, question: draft.question, charLimit: draft.charLimit, body: draft.body)
+        applicationId = draft.applicationId
+    }
+
+    private enum CodingKeys: String, CodingKey { case kind, applicationId, company, question, charLimit, body }
+
+    /// Comme l'encodage automatique, sauf applicationId : toujours écrit, null quand il n'y a pas
+    /// de lien (l'encodage automatique l'omettrait, et l'ancien lien resterait sur le serveur).
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(kind, forKey: .kind)
+        try c.encode(applicationId, forKey: .applicationId)
+        try c.encodeIfPresent(company, forKey: .company)
+        try c.encode(question, forKey: .question)
+        try c.encodeIfPresent(charLimit, forKey: .charLimit)
+        try c.encode(body, forKey: .body)
     }
 }
 

@@ -153,8 +153,8 @@ export const draftKinds = ["jikopr", "motivation", "gakuchika", "strengths", "fr
 
 export const draftInputSchema = z.object({
   kind: choice(draftKinds).default("free"),
-  /** Candidature concernée ; absent pour une ES « commune » (自己PR utilisé partout). */
-  applicationId: z.string().min(1).optional(),
+  /** Candidature concernée ; absent pour une ES « commune » (自己PR utilisé partout). null = délier. */
+  applicationId: z.string().min(1).nullish().transform((v) => v ?? undefined),
   /** L'entreprise, en clair, tant que le suivi des candidatures (S07) n'existe pas. */
   company: text(100).optional(),
   question: required(300),

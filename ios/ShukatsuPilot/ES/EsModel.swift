@@ -7,6 +7,8 @@ import Observation
 final class EsModel {
     private(set) var drafts: [Draft]?
     private(set) var guide: Guide?
+    /// Candidatures, pour relier une ES à une entreprise.
+    private(set) var applications: [JobApplication] = []
     var language: HelpLanguage = HelpLanguage.saved {
         didSet { UserDefaults.standard.set(language.rawValue, forKey: HelpLanguage.storageKey) }
     }
@@ -24,8 +26,10 @@ final class EsModel {
     func load() async {
         async let list = try? api.drafts()
         async let guide = loadGuide()
+        async let apps = try? api.applications()
         drafts = await list ?? []
         self.guide = await guide
+        applications = await apps ?? []
     }
 
     private func loadGuide() async -> Guide? {
@@ -83,10 +87,19 @@ final class EsEditorModel {
         if let draftId { history = (try? await api.reviews(of: draftId)) ?? [] }
     }
 
+    /// Candidatures connues : l'ES est reliée à celle dont le nom d'entreprise correspond.
+    var applications: [JobApplication] = []
+
+    var linkedApplication: JobApplication? {
+        let name = input.company?.trimmingCharacters(in: .whitespaces) ?? ""
+        return name.isEmpty ? nil : applications.first { $0.company == name }
+    }
+
     /// Enregistre ; renvoie l'id, ou nil si l'API a refusé.
     @discardableResult
     func save() async -> String? {
         status = .saving
+        input.applicationId = linkedApplication?.id
         do {
             let draft: Draft
             if let draftId {

@@ -8,7 +8,17 @@ struct EsEditorView: View {
     var body: some View {
         Form {
             Section {
-                TextField("企業 / Company（空欄＝共通）", text: optional($model.input.company))
+                HStack {
+                    TextField("企業 / Company（空欄＝共通）", text: optional($model.input.company))
+                    if !list.applications.isEmpty {
+                        Menu {
+                            ForEach(list.applications) { app in Button(app.company) { model.input.company = app.company } }
+                        } label: { Image(systemName: "building.2").accessibilityLabel("応募から選ぶ / Choose from applications") }
+                    }
+                }
+                if model.linkedApplication != nil {
+                    Label("応募と連携 / Linked to your application", systemImage: "link").font(.caption).foregroundStyle(.green)
+                }
                 TextField("文字数制限 / Character limit", value: $model.input.charLimit, format: .number)
                     .keyboardType(.numberPad)
                 if let e = model.error("charLimit") { Text(e).font(.caption).foregroundStyle(.red) }
@@ -41,7 +51,10 @@ struct EsEditorView: View {
                     .disabled(model.status == .saving)
             }
         }
-        .task { await model.load() }
+        .task {
+            model.applications = list.applications
+            await model.load()
+        }
     }
 
     private var counter: String {

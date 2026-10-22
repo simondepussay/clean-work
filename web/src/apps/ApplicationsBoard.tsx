@@ -1,7 +1,7 @@
 import { useEffect, useState, type DragEvent, type FormEvent } from "react";
 import {
-  createApplication, deleteApplication, listApplications, updateApplication,
-  type Application, type ApplicationInput, type AppStatus, type Issue, type Step,
+  createApplication, deleteApplication, listApplications, listDrafts, updateApplication,
+  type Application, type ApplicationInput, type AppStatus, type Draft, type Issue, type Step,
 } from "../api";
 import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
@@ -17,13 +17,14 @@ const stepFields: Field<Step>[] = [
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
-/** Suivi des candidatures (S07) en tableau kanban (S08). */
-export function ApplicationsBoard() {
+/** Suivi des candidatures (S07) en tableau kanban (S08). `onWriteEs` ouvre l'onglet ES pour une entreprise. */
+export function ApplicationsBoard({ onWriteEs }: { onWriteEs?: (app: { id: string; company: string }) => void } = {}) {
   const auth = useAuth();
   const [apps, setApps] = useState<Application[] | null>(null);
   const [editing, setEditing] = useState<{ id: string | null; form: ApplicationInput } | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [error, setError] = useState(false);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
 
   async function token() {
     const t = await auth.getToken();
@@ -35,6 +36,7 @@ export function ApplicationsBoard() {
     token().then(listApplications)
       .then((r) => setApps(r.ok && Array.isArray(r.value) ? r.value : []))
       .catch(() => setApps([]));
+    token().then(listDrafts).then((r) => r.ok && Array.isArray(r.value) && setDrafts(r.value)).catch(() => {});
     // Chargé une fois.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -102,6 +104,7 @@ export function ApplicationsBoard() {
   }
 
   const errors = new Map(issues.map((i) => [i.path, i.message]));
+  const esCount = (id: string) => drafts.filter((d) => d.applicationId === id).length;
   const set = (patch: Partial<ApplicationInput>) => setEditing((ed) => (ed ? { ...ed, form: { ...ed.form, ...patch } } : ed));
   const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", statuses: CLOSED.map((c) => c.status) }];
 
@@ -156,6 +159,7 @@ export function ApplicationsBoard() {
                       {closed && <span className="muted">{statusLabel(a.status)}</span>}
                     </button>
                     {days !== null && <p className={days <= 3 ? "due soon" : "due"}>⏰ {deadlineLabel(days)}</p>}
+                    {esCount(a.id) > 0 && <p className="es-badge">ES {esCount(a.id)}</p>}
                     {!closed && (
                       <div className="moves">
                         <button disabled={!prev} onClick={() => prev && move(a, prev)} aria-label={`${a.company} : 前のステップへ / previous step`}>◀</button>
@@ -201,6 +205,11 @@ export function ApplicationsBoard() {
           <div className="actions">
             <button className="primary" type="submit">保存 / Save</button>
             <button type="button" onClick={() => setEditing(null)}>閉じる / Close</button>
+            {editing.id && onWriteEs && (
+              <button type="button" onClick={() => onWriteEs({ id: editing.id!, company: editing.form.company })}>
+                ✍️ このESを書く / Write an ES for this company
+              </button>
+            )}
             {editing.id && <button type="button" className="danger" onClick={remove}>削除 / Delete</button>}
           </div>
         </form>

@@ -82,7 +82,8 @@ describe("EsPage", () => {
 
     expect(await screen.findByText("保存しました / Saved")).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST")!;
-    expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "free", company: "楽天", question: "志望動機", body: "貴社を志望する理由は…" });
+    // Pas de candidature « 楽天 » : ES commune (applicationId null).
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "free", company: "楽天", applicationId: null, question: "志望動機", body: "貴社を志望する理由は…" });
     expect(screen.getByRole("list", { name: "ES" })).toHaveTextContent("楽天");
   });
 
@@ -105,5 +106,24 @@ describe("EsPage", () => {
     const panel = screen.getByRole("complementary", { name: /How to write/ });
     expect(panel).toHaveTextContent("This is the STAR format");
     expect(panel).toHaveTextContent(/See an example/);
+  });
+
+  it("ouverte depuis une candidature : entreprise préremplie et ES reliée", async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/es-guide.json") return { ok: true, status: 200, json: async () => guide };
+      if (url === "/api/applications") return { ok: true, status: 200, json: async () => [{ id: "a1", company: "楽天", status: "es", steps: [] }] };
+      if (init?.method === "POST") return { ok: true, status: 201, json: async () => ({ ...JSON.parse(init.body as string), id: "n", createdAt: "t", updatedAt: "t" }) };
+      return { ok: true, status: 200, json: async () => (url === "/api/drafts" ? [] : { today: 10, month: 30 }) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AuthContext.Provider value={auth}><EsPage seed={{ company: "楽天", applicationId: "a1", nonce: 1 }} /></AuthContext.Provider>);
+    await userEvent.click(await screen.findByRole("button", { name: /志望動機/ }));
+    expect(screen.getByLabelText(/Company/)).toHaveValue("楽天");
+    expect(await screen.findByText(/Linked to your application/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Answer/), "貴社を");
+    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await screen.findByText("保存しました / Saved");
+    const post = fetchMock.mock.calls.find(([, i]) => i?.method === "POST")!;
+    expect(JSON.parse(post[1]!.body as string)).toMatchObject({ company: "楽天", applicationId: "a1", kind: "motivation" });
   });
 });

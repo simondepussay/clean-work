@@ -47,6 +47,13 @@ describe("/api/drafts", () => {
     expect((await call("d7", "POST", undefined, { ...jikoPR, kind: "poème" })).status).toBe(400);
   });
 
+  it("relie une ES à une candidature, puis la délie avec applicationId: null", async () => {
+    const created = (await call("d8", "POST", undefined, { ...jikoPR, company: "楽天", applicationId: "app-1" })).jsonBody as { id: string };
+    expect((await call("d8", "GET", created.id)).jsonBody).toMatchObject({ applicationId: "app-1", company: "楽天" });
+    const unlinked = (await call("d8", "PUT", created.id, { applicationId: null, company: "" })).jsonBody;
+    expect(unlinked).not.toHaveProperty("applicationId");
+  });
+
   it("supprime une ES", async () => {
     const created = (await call("d4", "POST", undefined, jikoPR)).jsonBody as { id: string };
     expect((await call("d4", "DELETE", created.id)).status).toBe(204);

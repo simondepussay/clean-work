@@ -131,3 +131,18 @@ describe("ApplicationsBoard", () => {
     expect(await screen.findByRole("button", { name: /Add to calendar/ })).toBeDisabled();
   });
 });
+
+describe("ES et candidatures", () => {
+  it("badge du nombre d'ES et bouton « このESを書く »", async () => {
+    const fetchMock = vi.fn(async (url: string) => new Response(JSON.stringify(url === "/api/drafts"
+      ? [{ id: "d1", applicationId: "a1", question: "Q", body: "", createdAt: "t", updatedAt: "t" }, { id: "d2", applicationId: "a1", question: "Q2", body: "", createdAt: "t", updatedAt: "t" }]
+      : [app({ id: "a1", company: "楽天" })])));
+    vi.stubGlobal("fetch", fetchMock);
+    const onWriteEs = vi.fn();
+    render(<AuthContext.Provider value={auth}><ApplicationsBoard onWriteEs={onWriteEs} /></AuthContext.Provider>);
+    expect(await screen.findByText("ES 2")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "楽天" }));
+    await userEvent.click(screen.getByRole("button", { name: /Write an ES/ }));
+    expect(onWriteEs).toHaveBeenCalledWith({ id: "a1", company: "楽天" });
+  });
+});

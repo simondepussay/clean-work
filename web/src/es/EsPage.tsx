@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { createDraft, deleteDraft, listDrafts, updateDraft, type Draft, type DraftInput, type Issue } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { createDraft, deleteDraft, listApplications, listDrafts, updateDraft, type Application, type Draft, type DraftInput, type Issue } from "../api";
 import { useAuth } from "../auth/auth";
 import { countChars } from "./count";
 import { GuidePanel, Intro } from "./GuidePanel";
@@ -8,8 +8,11 @@ import { ReviewPanel } from "./ReviewPanel";
 
 const blank: DraftInput = { question: "", body: "" };
 
+/** Ouverture depuis une candidature : nouvelle ES pour cette entreprise (nonce = nouvelle demande). */
+export type EsSeed = { company: string; applicationId: string; nonce: number };
+
 /** ES (S13) : liste à gauche, éditeur à droite, compteur de caractères en direct. */
-export function EsPage() {
+export function EsPage({ seed }: { seed?: EsSeed } = {}) {
   const auth = useAuth();
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   const [selected, setSelected] = useState<string | "new" | null>(null);
@@ -17,6 +20,8 @@ export function EsPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [choosing, setChoosing] = useState(false);
+  const [apps, setApps] = useState<Application[]>([]);
+  const pendingSeed = useRef<EsSeed | null>(null);
   const guide = useGuide();
   const [lang, setLang] = useHelpLanguage();
 
@@ -28,13 +33,21 @@ export function EsPage() {
 
   useEffect(() => {
     token().then(listDrafts).then((r) => setDrafts(r.ok ? r.value : [])).catch(() => setDrafts([]));
+    token().then(listApplications).then((r) => r.ok && Array.isArray(r.value) && setApps(r.value)).catch(() => {});
     // Chargé une fois.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Venu d'une candidature : on propose directement le choix du type de question.
+  useEffect(() => {
+    if (!seed) return;
+    pendingSeed.current = seed;
+    setChoosing(true);
+  }, [seed]);
+
   function open(d: Draft) {
     setSelected(d.id);
-    setForm({ kind: d.kind, company: d.company, question: d.question, charLimit: d.charLimit, body: d.body });
+    setForm({ kind: d.kind, applicationId: d.applicationId, company: d.company, question: d.question, charLimit: d.charLimit, body: d.body });
     setIssues([]);
     setStatus("idle");
     setChoosing(false);
@@ -42,8 +55,11 @@ export function EsPage() {
 
   /** Nouvelle ES à partir d'un type de question (ou libre) : question et limite préremplies. */
   function start(type: GuideType | null) {
+    const from = pendingSeed.current;
+    pendingSeed.current = null;
+    const company = from ? { company: from.company, applicationId: from.applicationId } : {};
     setSelected("new");
-    setForm(type ? { kind: type.id, question: type.question, charLimit: type.charLimit, body: "" } : { ...blank, kind: "free" });
+    setForm(type ? { kind: type.id, question: type.question, charLimit: type.charLimit, body: "", ...company } : { ...blank, kind: "free", ...company });
     setIssues([]);
     setStatus("idle");
     setChoosing(false);
@@ -54,7 +70,10 @@ export function EsPage() {
     setStatus("saving");
     try {
       const t = await token();
-      const result = selected === "new" ? await createDraft(t, form) : await updateDraft(t, selected!, form);
+      // Reliée à la candidature dont le nom correspond ; sinon ES commune (null délie).
+      const linked = apps.find((a) => a.company === form.company?.trim());
+      const payload = { ...form, applicationId: linked?.id ?? null };
+      const result = selected === "new" ? await createDraft(t, payload) : await updateDraft(t, selected!, payload);
       if (!result.ok) {
         setIssues(result.issues);
         setStatus("idle");
@@ -151,7 +170,9 @@ export function EsPage() {
           <div className="grid">
             <label>
               <span>企業 / Company（空欄＝共通 / blank = general）</span>
-              <input value={form.company ?? ""} onChange={(e) => edit({ company: e.target.value })} />
+              <input value={form.company ?? ""} list="es-companies" onChange={(e) => edit({ company: e.target.value })} />
+              <datalist id="es-companies">{apps.map((a) => <option key={a.id} value={a.company} />)}</datalist>
+              {apps.some((a) => a.company === form.company?.trim()) && <small className="linked">🔗 応募と連携 / Linked to your application</small>}
             </label>
             <label className={error("charLimit") ? "invalid" : undefined}>
               <span>文字数制限 / Character limit</span>

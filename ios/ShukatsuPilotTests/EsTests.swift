@@ -161,3 +161,25 @@ final class WorkHistoryTests: XCTestCase {
         XCTAssertEqual(StubURLProtocol.lastRequest?.url?.path, "/api/work-history")
     }
 }
+
+@MainActor
+final class EsLinkTests: XCTestCase {
+    override func tearDown() {
+        StubURLProtocol.handler = nil
+        StubURLProtocol.lastRequest = nil
+    }
+
+    func testApplicationIdIsAlwaysSentAndNullUnlinks() throws {
+        let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: JSONEncoder().encode(DraftInput(question: "Q"))) as? [String: Any])
+        XCTAssertTrue(json["applicationId"] is NSNull, "null explicite pour délier côté serveur")
+    }
+
+    func testLinksByCompanyName() {
+        let api = APIClient(baseURL: URL(string: "https://example.test")!, session: StubURLProtocol.session(), token: { "jeton" })
+        let model = EsEditorModel(api: api, draft: nil, input: DraftInput(company: " 楽天 ", question: "Q"))
+        model.applications = [JobApplication(id: "a1", company: "楽天", position: nil, url: nil, status: "es", steps: [], nextDeadline: nil)]
+        XCTAssertEqual(model.linkedApplication?.id, "a1")
+        model.input.company = "ソニー"
+        XCTAssertNil(model.linkedApplication)
+    }
+}
