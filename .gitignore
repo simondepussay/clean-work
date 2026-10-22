@@ -7,3 +7,4 @@ api/version.json
 ios/*.xcodeproj/
 ios/build/
 xcuserdata/
+presentation/qa/
