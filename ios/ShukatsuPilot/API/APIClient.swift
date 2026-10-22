@@ -99,6 +99,29 @@ struct APIClient {
         }
     }
 
+    // MARK: Candidatures (S07, S08)
+
+    func applications() async throws -> [JobApplication] {
+        try decode([JobApplication].self, from: try await send("GET", "api/applications"))
+    }
+
+    func createApplication(_ input: JobApplicationInput) async throws -> JobApplication {
+        try decode(JobApplication.self, from: try await send("POST", "api/applications", body: try JSONEncoder().encode(input)))
+    }
+
+    func updateApplication(_ id: String, _ input: JobApplicationInput) async throws -> JobApplication {
+        try decode(JobApplication.self, from: try await send("PUT", "api/applications/\(id)", body: try JSONEncoder().encode(input)))
+    }
+
+    /// Change seulement le statut (passage d'une étape à l'autre).
+    func moveApplication(_ id: String, to status: String) async throws -> JobApplication {
+        try decode(JobApplication.self, from: try await send("PUT", "api/applications/\(id)", body: try JSONEncoder().encode(["status": status])))
+    }
+
+    func deleteApplication(_ id: String) async throws {
+        try await send("DELETE", "api/applications/\(id)")
+    }
+
     // MARK: 履歴書 PDF (S11)
 
     struct ResumeOptions: Encodable, Equatable {

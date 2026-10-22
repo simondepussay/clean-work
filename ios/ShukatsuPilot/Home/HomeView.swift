@@ -25,6 +25,11 @@ struct HomeView: View {
                         Label("プロフィール / Profile", systemImage: "person.text.rectangle")
                     }
                     NavigationLink {
+                        ApplicationsView(model: ApplicationsModel(api: api))
+                    } label: {
+                        Label("応募 / Applications", systemImage: "rectangle.split.3x1")
+                    }
+                    NavigationLink {
                         ResumeView(api: api)
                     } label: {
                         Label("応募書類PDF / Application documents", systemImage: "doc.richtext")
