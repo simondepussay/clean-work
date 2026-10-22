@@ -3,7 +3,7 @@
 export type Field<T> = {
   key: keyof T & string;
   label: string;
-  type?: "text" | "month" | "select" | "textarea";
+  type?: "text" | "month" | "date" | "select" | "textarea" | "checkbox";
   options?: { value: string; label: string }[];
   /** Pour une liste : texte de l'option vide (« choisir »), qui oblige à faire un choix. */
   placeholder?: string;
@@ -25,7 +25,7 @@ type Props<T> = {
 };
 
 export function ListEditor<T extends Record<string, unknown>>({ title, name, items, fields, empty, errors, onChange }: Props<T>) {
-  const update = (index: number, key: keyof T, value: string) =>
+  const update = (index: number, key: keyof T, value: string | boolean) =>
     onChange(items.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
 
   return (
@@ -40,7 +40,9 @@ export function ListEditor<T extends Record<string, unknown>>({ title, name, ite
             return (
               <label key={f.key} className={error ? "invalid" : undefined}>
                 <span>{f.label}{f.required && " *"}</span>
-                {f.type === "select" ? (
+                {f.type === "checkbox" ? (
+                  <input type="checkbox" checked={Boolean(item[f.key])} onChange={(e) => update(i, f.key, e.target.checked)} />
+                ) : f.type === "select" ? (
                   <select value={value} onChange={(e) => update(i, f.key, e.target.value)}>
                     {f.placeholder && <option value="">{f.placeholder}</option>}
                     {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}

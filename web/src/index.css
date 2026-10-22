@@ -10,7 +10,7 @@
   :root { --bg: #15181c; --fg: #e6e8eb; --muted: #9aa3ad; --accent: #6ea0ff; }
 }
 body { margin: 0; background: var(--bg); color: var(--fg); }
-.shell { max-width: 960px; margin: 0 auto; padding: 48px 16px; }
+.shell { max-width: 1200px; margin: 0 auto; padding: 48px 16px; }
 h1 { margin: 0; font-size: 32px; }
 .tagline { color: var(--muted); margin: 4px 0 24px; }
 .status { font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: var(--accent); }
@@ -80,3 +80,19 @@ del { background: color-mix(in srgb, #d4483b 25%, transparent); }
 .legal { margin-top: 40px; font-size: 13px; color: var(--muted); } .legal a { color: var(--muted); }
 .resume { margin-top: 40px; padding-top: 24px; border-top: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); }
 .resume h2 { font-size: 22px; margin: 0 0 4px; }
+.apps { margin-top: 24px; }
+.apps-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(170px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 8px; }
+.column { background: color-mix(in srgb, var(--muted) 10%, transparent); border-radius: 12px; padding: 10px; min-height: 220px; display: flex; flex-direction: column; gap: 8px; }
+.column h3 { margin: 0 0 4px; font-size: 15px; display: flex; flex-direction: column; }
+.column h3 span { font-size: 11px; font-weight: 400; color: var(--muted); }
+.app-card { background: var(--bg); border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent); border-radius: 10px; padding: 8px; cursor: grab; }
+.app-open { border: 0; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 2px; width: 100%; background: none; }
+.app-open span { font-size: 12px; color: var(--muted); }
+.due { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.due.soon { color: #d4483b; font-weight: 700; }
+.moves { display: flex; justify-content: space-between; margin-top: 6px; }
+.moves button { padding: 2px 10px; font-size: 12px; }
+.app-editor { margin-top: 20px; padding: 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); }
+.app-editor h3 { margin: 0 0 8px; }
+label:has(> input[type="checkbox"]) { flex-direction: row; align-items: center; gap: 8px; }

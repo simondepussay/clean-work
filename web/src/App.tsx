@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
+import { ApplicationsBoard } from "./apps/ApplicationsBoard";
 import { EsPage } from "./es/EsPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
 import { ResumePanel } from "./profile/ResumePanel";
@@ -12,7 +13,7 @@ function Account() {
   const auth = useAuth();
   const [me, setMe] = useState<Me | null | "error">(null);
   const [deleting, setDeleting] = useState<"idle" | "busy" | "error">("idle");
-  const [tab, setTab] = useState<"profile" | "es">("profile");
+  const [tab, setTab] = useState<"profile" | "apps" | "es">("profile");
 
   async function removeAccount() {
     const ok = window.confirm(
@@ -75,9 +76,12 @@ function Account() {
           {deleting === "error" && <p className="muted">削除できませんでした / Could not delete the account</p>}
           <nav className="tabs" role="tablist">
             <button role="tab" aria-selected={tab === "profile"} onClick={() => setTab("profile")}>プロフィール / Profile</button>
+            <button role="tab" aria-selected={tab === "apps"} onClick={() => setTab("apps")}>応募 / Applications</button>
             <button role="tab" aria-selected={tab === "es"} onClick={() => setTab("es")}>ES</button>
           </nav>
-          {tab === "profile" ? <><ProfileEditor onSaved={refreshMe} /><ResumePanel /></> : <EsPage />}
+          {tab === "profile" && <><ProfileEditor onSaved={refreshMe} /><ResumePanel /></>}
+          {tab === "apps" && <ApplicationsBoard />}
+          {tab === "es" && <EsPage />}
         </div>
       );
   }

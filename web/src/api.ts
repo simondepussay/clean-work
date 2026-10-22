@@ -163,3 +163,19 @@ async function downloadPdf(token: string, path: string, options: object, fetcher
   const utf8 = /filename\*=UTF-8''([^;]+)/.exec(disposition)?.[1];
   return { ok: true, pdf: await res.blob(), filename: utf8 ? decodeURIComponent(utf8) : "rirekisho.pdf" };
 }
+
+// ------------------------------------------------------------------ candidatures (S07, S08)
+
+export type StepType = "es" | "test" | "interview1" | "interview2" | "final" | "offer";
+export type AppStatus = "interested" | StepType | "rejected" | "withdrawn";
+export type Step = { id: string; type: StepType; dueDate?: string; done: boolean; note?: string };
+export type ApplicationInput = { company: string; position?: string; url?: string; status: AppStatus; steps: Step[] };
+export type Application = ApplicationInput & { id: string; nextDeadline: string | null; createdAt: string; updatedAt: string };
+
+export const listApplications = (token: string, f?: typeof fetch) => call<Application[]>(token, "GET", "/api/applications", undefined, f);
+export const createApplication = (token: string, a: ApplicationInput, f?: typeof fetch) =>
+  call<Application>(token, "POST", "/api/applications", a, f);
+export const updateApplication = (token: string, id: string, a: Partial<ApplicationInput>, f?: typeof fetch) =>
+  call<Application>(token, "PUT", `/api/applications/${encodeURIComponent(id)}`, a, f);
+export const deleteApplication = (token: string, id: string, f?: typeof fetch) =>
+  call<null>(token, "DELETE", `/api/applications/${encodeURIComponent(id)}`, undefined, f);

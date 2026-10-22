@@ -1,0 +1,173 @@
+import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import {
+  createApplication, deleteApplication, listApplications, updateApplication,
+  type Application, type ApplicationInput, type AppStatus, type Issue, type Step,
+} from "../api";
+import { useAuth } from "../auth/auth";
+import { ListEditor, type Field } from "../profile/ListEditor";
+import { CLOSED, COLUMNS, STEP_TYPES, daysUntil, deadlineLabel, neighbour, statusLabel } from "./statuses";
+
+const stepFields: Field<Step>[] = [
+  { key: "type", label: "選考 / Step", type: "select", options: STEP_TYPES, placeholder: "選択 / Choose", required: true },
+  { key: "dueDate", label: "締切・日程 / Date", type: "date" },
+  { key: "done", label: "完了 / Done", type: "checkbox" },
+  { key: "note", label: "メモ / Note" },
+];
+
+const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
+
+/** Suivi des candidatures (S07) en tableau kanban (S08). */
+export function ApplicationsBoard() {
+  const auth = useAuth();
+  const [apps, setApps] = useState<Application[] | null>(null);
+  const [editing, setEditing] = useState<{ id: string | null; form: ApplicationInput } | null>(null);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [error, setError] = useState(false);
+
+  async function token() {
+    const t = await auth.getToken();
+    if (!t) throw new Error("pas de jeton");
+    return t;
+  }
+
+  useEffect(() => {
+    token().then(listApplications)
+      .then((r) => setApps(r.ok && Array.isArray(r.value) ? r.value : []))
+      .catch(() => setApps([]));
+    // Chargé une fois.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const replace = (a: Application) => setApps((all) => [a, ...(all ?? []).filter((x) => x.id !== a.id)]
+    .sort((x, y) => (x.nextDeadline ?? "9999").localeCompare(y.nextDeadline ?? "9999") || x.company.localeCompare(y.company)));
+
+  async function move(app: Application, status: AppStatus) {
+    if (app.status === status) return;
+    setError(false);
+    try {
+      const r = await updateApplication(await token(), app.id, { status });
+      if (r.ok) replace(r.value);
+      else setError(true);
+    } catch {
+      setError(true);
+    }
+  }
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    try {
+      const t = await token();
+      const r = editing.id ? await updateApplication(t, editing.id, editing.form) : await createApplication(t, editing.form);
+      if (!r.ok) return setIssues(r.issues);
+      replace(r.value);
+      setEditing(null);
+      setIssues([]);
+    } catch {
+      setError(true);
+    }
+  }
+
+  async function remove() {
+    if (!editing?.id || !window.confirm(`${editing.form.company} を削除しますか？ / Delete this application?`)) return;
+    try {
+      await deleteApplication(await token(), editing.id);
+      setApps((all) => (all ?? []).filter((x) => x.id !== editing.id));
+      setEditing(null);
+    } catch {
+      setError(true);
+    }
+  }
+
+  const onDrop = (status: AppStatus) => (e: DragEvent) => {
+    e.preventDefault();
+    const app = apps?.find((a) => a.id === e.dataTransfer.getData("text/plain"));
+    if (app) move(app, status);
+  };
+
+  if (apps === null) return <p className="muted">…</p>;
+
+  const errors = new Map(issues.map((i) => [i.path, i.message]));
+  const set = (patch: Partial<ApplicationInput>) => setEditing((ed) => (ed ? { ...ed, form: { ...ed.form, ...patch } } : ed));
+  const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", statuses: CLOSED.map((c) => c.status) }];
+
+  return (
+    <section className="apps">
+      <div className="apps-bar">
+        <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}>＋ 応募を追加 / Add</button>
+        <span className="muted">{apps.length}社 / {apps.length} companies</span>
+        {error && <span role="alert" className="notice">保存できませんでした / Could not save</span>}
+      </div>
+
+      <div className="board" role="list" aria-label="選考状況 / Selection board">
+        {columns.map((col) => {
+          const cards = apps.filter((a) => col.statuses.includes(a.status));
+          const closed = col.ja === "終了";
+          return (
+            <div key={col.ja} className="column" role="listitem" aria-label={`${col.ja} / ${col.en}`}
+              onDragOver={closed ? undefined : (e) => e.preventDefault()} onDrop={closed ? undefined : onDrop(col.status)}>
+              <h3>{col.ja}<span>{col.en} · {cards.length}</span></h3>
+              {cards.map((a) => {
+                const days = a.nextDeadline ? daysUntil(a.nextDeadline) : null;
+                const prev = neighbour(a.status, -1);
+                const next = neighbour(a.status, 1);
+                return (
+                  <article key={a.id} className="app-card" draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", a.id)}>
+                    <button className="app-open" onClick={() => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps } }); }}>
+                      <strong>{a.company}</strong>
+                      {a.position && <span>{a.position}</span>}
+                      {closed && <span className="muted">{statusLabel(a.status)}</span>}
+                    </button>
+                    {days !== null && <p className={days <= 3 ? "due soon" : "due"}>⏰ {deadlineLabel(days)}</p>}
+                    {!closed && (
+                      <div className="moves">
+                        <button disabled={!prev} onClick={() => prev && move(a, prev)} aria-label={`${a.company} : 前のステップへ / previous step`}>◀</button>
+                        <button disabled={!next} onClick={() => next && move(a, next)} aria-label={`${a.company} : 次のステップへ / next step`}>▶</button>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+
+      {editing && (
+        <form className="app-editor" onSubmit={save} noValidate aria-label="応募 / Application">
+          <h3>{editing.id ? editing.form.company : "新しい応募 / New application"}</h3>
+          <div className="grid">
+            <label className={errors.has("company") ? "invalid" : undefined}>
+              <span>企業名 / Company *</span>
+              <input value={editing.form.company} onChange={(e) => set({ company: e.target.value })} />
+              {errors.has("company") && <small role="alert">{errors.get("company")}</small>}
+            </label>
+            <label>
+              <span>職種 / Position</span>
+              <input value={editing.form.position ?? ""} onChange={(e) => set({ position: e.target.value })} />
+            </label>
+            <label className={errors.has("url") ? "invalid" : undefined}>
+              <span>URL（採用ページ）/ Careers page</span>
+              <input type="url" value={editing.form.url ?? ""} onChange={(e) => set({ url: e.target.value })} />
+              {errors.has("url") && <small role="alert">{errors.get("url")}</small>}
+            </label>
+            <label>
+              <span>状況 / Status</span>
+              <select value={editing.form.status} onChange={(e) => set({ status: e.target.value as AppStatus })}>
+                {[...COLUMNS, ...CLOSED].map((c) => <option key={c.status} value={c.status}>{c.ja} / {c.en}</option>)}
+              </select>
+            </label>
+          </div>
+          <ListEditor title="選考ステップ・締切 / Steps and deadlines" name="steps" items={editing.form.steps} fields={stepFields}
+            empty={{ id: crypto.randomUUID(), type: "es", done: false } as Step} errors={errors}
+            onChange={(steps) => set({ steps: steps.map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })) })} />
+          <div className="actions">
+            <button className="primary" type="submit">保存 / Save</button>
+            <button type="button" onClick={() => setEditing(null)}>閉じる / Close</button>
+            {editing.id && <button type="button" className="danger" onClick={remove}>削除 / Delete</button>}
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}

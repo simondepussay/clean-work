@@ -109,7 +109,7 @@ export const applicationStatuses = ["interested", ...stepTypes, "rejected", "wit
 
 export const stepSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(stepTypes),
+  type: choice(stepTypes),
   dueDate: isoDate.optional(),
   done: z.boolean().default(false),
   note: text(500).optional(),
@@ -119,7 +119,7 @@ export const applicationInputSchema = z.object({
   company: required(100),
   position: text(100).optional(),
   url: z.string().url().optional(),
-  status: z.enum(applicationStatuses).default("interested"),
+  status: choice(applicationStatuses).default("interested"),
   steps: z.array(stepSchema).max(20).default([]),
 });
 
