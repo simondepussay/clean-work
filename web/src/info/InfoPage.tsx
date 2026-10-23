@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getInfoPage, type InfoPageData } from "../api";
 import { useAuth } from "../auth/auth";
 import { formatDay, useTr } from "../i18n";
-import { ArrowRightIcon, BriefcaseIcon, ChevronLeftIcon, ChevronRightIcon, DocIcon, LightIcon } from "../icons";
+import { ArrowRightIcon, BriefcaseIcon, ChevronLeftIcon, ChevronRightIcon, LightIcon } from "../icons";
 import { JOB_SITES, PARTNERS, RESOURCES, type InfoLink } from "./links";
 
 function LinkList({ links }: { links: InfoLink[] }) {
@@ -107,11 +107,6 @@ export function InfoPage() {
               <button className="icon-button" disabled={page >= ready.pages} onClick={() => goTo(page + 1)} aria-label={tr({ ja: "次へ", en: "Next", fr: "Suivant" })}><ChevronRightIcon /></button>
             </nav>
           )}
-          <p className="muted small"><DocIcon size={13} /> {tr({
-            ja: "見出しは各サイトの RSS から選んでいます。記事は各サイトで読めます。",
-            en: "Headlines are picked from each site's RSS feed; read the full articles on their sites.",
-            fr: "Titres choisis dans les flux RSS de chaque site ; les articles se lisent sur leur site.",
-          })}</p>
         </section>
 
         <section aria-label={tr({ ja: "Clean Work からのお知らせ", en: "News from Clean Work", fr: "Nouvelles de Clean Work" })}>
