@@ -308,7 +308,10 @@ export const getInfoPage = (token: string, page: number, source = "", f?: typeof
 // ------------------------------------------------------------------ import d'un CV dans le profil
 
 export type CvImport = Partial<Omit<ProfileInput, "education" | "work" | "certifications" | "languages">> &
-  Pick<ProfileInput, "education" | "work" | "certifications" | "languages"> & { check: string[] };
+  Pick<ProfileInput, "education" | "work" | "certifications" | "languages"> & {
+    /** Champs à compléter : mois absent du CV (month), ou date d'une certification absente (date). */
+    check: { path: string; reason: "month" | "date" }[];
+  };
 export type CvImportOutcome =
   | { ok: true; profile: CvImport }
   | { ok: false; error: "limit"; retryAfter: string }

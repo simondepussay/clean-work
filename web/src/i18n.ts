@@ -33,6 +33,7 @@ const API_FR: Record<string, string> = {
   "Write your answer first": "Écrivez d'abord votre réponse",
   "Write or say your answer": "Écrivez ou dites votre réponse",
   "Check the month (it wasn't in the CV)": "Vérifiez le mois (il n'était pas dans le CV)",
+  "Enter the date (it wasn't in the CV)": "Indiquez la date (elle n'était pas dans le CV)",
 };
 
 /** Un message de l'API (« 入力してください / Required ») dans la langue choisie. */

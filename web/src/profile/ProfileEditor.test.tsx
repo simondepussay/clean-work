@@ -142,9 +142,9 @@ describe("ProfileEditor — CVから入力", () => {
       nameKanji: "別の名前", nameLatin: "Simon Depussay", email: "simon@example.com",
       education: [{ school: "HAL東京", start: "2026-04", status: "expected" }, { school: "Université de Lyon", start: "2019-01", end: "2023-06", status: "graduated" }],
       work: [{ company: "WebAgence", role: "Stagiaire", start: "2022-06", end: "2022-08" }],
-      certifications: [{ category: "language", name: "JLPT N2", date: "2024-12" }],
+      certifications: [{ category: "language", name: "JLPT N2", date: "2024-12" }, { category: "it", name: "基本情報技術者試験", date: "" }],
       languages: [{ language: "fr", level: "native" }],
-      check: ["education.1.start"],
+      check: [{ path: "education.1.start", reason: "month" }, { path: "certifications.1.date", reason: "date" }],
     };
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) =>
       url === "/api/profile/import" ? response(200, imported) : init?.method === "PUT" ? response(200, {}) : response(200, existing));
@@ -162,6 +162,8 @@ describe("ProfileEditor — CVから入力", () => {
       .toEqual(["HAL東京", "Université de Lyon"]);
     const second = within(education).getByRole("group", { name: "学歴 2" });
     expect(within(second).getByText(/月を確認してください/)).toBeInTheDocument();
+    const certs = screen.getByRole("group", { name: "資格" });
+    expect(within(within(certs).getByRole("group", { name: "資格 2" })).getByText(/取得年月を入力してください/)).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "PUT"), "rien n'est enregistré").toBe(false);
   });
 });

@@ -116,12 +116,14 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
     // « education.1.start » dans la réponse → l'index de la ligne dans le formulaire.
     const kept: Record<string, object[]> = { education: newEducation, work: newWork, certifications: newCertifications, languages: newLanguages };
     const source: Record<string, object[]> = { education, work, certifications, languages };
-    setIssues(check.flatMap((path) => {
+    setIssues(check.flatMap(({ path, reason }) => {
       const [list, i, field] = path.split(".");
       const row = source[list]?.[Number(i)];
       const index = row ? kept[list].indexOf(row) : -1;
       return index < 0 ? [] : [{ path: `${list}.${offset[list as keyof typeof offset] + index}.${field}`,
-        message: "月を確認してください（CVに書いていませんでした） / Check the month (it wasn't in the CV)" }];
+        message: reason === "date"
+          ? "取得年月を入力してください（CVに書いていませんでした） / Enter the date (it wasn't in the CV)"
+          : "月を確認してください（CVに書いていませんでした） / Check the month (it wasn't in the CV)" }];
     }));
   }
 

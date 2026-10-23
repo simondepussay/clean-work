@@ -14,7 +14,7 @@ const result: CvResult = {
     { school: "Université", faculty: null, start: "2019", end: null, status: "graduated" },
   ],
   work: [{ company: "Export SA", role: "Stagiaire", start: "2025-06", end: "2025-09", description: "Export vers le Japon" }],
-  certifications: [{ category: "language", name: "JLPT N2", date: "2025-12" }, { category: "it", name: "Sans date", date: "" }],
+  certifications: [{ category: "language", name: "JLPT N2", date: "2025-12" }, { category: "it", name: "基本情報技術者試験", date: null }],
   languages: [{ language: "fr", languageOther: null, level: "native" }, { language: "other", languageOther: null, level: "basic" }],
 };
 
@@ -26,9 +26,22 @@ describe("import de CV", () => {
     expect(p, "email invalide écarté").not.toHaveProperty("email");
     expect(p.education.map((e) => e.school)).toEqual(["HAL東京", "Université"]);
     expect(p.education[1].start, "année seule : mois provisoire").toBe("2019-01");
-    expect(p.check, "et le champ est signalé").toEqual(["education.1.start"]);
-    expect(p.certifications.map((c) => c.name), "certification sans date écartée").toEqual(["JLPT N2"]);
+    expect(p.certifications.map((c) => [c.name, c.date]), "certification sans date gardée, date à compléter")
+      .toEqual([["JLPT N2", "2025-12"], ["基本情報技術者試験", ""]]);
+    expect(p.check).toEqual([{ path: "education.1.start", reason: "month" }, { path: "certifications.1.date", reason: "date" }]);
     expect(p.languages, "« other » sans nom de langue écarté").toEqual([{ language: "fr", level: "native" }]);
+  });
+
+  it("un cours en ligne n'apparaît qu'une fois (dans les certifications), et les signalements suivent", () => {
+    const p = sanitizeCv({ ...result,
+      education: [
+        { school: "Coursera", faculty: "Google UX Design", start: "2024", end: "2024", status: "completed" },
+        { school: "HAL東京", faculty: null, start: "2026", end: null, status: "enrolled" },
+      ],
+      certifications: [{ category: "it", name: "Google UX Design 修了", date: "2024" }],
+    });
+    expect(p.education.map((e) => e.school)).toEqual(["HAL東京"]);
+    expect(p.check).toEqual([{ path: "education.0.start", reason: "month" }, { path: "certifications.0.date", reason: "month" }]);
   });
 
   it("POST /api/profile/import : compte comme une relecture, n'enregistre rien", async () => {
