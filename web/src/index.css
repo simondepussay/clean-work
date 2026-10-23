@@ -210,10 +210,10 @@ button.link:hover { color: var(--bordeaux); background: none; }
 .binder { max-width: 1200px; margin: 18px auto 0; padding: 0 16px; }
 .tabs { display: flex; align-items: flex-end; padding-left: 12px; position: relative; z-index: 2; overflow-x: auto; scrollbar-width: none; }
 .tabs button {
-  position: relative; margin-left: -14px; min-width: 132px; padding: 10px 30px 9px;
+  position: relative; margin-left: -16px; min-width: 160px; padding: 22px 34px 12px; font-size: 18px;
   display: flex; flex-direction: column; align-items: center; line-height: 1.25;
   border: 1px solid var(--line); border-bottom: 0;
-  border-radius: 50% 50% 0 0 / 22px 22px 0 0;   /* le sommet en ellipse de l'intercalaire */
+  border-radius: 50% 50% 0 0 / 30px 30px 0 0;   /* le sommet en ellipse de l'intercalaire */
   background: var(--tab, var(--blue-100)); color: var(--blue-800); font-weight: 700;
   box-shadow: 0 -2px 6px rgba(12, 31, 58, .05);
   transition: transform .15s, background .15s;
@@ -224,21 +224,23 @@ button.link:hover { color: var(--bordeaux); background: none; }
 .tabs button:nth-child(3) { --tab: #c7d9f1; z-index: 3; }
 .tabs button:nth-child(4) { --tab: #bad0ee; z-index: 2; }
 .tabs button:nth-child(5) { --tab: #adc7ea; z-index: 1; }
-.tabs button span { font-size: 11px; font-weight: 400; color: var(--muted); }
+.tabs button span { font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
 .tabs button:hover { transform: translateY(-3px); background: var(--tab); }
 .tabs button[aria-selected="true"] {
-  z-index: 6; background: var(--white); color: var(--blue-700); padding-bottom: 12px; margin-bottom: -1px;
+  z-index: 6; background: var(--white); color: var(--blue-700); padding-top: 26px; padding-bottom: 14px; margin-bottom: -1px;
   border-color: var(--line); box-shadow: 0 -4px 10px rgba(12, 31, 58, .07);
 }
 .tabs button[aria-selected="true"]::before {   /* liseré bordeaux en haut de l'onglet actif */
-  content: ""; position: absolute; top: 7px; left: 50%; width: 26px; height: 3px; border-radius: 3px; translate: -50% 0; background: var(--bordeaux);
+  content: ""; position: absolute; top: 11px; left: 50%; width: 30px; height: 3px; border-radius: 3px; translate: -50% 0; background: var(--bordeaux);
 }
 .sheet { position: relative; z-index: 1; max-width: none; background: rgba(255, 255, 255, .94); border: 1px solid var(--line);
   border-radius: 0 var(--radius) var(--radius) var(--radius); box-shadow: var(--shadow); padding: 28px 28px 40px; }
 @media (max-width: 760px) {
   .binder { padding: 0 8px; }
   .tabs { padding-left: 4px; }
-  .tabs button { min-width: 0; flex: 1 0 auto; padding: 9px 16px 8px; margin-left: -8px; border-radius: 50% 50% 0 0 / 16px 16px 0 0; }
+  .tabs button { min-width: 0; flex: 1 0 auto; padding: 16px 14px 9px; font-size: 16px; margin-left: -8px; border-radius: 50% 50% 0 0 / 20px 20px 0 0; }
+  .tabs button[aria-selected="true"] { padding-top: 19px; padding-bottom: 10px; }
+  .tabs button[aria-selected="true"]::before { top: 8px; width: 22px; }
   .tabs button span { display: none; }
   .sheet { padding: 18px 14px 28px; border-radius: 0 0 var(--radius) var(--radius); }
 }
