@@ -35,6 +35,11 @@ Site : https://blue-rock-008b52800.2.azurestaticapps.net
 - [ ] 履歴書 : 西暦 puis 和暦, vérifier la mise en page et les formulations (statut 修了, 卒業見込み).
 - [ ] 職務経歴書 : avec une expérience décrite et un 職務要約 de 2 ou 3 phrases.
 
+## Surveillance (S21, jour 9)
+
+- [ ] Vérifier que l'email d'Azure « ajouté au groupe d'actions » est bien arrivé sur depussay.simon@icloud.com (sinon les alertes n'arriveront pas).
+- [ ] GitHub : vérifier que les emails « workflow failed » sont activés (Settings → Notifications → Actions).
+
 ## Avant l'App Store (activité L)
 
 - [ ] Ajouter l'icône de l'app : l'archive a été refusée le 23/10 faute d'icône 120×120 (`CFBundleIconName`).
