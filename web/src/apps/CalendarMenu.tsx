@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Loader } from "../Loader";
 import { getCalendarLink } from "../api";
 import { useAuth } from "../auth/auth";
 import { useTr } from "../i18n";
@@ -65,7 +66,7 @@ export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?:
       {open && (
         <div className="menu wide" role="menu" aria-label={tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}>
           <p className="menu-title">{tr({ ja: "カレンダーで購読（自動で更新）", en: "Subscribe (updates automatically)", fr: "S'abonner (mise à jour automatique)" })}</p>
-          {!url && !failed && <p className="menu-note">…</p>}
+          {!url && !failed && <Loader size={26} />}
           {failed && <p className="menu-note">{tr({ ja: "リンクを作成できませんでした", en: "Could not create the link", fr: "Impossible de créer le lien" })}</p>}
           {targets.map((t) => (
             <a key={t.name} role="menuitem" className="menu-link" href={t.href} target={t.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">

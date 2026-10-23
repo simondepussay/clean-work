@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { Loader } from "./Loader";
 import { clearApiCache, deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
@@ -103,7 +104,7 @@ function SignedOut() {
         <button className="primary large" onClick={() => auth.signIn()}>{tr({ ja: "サインイン", en: "Sign in", fr: "Se connecter" })}</button>
       )}
       {auth.state.status === "disabled" && <p className="muted">{tr({ ja: "サインインは準備中です", en: "Sign-in coming soon", fr: "Connexion bientôt disponible" })}</p>}
-      {auth.state.status === "loading" && <p className="muted">…</p>}
+      {auth.state.status === "loading" && <Loader />}
     </section>
   );
 }
@@ -181,7 +182,7 @@ export default function App() {
           </nav>
         )}
         <main className={signedIn ? "shell sheet" : "shell"}>
-          <Suspense fallback={<p className="muted">…</p>}>
+          <Suspense fallback={<Loader />}>
             {!signedIn && <SignedOut />}
             {signedIn && view === "home" && (
               <HomePage name={signedIn.name} onOpenApps={() => open("apps")}

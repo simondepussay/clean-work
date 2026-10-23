@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Loader } from "../Loader";
 import { createDraft, deleteDraft, listApplications, listDrafts, updateDraft, type Application, type Draft, type DraftInput, type Issue } from "../api";
 import { useAuth } from "../auth/auth";
 import { countChars } from "./count";
@@ -120,7 +121,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
     if (status === "saved") setStatus("idle");
   };
 
-  if (drafts === null) return <p className="muted">…</p>;
+  if (drafts === null) return <Loader />;
 
   const type = guide?.types.find((t) => t.id === form.kind);
 

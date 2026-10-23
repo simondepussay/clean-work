@@ -1,4 +1,5 @@
 import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import { Loader } from "../Loader";
 import {
   createApplication, deleteApplication, listApplications, listDrafts, updateApplication,
   type Application, type ApplicationInput, type AppStatus, type CompanyType, type Draft, type Industry, type Issue, type Step,
@@ -98,7 +99,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
     if (app) move(app, status);
   };
 
-  if (apps === null) return <p className="muted">…</p>;
+  if (apps === null) return <Loader />;
 
   const soon = upcomingDeadlines(apps, new Date(), 14);
   const allUpcoming = upcomingDeadlines(apps);

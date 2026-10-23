@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Loader } from "../Loader";
 import { createPlan, deletePlan, listApplications, listPlans, updatePlan, type Application, type Issue, type Plan, type PlanKind } from "../api";
 import { useAuth } from "../auth/auth";
 import { CalendarIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, TrashIcon } from "../icons";
@@ -180,6 +181,7 @@ export function HomePage({ name, onOpenApps, onPractice }: {
           <h1>{tr({ ja: `${name ? `${name}さん、` : ""}おかえりなさい`, en: `Welcome back${name ? `, ${name}` : ""}`, fr: `Bon retour${name ? `, ${name}` : ""}` })}</h1>
         </div>
         <div className="highlights">
+          {!loaded && <Loader size={32} />}
           {nextInterview && (
             <p className="highlight interview"><span>{tr({ ja: "次の面接", en: "Next interview", fr: "Prochain entretien" })}</span>{longDate(nextInterview.date)} {nextInterview.title}</p>
           )}

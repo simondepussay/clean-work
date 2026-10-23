@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Loader } from "../Loader";
 import { getProfile, saveProfile, type Certification, type Education, type Issue, type Language, type ProfileInput, type Work } from "../api";
 import { useAuth } from "../auth/auth";
 import { apiMessage, useTr } from "../i18n";
@@ -89,7 +90,7 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
     }
   }
 
-  if (status.kind === "loading") return <p className="muted">…</p>;
+  if (status.kind === "loading") return <Loader />;
 
   const text = (key: "nameKanji" | "nameKana" | "nameLatin" | "birthDate" | "email" | "phone" | "address", label: string,
     type = "text", required = false) => (

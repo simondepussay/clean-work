@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Loader } from "../Loader";
 import { getInfoPage, type InfoPageData } from "../api";
 import { useAuth } from "../auth/auth";
 import { formatDay, useTr } from "../i18n";
@@ -84,7 +85,7 @@ export function InfoPage() {
               </div>
             )}
           </div>
-          {data === null && <p className="muted">…</p>}
+          {data === null && <Loader />}
           {data === "error" && <p className="muted">{tr({ ja: "読み込めませんでした", en: "Could not load", fr: "Chargement impossible" })}</p>}
           {ready && ready.items.length === 0 && <p className="muted">{tr({ ja: "まだありません", en: "Nothing yet", fr: "Rien pour l'instant" })}</p>}
           <ul className="news">
