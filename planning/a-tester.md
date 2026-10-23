@@ -6,6 +6,16 @@ Cocher `[x]` quand c'est fait, et noter ce qui ne va pas sous la ligne.
 
 Site : https://blue-rock-008b52800.2.azurestaticapps.net
 
+## Langue, calendrier et design (jour 9, soir)
+
+- [ ] Globe en haut à droite : passer en 日本語, English, Français ; tout change sauf les intercalaires.
+- [ ] Accueil : « Ajouter au calendrier » → Google Agenda : l'abonnement apparaît, avec tes entretiens et tes notes.
+- [ ] Même chose avec le Calendrier Apple (iPhone ou Mac).
+- [ ] Modifier une date dans 応募, puis vérifier quelques heures plus tard que Google ou Apple l'a mise à jour.
+- [ ] Clic sur une date du calendrier : note rapide ; survol d'une date occupée : l'aperçu.
+- [ ] 面接 : « Quel entretien ? » propose l'entretien prévu dans une candidature ; bouton « 練習する » sur un entretien du calendrier.
+- [ ] Coller une vraie offre d'emploi dans les notes d'une candidature, puis faire un entraînement pour cette entreprise.
+
 ## Entraînement aux entretiens (S17–S19, jour 9) — nouveau
 
 - [ ] Web, onglet 面接 : choisir une entreprise (avec 業界, type et 企業メモ remplis), puis 一次面接, et commencer.
