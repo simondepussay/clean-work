@@ -36,6 +36,7 @@ function CvIcon() {
 export function DocumentsPage({ current, onChoose, children }: { current: DocumentKind; onChoose: (d: DocumentKind) => void; children: ReactNode }) {
   const tr = useTr();
   const root = useRef<HTMLDivElement>(null);
+  const switchRef = useRef<HTMLDivElement>(null);
   const [align, setAlign] = useState<number | null>(null);
 
   // Le centre de l'intercalaire « 書類 », mesuré par rapport à la feuille (et recalculé si la fenêtre change).
@@ -45,7 +46,11 @@ export function DocumentsPage({ current, onChoose, children }: { current: Docume
       const box = root.current?.getBoundingClientRect();
       if (!tab || !box) return setAlign(null);
       const r = tab.getBoundingClientRect();
-      setAlign(r.left + r.width / 2 - box.left);
+      // Sous l'intercalaire, mais jamais au-delà des bords de la feuille (petit écran).
+      const half = (switchRef.current?.offsetWidth ?? 0) / 2;
+      const center = r.left + r.width / 2 - box.left;
+      // Le bord gauche du sélecteur (pas de décalage en CSS : il élargirait la page sur un petit écran).
+      setAlign(Math.max(0, Math.min(center - half, box.width - 2 * half)));
     };
     measure();
     window.addEventListener("resize", measure);
@@ -58,8 +63,8 @@ export function DocumentsPage({ current, onChoose, children }: { current: Docume
   ];
   return (
     <div className="documents" ref={root}>
-      <div className="doc-switch" role="tablist" aria-label={tr({ ja: "書類の種類", en: "Document type", fr: "Type de document" })}
-        style={align === null ? undefined : { marginLeft: align, transform: "translateX(-50%)" }}>
+      <div className="doc-switch" ref={switchRef} role="tablist" aria-label={tr({ ja: "書類の種類", en: "Document type", fr: "Type de document" })}
+        style={align === null ? undefined : { marginLeft: align }}>
         {choices.map(({ id, Icon, title }) => (
           <button key={id} role="tab" aria-selected={current === id} onClick={() => onChoose(id)}>
             <Icon />

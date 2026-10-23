@@ -139,8 +139,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
             {soon.map((d) => (
               <li key={d.stepId} className={d.days <= 3 ? "soon" : undefined}>
                 <span className="when">{deadlineLabel(d.days, lang)}</span>
-                <strong>{d.company}</strong> {stepName(d.step, lang)}
-                <span className="muted"> · {d.date}{d.note ? ` · ${d.note}` : ""}</span>
+                <span><strong>{d.company}</strong> {stepName(d.step, lang)}<span className="muted"> · {d.date}{d.note ? ` · ${d.note}` : ""}</span></span>
               </li>
             ))}
           </ul>

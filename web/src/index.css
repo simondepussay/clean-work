@@ -428,3 +428,16 @@ button .icon { vertical-align: -3px; }
 .cv-import { width: 100%; margin: 8px 0 16px; }
 .cv-import h3 { margin: 0 0 6px; font-size: 16px; }
 .cv-import textarea { width: 100%; box-sizing: border-box; }
+
+/* Aucun champ ne dépasse la largeur de l'écran (une option longue élargissait sa liste). */
+input, select, textarea { max-width: 100%; box-sizing: border-box; }
+
+/* Téléphone : échéances sur deux lignes (quand, puis quoi) et tableau qui défile colonne par colonne. */
+@media (max-width: 600px) {
+  .upcoming li { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .upcoming li:last-child { border-bottom: 0; }
+  .upcoming .when { min-width: 0; margin: 0; }
+  .upcoming-head { align-items: flex-start; }
+  .board { grid-auto-columns: 78vw; scroll-snap-type: x mandatory; }
+  .column { scroll-snap-align: start; }
+}
