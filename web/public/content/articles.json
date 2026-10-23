@@ -1,0 +1,19 @@
+[
+  {
+    "id": "bienvenue",
+    "date": "2026-10-23",
+    "kind": "article",
+    "lang": "ja",
+    "title": {
+      "ja": "Clean Work へようこそ",
+      "en": "Welcome to Clean Work",
+      "fr": "Bienvenue sur Clean Work"
+    },
+    "summary": {
+      "ja": "就活に必要なものを、ひとつの場所に。この「情報」ページでは、就活のニュースや、留学生の先輩へのインタビューを紹介していきます。",
+      "en": "Everything for your job hunt, in one place. This Info page will share job-market news and interviews with international students who found a job in Japan.",
+      "fr": "Tout pour votre recherche d'emploi, au même endroit. Cette page Info présentera l'actualité de l'emploi et des interviews d'étudiants étrangers qui ont trouvé un travail au Japon."
+    },
+    "body": "Clean Work は、留学生が日本で就職活動をするためのアプリです。応募の管理、ES の AI 添削、面接練習、履歴書の作成、締切のカレンダーを、ひとつの場所にまとめました。\n\nこの「情報」ページでは、厚生労働省・JETRO・NHK・The Japan Times などの新着ニュースと、就活に役立つ記事を紹介します。日本で働いている先輩へのインタビューも準備中です。"
+  }
+]

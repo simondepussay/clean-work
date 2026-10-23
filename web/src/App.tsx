@@ -8,12 +8,13 @@ import { HomePage } from "./home/HomePage";
 import { UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
 import { useTr, type T3 } from "./i18n";
+import { InfoPage } from "./info/InfoPage";
 import { InterviewPage, type InterviewSeed } from "./interview/InterviewPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
 import { ResumePanel } from "./profile/ResumePanel";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
-const VIEWS = ["home", "apps", "es", "interview", "documents", "account"] as const;
+const VIEWS = ["home", "apps", "es", "interview", "documents", "info", "account"] as const;
 type View = (typeof VIEWS)[number];
 
 function viewFromHash(): View {
@@ -27,6 +28,7 @@ const SERVICES: { view: Exclude<View, "home" | "account">; ja: string; en: strin
   { view: "es", ja: "ES", en: "Entry sheets", name: { ja: "ES", en: "Entry sheets", fr: "ES (entry sheets)" }, text: { ja: "書き方のガイドとAI添削", en: "Writing guide and AI review", fr: "Guide de rédaction et relecture par IA" } },
   { view: "interview", ja: "面接", en: "Interview", name: { ja: "面接", en: "Interview", fr: "Entretiens" }, text: { ja: "企業に合わせた模擬面接", en: "Mock interviews for each company", fr: "Entretiens simulés pour chaque entreprise" } },
   { view: "documents", ja: "書類", en: "Documents", name: { ja: "書類", en: "Documents", fr: "Documents" }, text: { ja: "履歴書・職務経歴書のPDF", en: "Résumé PDFs", fr: "CV japonais en PDF" } },
+  { view: "info", ja: "情報", en: "Info", name: { ja: "情報", en: "Info", fr: "Infos" }, text: { ja: "就活ニュース・求人サイト・役立つリンク", en: "Job news, job sites and useful links", fr: "Actualité, sites d'offres et liens utiles" } },
 ];
 
 /** Marque « Clean Work » : un trait de vague, rappel des lignes du fond. */
@@ -192,6 +194,7 @@ export default function App() {
           {signedIn && view === "es" && <EsPage seed={esSeed} />}
           {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
           {signedIn && view === "documents" && <ResumePanel />}
+          {signedIn && view === "info" && <InfoPage />}
         </main>
       </div>
 

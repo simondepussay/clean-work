@@ -56,6 +56,14 @@ const plans = [
 
 const routes: Record<string, unknown> = {
   "GET /api/plans": plans,
+  "GET /api/news": {
+    sources: [{ id: "mhlw", name: "厚生労働省", site: "", lang: "ja" }, { id: "nhk", name: "NHK 経済", site: "", lang: "ja" }, { id: "japantimes", name: "The Japan Times", site: "", lang: "en" }],
+    items: [
+      { source: "mhlw", title: "外国人雇用状況の届出状況まとめ", link: "https://www.mhlw.go.jp/", date: today.toISOString(), excerpt: "" },
+      { source: "japantimes", title: "Japan's job-to-applicant ratio stays high", link: "https://www.japantimes.co.jp/", date: today.toISOString(), excerpt: "Demand for workers remains strong across industries…" },
+      { source: "nhk", title: "来春卒業予定の大学生の就職内定率", link: "https://www3.nhk.or.jp/news/", date: today.toISOString(), excerpt: "" },
+    ],
+  },
   "GET /api/calendar-link?lang=ja": { url: "https://example.test/api/calendar/demo.token.ics?lang=ja" },
   "GET /api/calendar-link?lang=en": { url: "https://example.test/api/calendar/demo.token.ics?lang=en" },
   "GET /api/calendar-link?lang=fr": { url: "https://example.test/api/calendar/demo.token.ics?lang=fr" },

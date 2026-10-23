@@ -252,3 +252,28 @@ export const deletePlan = (token: string, id: string, f?: typeof fetch) =>
 /** Le lien privé d'abonnement (Google, Apple, Outlook…), dans la langue choisie. */
 export const getCalendarLink = (token: string, lang: string, f?: typeof fetch) =>
   call<{ url: string }>(token, "GET", `/api/calendar-link?lang=${lang}`, undefined, f);
+
+// ------------------------------------------------------------------ onglet « 情報 » : actualités
+
+export type NewsSource = { id: string; name: string; site: string; lang: "ja" | "en" };
+export type NewsItem = { source: string; title: string; link: string; date: string | null; excerpt: string };
+export const getNews = (token: string, f?: typeof fetch) => call<{ sources: NewsSource[]; items: NewsItem[] }>(token, "GET", "/api/news", undefined, f);
+
+/** Articles et interviews publiés par Clean Work (web/public/content/articles.json). */
+export type Article = {
+  id: string; date: string; kind: "article" | "interview";
+  /** Langue dans laquelle l'article est écrit ; le titre et le résumé existent dans les trois. */
+  lang: "ja" | "en" | "fr";
+  title: { ja: string; en: string; fr: string };
+  summary: { ja: string; en: string; fr: string };
+  body: string;
+};
+export async function getArticles(fetcher: typeof fetch = fetch): Promise<Article[]> {
+  try {
+    const res = await fetcher("/content/articles.json");
+    const data = res.ok ? await res.json() : [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}

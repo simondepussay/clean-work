@@ -233,6 +233,7 @@ button.link:hover { color: var(--bordeaux); background: none; }
 .tabs button:nth-child(3) { --tab: #c7d9f1; z-index: 3; }
 .tabs button:nth-child(4) { --tab: #bad0ee; z-index: 2; }
 .tabs button:nth-child(5) { --tab: #adc7ea; z-index: 1; }
+.tabs button:nth-child(6) { --tab: #a0bee6; z-index: 0; }
 .tabs button span { font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
 /* Au survol, l'intercalaire se lève mais reste attaché à la feuille : on l'agrandit vers le haut
    (plus d'espace au-dessus du texte) au lieu de le déplacer, qui laissait un vide en dessous. */
@@ -366,3 +367,33 @@ button .icon { vertical-align: -3px; }
 .copy-row { display: flex; gap: 6px; padding: 0 6px 6px; }
 .copy-row input { flex: 1; min-width: 0; font-size: 12px; padding: 6px 8px; }
 .menu .copy-row button { width: auto; flex: none; padding: 6px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+
+/* ------------------------------------------------------------------ onglet « 情報 » */
+.info { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .info { grid-template-columns: 1fr; } .info-side { position: static; max-height: none; order: 2; } }
+.info-side { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
+  padding: 18px; border-radius: var(--radius); background: var(--blue-50); border: 1px solid var(--line); }
+.info-side h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+.link-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.link-list a { display: flex; flex-direction: column; padding: 8px 10px; border-radius: 10px; background: var(--white); border: 1px solid var(--line); text-decoration: none; }
+.link-list a:hover { border-color: var(--bordeaux); }
+.link-list strong { color: var(--blue-700); font-size: 14px; }
+.link-list small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.info-main h2 { font-size: 20px; margin: 0 0 12px; }
+.info-main > section + section { margin-top: 28px; }
+.articles { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.article h3 { margin: 4px 0 6px; font-size: 17px; }
+.article-meta { margin: 0; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.article-meta .tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--bordeaux-50); color: var(--bordeaux); }
+.article-body p { white-space: pre-wrap; }
+.news-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.news-head h2 { margin: 0; }
+.chips-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips-filter button { padding: 4px 12px; font-size: 13px; }
+.chips-filter button[aria-pressed="true"] { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
+.news { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 8px; }
+.news a { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--white); border: 1px solid var(--line); text-decoration: none; color: var(--fg); }
+.news a:hover { border-color: var(--blue-500); }
+.news-meta { font-size: 12px; color: var(--bordeaux); font-weight: 600; }
+.news strong { font-size: 15px; color: var(--blue-800); }
+.news small { color: var(--muted); font-size: 13px; }
