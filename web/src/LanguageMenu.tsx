@@ -42,7 +42,6 @@ export function LanguageMenu() {
               <span>{l.label}</span>{l.value === lang && <CheckIcon size={16} />}
             </button>
           ))}
-          <p className="menu-note">{tr({ ja: "画面の表示と、AIの添削・面接練習の説明に使います", en: "For the whole interface, and for AI feedback and interview practice", fr: "Pour toute l'interface, et pour les avis de l'IA et les entretiens" })}</p>
         </div>
       )}
     </div>

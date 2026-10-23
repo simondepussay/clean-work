@@ -173,7 +173,7 @@ export default function App() {
         {signedIn && (
           <nav className="tabs" role="tablist" aria-label={tr({ ja: "メニュー", en: "Menu", fr: "Menu" })}>
             {[{ view: "home" as View, ja: "ホーム", en: "Home" }, ...SERVICES].map((s) => (
-              <button key={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && view === "es")} onClick={() => open(s.view)}>
+              <button key={s.view} data-view={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && view === "es")} onClick={() => open(s.view)}>
                 {s.ja}<span>{s.en}</span>
               </button>
             ))}

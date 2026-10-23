@@ -84,11 +84,6 @@ export function InfoPage() {
               </div>
             )}
           </div>
-          <p className="muted small">{tr({
-            ja: "毎朝、留学生の就活に役立つニュースを5つ選び、ここに追加していきます。",
-            en: "Every morning, 5 news items useful for international students' job hunting are added here.",
-            fr: "Chaque matin, 5 actualités utiles à la recherche d'emploi des étudiants étrangers s'ajoutent ici.",
-          })}</p>
           {data === null && <p className="muted">…</p>}
           {data === "error" && <p className="muted">{tr({ ja: "読み込めませんでした", en: "Could not load", fr: "Chargement impossible" })}</p>}
           {ready && ready.items.length === 0 && <p className="muted">{tr({ ja: "まだありません", en: "Nothing yet", fr: "Rien pour l'instant" })}</p>}

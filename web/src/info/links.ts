@@ -19,12 +19,13 @@ export const PARTNERS: InfoLink[] = [
 
 /** Les grands sites d'offres (on n'y envoie pas de robot : leurs conditions l'interdisent). */
 export const JOB_SITES: InfoLink[] = [
-  { name: "ハローワーク", url: "https://www.hellowork.mhlw.go.jp/", text: { ja: "国の求人検索（無料）", en: "Japan's public job search (free)", fr: "Recherche d'emploi publique (gratuite)" } },
+  { name: "ハローワーク", url: "https://www.hellowork.mhlw.go.jp/", text: { ja: "国の求人検索", en: "Japan's public job search", fr: "Recherche d'emploi publique" } },
   { name: "リクナビ", url: "https://job.rikunabi.com/", text: { ja: "新卒向けの大手就職サイト", en: "Major site for new graduates", fr: "Grand site pour jeunes diplômés" } },
   { name: "マイナビ", url: "https://job.mynavi.jp/", text: { ja: "新卒向けの大手就職サイト", en: "Major site for new graduates", fr: "Grand site pour jeunes diplômés" } },
   { name: "TokyoDev", url: "https://www.tokyodev.com/", text: { ja: "外国人エンジニア向け（英語）", en: "Developer jobs for foreigners (English)", fr: "Postes de développeur pour étrangers (anglais)" } },
   { name: "Japan Dev", url: "https://japan-dev.com/", text: { ja: "英語で働けるIT企業", en: "English-friendly tech companies", fr: "Entreprises tech anglophones" } },
   { name: "GaijinPot Jobs", url: "https://jobs.gaijinpot.com/", text: { ja: "外国人向けの求人", en: "Jobs for foreigners in Japan", fr: "Offres pour étrangers au Japon" } },
+  { name: "LAPRAS", url: "https://lapras.com/?lang=ja", text: { ja: "エンジニア向けのスカウト型転職サービス", en: "Scouting platform for engineers", fr: "Recrutement par approche directe pour ingénieurs" } },
   { name: "Daijob", url: "https://www.daijob.com/", text: { ja: "バイリンガル向けの求人", en: "Bilingual jobs", fr: "Postes bilingues" } },
 ];
 

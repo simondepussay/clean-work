@@ -404,14 +404,11 @@ button .icon { vertical-align: -3px; }
 .pager button { min-width: 38px; padding: 6px 10px; }
 .pager button[aria-current="page"] { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
 
-/* Onglet « 書類 » : titre et deux boutons centrés (ES ou CV en PDF). */
-.documents-head { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 24px; }
-.documents-head h2 { margin: 0; font-size: 24px; }
-.doc-switch { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
-.doc-switch button { width: 220px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 18px; border-radius: var(--radius);
-  border: 1.5px solid var(--line); background: var(--white); color: var(--blue-700); box-shadow: var(--shadow); }
-.doc-switch button strong { font-size: 17px; }
-.doc-switch button small { color: var(--muted); font-size: 12px; font-weight: 400; }
-.doc-switch button:hover { border-color: var(--blue-500); background: var(--white); }
-.doc-switch button[aria-selected="true"] { border-color: var(--bordeaux); color: var(--bordeaux); background: var(--bordeaux-50); }
-@media (max-width: 520px) { .doc-switch button { width: 100%; } }
+/* Onglet « 書類 » : deux petits boutons sous l'intercalaire « 書類 » (ES ou CV en PDF). */
+.documents { position: relative; }
+.doc-switch { display: inline-flex; gap: 4px; padding: 4px; margin: -12px 0 22px; border-radius: 999px; background: var(--blue-50); border: 1px solid var(--line); width: max-content; }
+.doc-switch button { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px 5px 8px; border: 0; border-radius: 999px; background: none; color: var(--blue-800); font-size: 14px; font-weight: 600; }
+.doc-switch button:hover { background: var(--white); }
+.doc-switch button[aria-selected="true"] { background: var(--white); color: var(--bordeaux); box-shadow: 0 1px 3px rgba(12, 31, 58, .12); }
+.doc-icon { width: 26px; height: 26px; flex: none; }
+@media (max-width: 760px) { .doc-switch { margin-top: 0; } }
