@@ -216,7 +216,7 @@ button.link:hover { color: var(--bordeaux); background: none; }
   border-radius: 50% 50% 0 0 / 30px 30px 0 0;   /* le sommet en ellipse de l'intercalaire */
   background: var(--tab, var(--blue-100)); color: var(--blue-800); font-weight: 700;
   box-shadow: 0 -2px 6px rgba(12, 31, 58, .05);
-  transition: transform .15s, background .15s;
+  transition: padding-top .15s ease-out, background .15s;
 }
 .tabs button:first-child { margin-left: 0; }
 .tabs button:nth-child(1) { --tab: #dfe9f7; z-index: 5; }
@@ -225,7 +225,9 @@ button.link:hover { color: var(--bordeaux); background: none; }
 .tabs button:nth-child(4) { --tab: #bad0ee; z-index: 2; }
 .tabs button:nth-child(5) { --tab: #adc7ea; z-index: 1; }
 .tabs button span { font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
-.tabs button:hover { transform: translateY(-3px); background: var(--tab); }
+/* Au survol, l'intercalaire se lève mais reste attaché à la feuille : on l'agrandit vers le haut
+   (plus d'espace au-dessus du texte) au lieu de le déplacer, qui laissait un vide en dessous. */
+.tabs button:hover { padding-top: 28px; background: var(--tab); }
 .tabs button[aria-selected="true"] {
   z-index: 6; background: var(--white); color: var(--blue-700); padding-top: 26px; padding-bottom: 14px; margin-bottom: -1px;
   border-color: var(--line); box-shadow: 0 -4px 10px rgba(12, 31, 58, .07);
@@ -240,6 +242,7 @@ button.link:hover { color: var(--bordeaux); background: none; }
   .tabs { padding-left: 4px; }
   .tabs button { min-width: 0; flex: 1 0 auto; padding: 16px 14px 9px; font-size: 16px; margin-left: -8px; border-radius: 50% 50% 0 0 / 20px 20px 0 0; }
   .tabs button[aria-selected="true"] { padding-top: 19px; padding-bottom: 10px; }
+  .tabs button:hover { padding-top: 20px; }
   .tabs button[aria-selected="true"]::before { top: 8px; width: 22px; }
   .tabs button span { display: none; }
   .sheet { padding: 18px 14px 28px; border-radius: 0 0 var(--radius) var(--radius); }
