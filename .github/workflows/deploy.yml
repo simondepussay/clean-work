@@ -60,16 +60,19 @@ jobs:
           app_location: web
           api_location: api
           output_location: dist
-      - name: Vérifier la version en ligne
+      - name: Attendre la nouvelle version
         if: github.event_name == 'push'
         run: |
           for i in $(seq 1 20); do
             BODY=$(curl -fsS "$SITE/api/health" || true)
             echo "essai $i : $BODY"
-            echo "$BODY" | grep -q "\"version\":\"${GITHUB_SHA::7}\"" && echo "$BODY" | grep -q '"database":"ok"' && echo "$BODY" | grep -q '"resume":"ok"' && exit 0
+            echo "$BODY" | grep -q "\"version\":\"${GITHUB_SHA::7}\"" && exit 0
             sleep 15
           done
-          echo "La version ${GITHUB_SHA::7} n'est pas en ligne ou la base ne répond pas"; exit 1
+          echo "La version ${GITHUB_SHA::7} n'est pas en ligne"; exit 1
+      - name: Test de fumée sur le site en ligne
+        if: github.event_name == 'push'
+        run: node tools/smoke.mjs "$SITE" "${GITHUB_SHA::7}"
 
   close-preview:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

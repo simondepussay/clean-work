@@ -2,7 +2,7 @@ import { app } from "@azure/functions";
 import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
 import { Repository } from "../lib/repository";
-import { getStore } from "../lib/store";
+import { getStore, type DocStore } from "../lib/store";
 
 /**
  * ES (S13) :
@@ -11,9 +11,9 @@ import { getStore } from "../lib/store";
  *   PUT    /api/drafts/{id}   modification (champs envoyés seulement)
  *   DELETE /api/drafts/{id}   suppression → 204
  */
-export function draftsHandler(verifier?: () => IdentityVerifier | null) {
+export function draftsHandler(verifier?: () => IdentityVerifier | null, store: () => DocStore = getStore) {
   return withUser(async (req, user) => {
-    const repo = new Repository(getStore());
+    const repo = new Repository(store());
     const id = req.params.id;
     const body = () => req.json().catch(() => null);
     const notFound = { status: 404, jsonBody: { error: "not_found" } };

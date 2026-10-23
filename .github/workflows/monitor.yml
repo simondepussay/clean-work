@@ -1,0 +1,25 @@
+name: Veille du site
+
+# Toutes les 2 heures, le test de fumée vérifie le site en ligne (pages, santé de l'API,
+# routes protégées). S'il échoue, GitHub envoie un email : on apprend la panne avant les
+# utilisateurs. Toutes les 2 heures plutôt que toutes les heures : le dépôt est privé,
+# et GitHub Actions n'y offre que 2 000 minutes par mois.
+on:
+  schedule:
+    - cron: "23 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: tools
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: node tools/smoke.mjs https://blue-rock-008b52800.2.azurestaticapps.net

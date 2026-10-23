@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Pose les réglages de l'API sur Static Web Apps : Cosmos DB, annuaire et Azure OpenAI.
+// Pose les réglages de l'API sur Static Web Apps : Cosmos DB, annuaire, Azure OpenAI et Application Insights.
 // Les réglages existants qui ne sont pas listés ici (le secret de suppression des
 // comptes, posé par identity.mjs) ne sont pas touchés.
 //
@@ -23,6 +23,9 @@ const key = az(["cosmosdb", "keys", "list", "-g", RG, "-n", cosmos, "--query", "
 const ai = az(["cognitiveservices", "account", "list", "-g", RG, "--query", "[?kind=='OpenAI'] | [0].name", "-o", "tsv"]);
 const aiEndpoint = az(["cognitiveservices", "account", "show", "-g", RG, "-n", ai, "--query", "properties.endpoint", "-o", "tsv"]);
 const aiKey = az(["cognitiveservices", "account", "keys", "list", "-g", RG, "-n", ai, "--query", "key1", "-o", "tsv"]);
+// Surveillance (S21), créée par infra/monitoring.bicep ; vide si elle n'est pas encore déployée.
+const insights = az(["resource", "list", "-g", RG, "--resource-type", "Microsoft.Insights/components", "--query", "[0].id", "-o", "tsv"]);
+const insightsConnection = insights ? az(["resource", "show", "--ids", insights, "--query", "properties.ConnectionString", "-o", "tsv"]) : "";
 
 const settings = {
   COSMOS_ENDPOINT: endpoint,
@@ -34,6 +37,7 @@ const settings = {
   AI_ENDPOINT: aiEndpoint,
   AI_KEY: aiKey,
   AI_DEPLOYMENT: "review",
+  ...(insightsConnection ? { APPLICATIONINSIGHTS_CONNECTION_STRING: insightsConnection } : {}),
 };
 
 az(["staticwebapp", "appsettings", "set", "-g", RG, "-n", web, "--setting-names",
