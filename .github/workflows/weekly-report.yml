@@ -1,0 +1,47 @@
+name: Rapport de la semaine
+
+# Chaque lundi à 9 h (heure du Japon), le coût de la semaine arrive par email :
+# le workflow crée un « issue » GitHub qui mentionne le propriétaire du dépôt,
+# et GitHub l'envoie par email (notifications « @mention », activées par défaut).
+# Le rapport de la semaine précédente est fermé : il n'en reste qu'un ouvert.
+on:
+  schedule:
+    - cron: "0 0 * * 1" # lundi 0 h UTC = 9 h JST
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chiffres de la semaine
+        env:
+          SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+        run: |
+          curl -fsS --retry 3 --retry-all-errors --max-time 60 -X POST -H "x-shukatsu-cron: $SECRET" \
+            https://blue-rock-008b52800.2.azurestaticapps.net/api/report/run > report.json
+          cat report.json
+      - name: Envoyer le rapport (issue GitHub + email)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          {
+            echo "@$OWNER, voici le coût de Clean Work pour la semaine."
+            echo
+            echo "| Jour | Coût de l'IA |"
+            echo "|---|---|"
+            jq -r '.daily[] | "| \(.day) | \(.costJpy) ¥ |"' report.json
+            echo
+            jq -r '"**Semaine : \(.weekCostJpy) ¥** · Mois \(.month) : \(.monthCostJpy) ¥ sur un budget de \(.budgetJpy) ¥ (reste \(.budgetLeftJpy) ¥)"' report.json
+            echo
+            echo "L'IA (relectures d'ES, entretiens, sélection des actualités) est le seul coût qui varie."
+            echo "Le site, l'API, la base de données, les notifications et la surveillance restent dans leurs offres gratuites ou presque."
+            echo "Détail exact : [portail Azure → Gestion des coûts](https://portal.azure.com/#view/Microsoft_Azure_CostManagement/Menu/~/costanalysis)."
+          } > body.md
+          for n in $(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "Rapport de la semaine in:title" --json number -q '.[].number'); do
+            gh issue close "$n" --repo "$GITHUB_REPOSITORY" --comment "Remplacé par le rapport de cette semaine."
+          done
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "Rapport de la semaine — $(date -u +%Y-%m-%d) — $(jq -r .weekCostJpy report.json) ¥" --body-file body.md

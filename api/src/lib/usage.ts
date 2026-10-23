@@ -64,7 +64,9 @@ export class UsageLimiter {
 
   /** Ajoute le coût d'une relecture au budget du mois. */
   async recordCost(costJpy: number) {
-    await this.store.increment(containers.usage, GLOBAL, this.keys().month, { costJpy }, USAGE_TTL);
+    // Le total du mois (pour le budget) et celui du jour (pour le rapport de la semaine).
+    const day = this.now().toISOString().slice(0, 10);
+    await this.store.increment(containers.usage, GLOBAL, this.keys().month, { costJpy, [`cost_${day}`]: costJpy }, USAGE_TTL);
   }
 
   /** Ce qu'il reste à l'utilisateur ce mois-ci et aujourd'hui (pour l'afficher). */
