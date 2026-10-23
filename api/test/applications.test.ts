@@ -33,6 +33,23 @@ describe("/api/applications", () => {
     expect(res.jsonBody).toMatchObject({ status: "es", nextDeadline: "2026-11-01", company: "LINEヤフー" });
   });
 
+  it("garde le 業界, le type d'entreprise et les notes (pour l'entraînement aux entretiens)", async () => {
+    const call = api();
+    const res = await call("u1", "POST", undefined, { company: "ソニー", industry: "maker", companyType: "large", notes: "ゲームと半導体。" });
+    expect(res.jsonBody).toMatchObject({ industry: "maker", companyType: "large", notes: "ゲームと半導体。" });
+    const bad = await call("u1", "POST", undefined, { company: "X", industry: "casino", companyType: "huge" });
+    expect(bad.status).toBe(400);
+    expect((bad.jsonBody as { issues: { path: string }[] }).issues.map((i) => i.path).sort()).toEqual(["companyType", "industry"]);
+  });
+
+  it("null efface un champ ; un champ absent ne change pas", async () => {
+    const call = api();
+    const created = (await call("u1", "POST", undefined, { company: "ソニー", industry: "maker", notes: "メモ" })).jsonBody as { id: string };
+    const res = await call("u1", "PUT", created.id, { industry: null, status: "es" });
+    expect(res.jsonBody).toMatchObject({ status: "es", notes: "メモ" });
+    expect(res.jsonBody).not.toHaveProperty("industry");
+  });
+
   it("liste par échéance la plus proche", async () => {
     const call = api();
     await call("u1", "POST", undefined, { company: "B社", steps: [{ id: "s", type: "es", dueDate: "2026-12-01" }] });

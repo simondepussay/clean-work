@@ -9,6 +9,10 @@ struct JobApplication: Codable, Equatable, Identifiable {
     var status: String
     var steps: [Step]
     var nextDeadline: String?
+    /// 業界, type d'entreprise et notes : pour adapter l'entraînement aux entretiens.
+    var industry: String?
+    var companyType: String?
+    var notes: String?
 
     struct Step: Codable, Equatable, Identifiable {
         var id = UUID().uuidString
@@ -26,10 +30,30 @@ struct JobApplicationInput: Encodable, Equatable {
     var url: String?
     var status = "interested"
     var steps: [JobApplication.Step] = []
+    var industry: String?
+    var companyType: String?
+    var notes: String?
 
     init() {}
     init(_ app: JobApplication) {
         company = app.company; position = app.position; url = app.url; status = app.status; steps = app.steps
+        industry = app.industry; companyType = app.companyType; notes = app.notes
+    }
+
+    private enum CodingKeys: String, CodingKey { case company, position, url, status, steps, industry, companyType, notes }
+
+    /// 業界 et type sont toujours envoyés, null compris : null efface le choix côté API
+    /// (Swift omet les nil, et l'ancienne valeur resterait).
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(company, forKey: .company)
+        try c.encodeIfPresent(position, forKey: .position)
+        try c.encodeIfPresent(url, forKey: .url)
+        try c.encode(status, forKey: .status)
+        try c.encode(steps, forKey: .steps)
+        try c.encode(industry, forKey: .industry)
+        try c.encode(companyType, forKey: .companyType)
+        try c.encodeIfPresent(notes, forKey: .notes)
     }
 }
 
@@ -73,4 +97,30 @@ enum SelectionStage {
         default: "あと\(days)日 / \(days) days left"
         }
     }
+}
+
+/// 業界 et types d'entreprise (mêmes codes que l'API et le web).
+enum CompanyProfile {
+    struct Option: Identifiable { let id: String; let ja: String; let en: String }
+
+    static let industries: [Option] = [
+        .init(id: "it", ja: "IT・通信", en: "IT & telecom"),
+        .init(id: "maker", ja: "メーカー", en: "Manufacturing"),
+        .init(id: "trading", ja: "商社", en: "Trading"),
+        .init(id: "finance", ja: "金融", en: "Finance"),
+        .init(id: "consulting", ja: "コンサル", en: "Consulting"),
+        .init(id: "retail", ja: "小売・流通", en: "Retail"),
+        .init(id: "service", ja: "サービス・人材", en: "Services & HR"),
+        .init(id: "media", ja: "広告・マスコミ", en: "Advertising & media"),
+        .init(id: "infrastructure", ja: "インフラ・交通", en: "Infrastructure & transport"),
+        .init(id: "public", ja: "官公庁・団体", en: "Public sector"),
+        .init(id: "other", ja: "その他", en: "Other"),
+    ]
+
+    static let types: [Option] = [
+        .init(id: "large", ja: "大手", en: "Large company"),
+        .init(id: "sme", ja: "中小企業", en: "Small / medium"),
+        .init(id: "startup", ja: "ベンチャー", en: "Startup"),
+        .init(id: "foreign", ja: "外資系", en: "Foreign-owned"),
+    ]
 }

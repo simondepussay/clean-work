@@ -66,7 +66,14 @@ export class Repository {
     const current = await this.store.get<Application>(containers.applications, userId, id);
     if (!current) return null;
     const { id: _id, userId: _u, nextDeadline: _n, createdAt, updatedAt: _t, ...editable } = current;
-    const data = applicationInputSchema.parse({ ...editable, ...(input as object) });
+    // Seuls les champs envoyés changent (le kanban n'envoie que le statut) ; null efface un champ
+    // (業界 remis à « — » : sans null, l'ancienne valeur resterait).
+    const merged: Record<string, unknown> = { ...editable };
+    for (const [key, value] of Object.entries((input ?? {}) as object)) {
+      if (value === null) delete merged[key];
+      else merged[key] = value;
+    }
+    const data = applicationInputSchema.parse(merged);
     const app: Application = {
       ...data,
       id,

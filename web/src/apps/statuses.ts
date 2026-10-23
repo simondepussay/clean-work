@@ -1,4 +1,4 @@
-import type { AppStatus, StepType } from "../api";
+import type { AppStatus, CompanyType, Industry, StepType } from "../api";
 
 /** Étapes du 就活 dans l'ordre : une colonne du tableau chacune (S08). */
 export const COLUMNS: { status: AppStatus; ja: string; en: string }[] = [
@@ -45,3 +45,25 @@ export function deadlineLabel(days: number) {
   if (days === 1) return "明日 / tomorrow";
   return `あと${days}日 / ${days} days left`;
 }
+
+/** 業界 (mêmes codes que l'API). */
+export const INDUSTRIES: { value: Industry; ja: string; en: string }[] = [
+  { value: "it", ja: "IT・通信", en: "IT & telecom" },
+  { value: "maker", ja: "メーカー", en: "Manufacturing" },
+  { value: "trading", ja: "商社", en: "Trading" },
+  { value: "finance", ja: "金融", en: "Finance" },
+  { value: "consulting", ja: "コンサル", en: "Consulting" },
+  { value: "retail", ja: "小売・流通", en: "Retail" },
+  { value: "service", ja: "サービス・人材", en: "Services & HR" },
+  { value: "media", ja: "広告・マスコミ", en: "Advertising & media" },
+  { value: "infrastructure", ja: "インフラ・交通", en: "Infrastructure & transport" },
+  { value: "public", ja: "官公庁・団体", en: "Public sector" },
+  { value: "other", ja: "その他", en: "Other" },
+];
+
+export const COMPANY_TYPES: { value: CompanyType; ja: string; en: string }[] = [
+  { value: "large", ja: "大手", en: "Large company" },
+  { value: "sme", ja: "中小企業", en: "Small / medium" },
+  { value: "startup", ja: "ベンチャー", en: "Startup" },
+  { value: "foreign", ja: "外資系", en: "Foreign-owned" },
+];

@@ -1,12 +1,12 @@
 import { useEffect, useState, type DragEvent, type FormEvent } from "react";
 import {
   createApplication, deleteApplication, listApplications, listDrafts, updateApplication,
-  type Application, type ApplicationInput, type AppStatus, type Draft, type Issue, type Step,
+  type Application, type ApplicationInput, type AppStatus, type CompanyType, type Draft, type Industry, type Issue, type Step,
 } from "../api";
 import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
 import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
-import { CLOSED, COLUMNS, STEP_TYPES, daysUntil, deadlineLabel, neighbour, statusLabel } from "./statuses";
+import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, STEP_TYPES, daysUntil, deadlineLabel, neighbour, statusLabel } from "./statuses";
 
 const stepFields: Field<Step>[] = [
   { key: "type", label: "選考 / Step", type: "select", options: STEP_TYPES, placeholder: "選択 / Choose", required: true },
@@ -153,7 +153,7 @@ export function ApplicationsBoard({ onWriteEs }: { onWriteEs?: (app: { id: strin
                 const next = neighbour(a.status, 1);
                 return (
                   <article key={a.id} className="app-card" draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", a.id)}>
-                    <button className="app-open" onClick={() => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps } }); }}>
+                    <button className="app-open" onClick={() => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes } }); }}>
                       <strong>{a.company}</strong>
                       {a.position && <span>{a.position}</span>}
                       {closed && <span className="muted">{statusLabel(a.status)}</span>}
@@ -193,12 +193,32 @@ export function ApplicationsBoard({ onWriteEs }: { onWriteEs?: (app: { id: strin
               {errors.has("url") && <small role="alert">{errors.get("url")}</small>}
             </label>
             <label>
+              <span>業界 / Industry</span>
+              <select value={editing.form.industry ?? ""} onChange={(e) => set({ industry: (e.target.value || null) as Industry | null })}>
+                <option value="">—</option>
+                {INDUSTRIES.map((i) => <option key={i.value} value={i.value}>{i.ja} / {i.en}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>企業の種類 / Company type</span>
+              <select value={editing.form.companyType ?? ""} onChange={(e) => set({ companyType: (e.target.value || null) as CompanyType | null })}>
+                <option value="">—</option>
+                {COMPANY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.ja} / {t.en}</option>)}
+              </select>
+            </label>
+            <label>
               <span>状況 / Status</span>
               <select value={editing.form.status} onChange={(e) => set({ status: e.target.value as AppStatus })}>
                 {[...COLUMNS, ...CLOSED].map((c) => <option key={c.status} value={c.status}>{c.ja} / {c.en}</option>)}
               </select>
             </label>
           </div>
+          <label className={errors.has("notes") ? "invalid" : undefined}>
+            <span>企業メモ / Notes on the company</span>
+            <textarea rows={4} maxLength={2000} value={editing.form.notes ?? ""} onChange={(e) => set({ notes: e.target.value })}
+              placeholder="事業・製品、企業理念、説明会で聞いたこと、惹かれた点など（面接練習に使います）/ Products, values, what attracts you… (used for interview practice)" />
+            {errors.has("notes") && <small role="alert">{errors.get("notes")}</small>}
+          </label>
           <ListEditor title="選考ステップ・締切 / Steps and deadlines" name="steps" items={editing.form.steps} fields={stepFields}
             empty={{ id: crypto.randomUUID(), type: "es", done: false } as Step} errors={errors}
             onChange={(steps) => set({ steps: steps.map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })) })} />

@@ -170,7 +170,13 @@ async function downloadPdf(token: string, path: string, options: object, fetcher
 export type StepType = "es" | "test" | "interview1" | "interview2" | "final" | "offer";
 export type AppStatus = "interested" | StepType | "rejected" | "withdrawn";
 export type Step = { id: string; type: StepType; dueDate?: string; done: boolean; note?: string };
-export type ApplicationInput = { company: string; position?: string; url?: string; status: AppStatus; steps: Step[] };
+export type Industry = "it" | "maker" | "trading" | "finance" | "consulting" | "retail" | "service" | "media" | "infrastructure" | "public" | "other";
+export type CompanyType = "large" | "sme" | "startup" | "foreign";
+export type ApplicationInput = {
+  company: string; position?: string; url?: string; status: AppStatus; steps: Step[];
+  /** null : effacer le champ (l'API garde sinon l'ancienne valeur). */
+  industry?: Industry | null; companyType?: CompanyType | null; notes?: string;
+};
 export type Application = ApplicationInput & { id: string; nextDeadline: string | null; createdAt: string; updatedAt: string };
 
 export const listApplications = (token: string, f?: typeof fetch) => call<Application[]>(token, "GET", "/api/applications", undefined, f);

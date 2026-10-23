@@ -90,7 +90,7 @@ describe("ApplicationsBoard", () => {
     renderBoard();
     await userEvent.click(await screen.findByRole("button", { name: /Add$/ }));
     const form = screen.getByRole("form", { name: "応募 / Application" });
-    await userEvent.type(within(form).getByLabelText(/Company/), "ソニー");
+    await userEvent.type(within(form).getByLabelText(/企業名/), "ソニー");
     await userEvent.click(within(form).getByRole("button", { name: /追加 \/ Add/ }));
     await userEvent.selectOptions(within(form).getByLabelText(/^選考 \/ Step/), "es");
     await userEvent.type(within(form).getByLabelText(/Date/), "2026-11-01");

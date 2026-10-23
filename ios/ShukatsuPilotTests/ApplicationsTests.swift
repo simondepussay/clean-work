@@ -44,6 +44,15 @@ final class ApplicationsModelTests: XCTestCase {
         XCTAssertEqual(m.sections.first?.items.map(\.company), ["楽天", "ソニー"])
     }
 
+    func testClearedIndustryIsSentAsNull() throws {
+        var input = JobApplicationInput()
+        input.company = "ソニー"
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(input)) as? [String: Any])
+        XCTAssertTrue(json["industry"] is NSNull, "null efface le 業界 côté API")
+        XCTAssertTrue(json["companyType"] is NSNull)
+        XCTAssertNil(json["notes"])
+    }
+
     func testMoveSendsOnlyTheStatus() async throws {
         StubURLProtocol.handler = { request in
             request.httpMethod == "PUT"

@@ -115,9 +115,20 @@ export const stepSchema = z.object({
   note: text(500).optional(),
 });
 
+/** 業界 : IT・通信, メーカー, 商社, 金融, コンサル, 小売・流通, サービス・人材, 広告・マスコミ, インフラ・交通, 官公庁・団体, その他. */
+export const industries = ["it", "maker", "trading", "finance", "consulting", "retail", "service", "media", "infrastructure", "public", "other"] as const;
+/** Type d'entreprise : 大手, 中小企業, ベンチャー, 外資系. */
+export const companyTypes = ["large", "sme", "startup", "foreign"] as const;
+
 export const applicationInputSchema = z.object({
   company: required(100),
   position: text(100).optional(),
+  // Pour adapter l'entraînement aux entretiens (S17–S19) : un entretien chez un 大手 de メーカー
+  // ne ressemble pas à celui d'une ベンチャー IT.
+  industry: choice(industries).optional(),
+  companyType: choice(companyTypes).optional(),
+  /** Ce que l'étudiant sait de l'entreprise (produits, valeurs, ce qui l'attire) : S20, notes entreprise. */
+  notes: text(2000).optional(),
   url: z.string().url().optional(),
   status: choice(applicationStatuses).default("interested"),
   steps: z.array(stepSchema).max(20).default([]),

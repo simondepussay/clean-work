@@ -98,6 +98,23 @@ struct ApplicationEditor: View {
                     ForEach(SelectionStage.all) { Text("\($0.ja) / \($0.en)").tag($0.id) }
                 }
             }
+            Section {
+                Picker("業界 / Industry", selection: $input.industry) {
+                    Text("—").tag(String?.none)
+                    ForEach(CompanyProfile.industries) { Text("\($0.ja) / \($0.en)").tag(Optional($0.id)) }
+                }
+                Picker("企業の種類 / Company type", selection: $input.companyType) {
+                    Text("—").tag(String?.none)
+                    ForEach(CompanyProfile.types) { Text("\($0.ja) / \($0.en)").tag(Optional($0.id)) }
+                }
+                TextField("企業メモ / Notes on the company", text: optional($input.notes), axis: .vertical)
+                    .lineLimit(3...8)
+                if let e = error("notes") { Text(e).font(.caption).foregroundStyle(.red) }
+            } header: {
+                Text("企業について / About the company")
+            } footer: {
+                Text("面接練習の質問に使います / Used to tailor interview practice")
+            }
             Section("選考ステップ・締切 / Steps and deadlines") {
                 ForEach($input.steps) { $step in
                     VStack(alignment: .leading) {
