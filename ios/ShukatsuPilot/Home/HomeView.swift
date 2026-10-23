@@ -56,7 +56,7 @@ struct HomeView: View {
                 }
             }
             Section {
-                Button("サインアウト / Sign out") { model.signOut() }
+                Button("サインアウト / Sign out") { Task { await model.signOut() } }
             } footer: {
                 LegalLinks()
             }

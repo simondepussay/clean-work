@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import UserNotifications
 
 /// Une échéance à venir (S09) : étape non terminée d'une candidature en cours.
@@ -42,6 +43,7 @@ struct Reminder: Equatable {
 
 /// Rappels locaux des échéances : la veille à 9 h et le jour même à 8 h.
 /// Pas de serveur ni de clé APNs : l'app programme les rappels elle-même.
+/// Depuis S26, c'est le filet de sécurité quand le serveur n'envoie pas les rappels push.
 enum DeadlineReminders {
     static let prefix = "deadline."
     /// iOS garde au plus 64 rappels par app : 30 échéances × 2.
@@ -71,27 +73,41 @@ protocol NotificationScheduling: AnyObject {
     func pendingIdentifiers() async -> [String]
     func remove(_ ids: [String])
     func add(_ reminder: Reminder) async throws
+    /// Demande à iOS le jeton APNs de l'iPhone (S26) ; la réponse arrive dans l'AppDelegate.
+    func registerForRemoteNotifications()
 }
 
 /// Reprogramme tous les rappels : retire les anciens, ajoute les nouveaux.
 @MainActor
 final class DeadlineReminderScheduler {
-    static let shared = DeadlineReminderScheduler(center: SystemNotificationCenter())
+    static let shared: DeadlineReminderScheduler = DeadlineReminderScheduler(center: SystemNotificationCenter(),
+                                                  serverPushActive: { PushRegistration.shared.isServerActive })
     private let center: NotificationScheduling
+    private let serverPushActive: @MainActor () -> Bool
 
-    init(center: NotificationScheduling) { self.center = center }
+    init(center: NotificationScheduling, serverPushActive: @escaping @MainActor () -> Bool = { false }) {
+        self.center = center
+        self.serverPushActive = serverPushActive
+    }
 
-    /// Renvoie le nombre de rappels programmés (0 si l'utilisateur a refusé).
+    /// Renvoie le nombre de rappels locaux programmés (0 si l'utilisateur a refusé, ou si le serveur s'en charge).
     @discardableResult
     func reschedule(_ apps: [JobApplication], now: Date = .now) async -> Int {
-        let old = await center.pendingIdentifiers().filter { $0.hasPrefix(DeadlineReminders.prefix) }
-        center.remove(old)
+        await removeLocal()
         let reminders = DeadlineReminders.reminders(for: apps, now: now)
         // L'autorisation n'est demandée qu'au moment où il y a quelque chose à rappeler.
         guard !reminders.isEmpty, await center.authorizationAllowed() else { return 0 }
+        // S26 : on (re)demande le jeton APNs. Si le serveur envoie déjà les rappels, pas de doublon local.
+        center.registerForRemoteNotifications()
+        guard !serverPushActive() else { return 0 }
         var added = 0
         for r in reminders where (try? await center.add(r)) != nil { added += 1 }
         return added
+    }
+
+    /// Retire nos rappels locaux (et seulement les nôtres).
+    func removeLocal() async {
+        center.remove(await center.pendingIdentifiers().filter { $0.hasPrefix(DeadlineReminders.prefix) })
     }
 }
 
@@ -122,5 +138,9 @@ final class SystemNotificationCenter: NotificationScheduling {
         content.sound = .default
         let trigger = UNCalendarNotificationTrigger(dateMatching: reminder.fireAt, repeats: false)
         try await center.add(UNNotificationRequest(identifier: reminder.id, content: content, trigger: trigger))
+    }
+
+    func registerForRemoteNotifications() {
+        DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
     }
 }

@@ -6,9 +6,13 @@
  * marqués (`deletedAt`) avec une durée de vie (`ttl`, en secondes). Les lectures les
  * ignorent, et Cosmos DB les efface lui-même à l'échéance. D'ici là, `restore` les
  * rend à nouveau visibles.
+ *
+ * Seule exception à la règle « un utilisateur à la fois » : `scanDevices`, pour la tâche
+ * planifiée des rappels (S26), qui doit savoir à quels iPhone envoyer. Elle ne lit que
+ * le conteneur des appareils (le type ne permet pas d'en passer un autre).
  */
 import { CosmosClient, type Database } from "@azure/cosmos";
-import type { ContainerName } from "./models";
+import { containers, type ContainerName } from "./models";
 
 export type Doc = { id: string; userId: string };
 
@@ -31,6 +35,8 @@ export interface DocStore {
    * les nouvelles valeurs. Le document est créé s'il n'existe pas, avec la durée de vie `ttl`.
    */
   increment(container: ContainerName, userId: string, id: string, deltas: Record<string, number>, ttl?: number): Promise<Record<string, number>>;
+  /** Tous les appareils de tous les utilisateurs (comptes supprimés exclus). Réservé à la tâche des rappels. */
+  scanDevices<T extends Doc>(): Promise<T[]>;
   ping(): Promise<void>;
 }
 
@@ -86,6 +92,12 @@ export class MemoryStore implements DocStore {
     for (const [field, delta] of Object.entries(deltas)) result[field] = doc[field] = (doc[field] ?? 0) + delta;
     this.data.set(key, doc);
     return result;
+  }
+
+  async scanDevices<T extends Doc>() {
+    return [...this.data.entries()]
+      .filter(([k, v]) => k.startsWith(`${containers.devices}/`) && !isDeleted(v))
+      .map(([, v]) => structuredClone(v)) as T[];
   }
 
   async ping() {}
@@ -167,6 +179,15 @@ export class CosmosStore implements DocStore {
       const { resource } = await item.patch(operations);
       return read(resource);
     }
+  }
+
+  async scanDevices<T extends Doc>() {
+    // Requête sur toutes les partitions : acceptable ici, une fois par jour et sur un petit conteneur.
+    const { resources } = await this.db
+      .container(containers.devices)
+      .items.query<T>("SELECT * FROM c WHERE NOT IS_DEFINED(c.deletedAt)")
+      .fetchAll();
+    return resources.map(strip);
   }
 
   async ping() {

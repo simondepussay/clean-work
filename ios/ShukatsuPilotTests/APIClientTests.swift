@@ -24,6 +24,26 @@ final class APIClientTests: XCTestCase {
         XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
     }
 
+    func testRegisterDevice() async throws {
+        StubURLProtocol.handler = { _ in (200, Data(#"{"push":"on"}"#.utf8)) }
+        let on = try await client().registerDevice(token: "abcd", environment: "sandbox")
+        XCTAssertTrue(on)
+        let request = try XCTUnwrap(StubURLProtocol.lastRequest)
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.url?.absoluteString, "https://example.test/api/devices")
+
+        StubURLProtocol.handler = { _ in (200, Data(#"{"push":"off"}"#.utf8)) }
+        let off = try await client().registerDevice(token: "abcd", environment: "sandbox")
+        XCTAssertFalse(off)
+    }
+
+    func testUnregisterDevice() async throws {
+        StubURLProtocol.handler = { _ in (204, Data()) }
+        try await client().unregisterDevice(token: "abcd")
+        XCTAssertEqual(StubURLProtocol.lastRequest?.httpMethod, "DELETE")
+        XCTAssertEqual(StubURLProtocol.lastRequest?.url?.absoluteString, "https://example.test/api/devices/abcd")
+    }
+
     func testUnauthorized() async {
         StubURLProtocol.handler = { _ in (401, Data(#"{"error":"unauthorized"}"#.utf8)) }
         await assertThrows(APIError.unauthorized) { _ = try await self.client().me() }

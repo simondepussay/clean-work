@@ -167,6 +167,21 @@ struct APIClient {
         try await send("DELETE", "api/me")
     }
 
+    // MARK: Notifications push (S26)
+
+    /// Enregistre le jeton APNs de l'iPhone ; renvoie true si le serveur enverra les rappels.
+    func registerDevice(token: String, environment: String) async throws -> Bool {
+        struct Body: Encodable { let token: String; let environment: String }
+        struct Reply: Decodable { let push: String }
+        let data = try await send("POST", "api/devices", body: try JSONEncoder().encode(Body(token: token, environment: environment)))
+        return try decode(Reply.self, from: data).push == "on"
+    }
+
+    /// À la déconnexion : cet iPhone ne recevra plus les rappels du compte.
+    func unregisterDevice(token: String) async throws {
+        try await send("DELETE", "api/devices/\(token)")
+    }
+
     /// Requête brute : données et code HTTP, sans interprétation.
     private func raw(_ method: String, _ path: String, body: Data? = nil) async throws -> (Data, Int) {
         var request = URLRequest(url: baseURL.appending(path: path))

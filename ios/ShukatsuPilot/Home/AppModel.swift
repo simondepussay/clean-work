@@ -24,10 +24,13 @@ final class AppModel {
 
     private let account: AccountService?
     private let api: APIClient?
+    private let push: PushRegistration?
 
-    init(account: AccountService?, api: APIClient?) {
+    init(account: AccountService?, api: APIClient?, push: PushRegistration? = nil) {
         self.account = account
         self.api = api
+        self.push = push
+        push?.api = api
         if let account, api != nil {
             phase = account.isSignedIn ? .signedIn : .signedOut
         } else {
@@ -41,7 +44,7 @@ final class AppModel {
             return AppModel(account: nil, api: nil)
         }
         let session = AccountSession.shared
-        return AppModel(account: session, api: APIClient(baseURL: baseURL, token: { try await session.accessToken() }))
+        return AppModel(account: session, api: APIClient(baseURL: baseURL, token: { try await session.accessToken() }), push: .shared)
     }
 
     var email: String? { account?.email }
@@ -66,7 +69,9 @@ final class AppModel {
         await refreshMe()
     }
 
-    func signOut() {
+    func signOut() async {
+        // Avant de quitter le compte : il faut encore un jeton valide pour dire à l'API d'oublier cet iPhone.
+        await push?.signOut()
         account?.signOut()
         phase = account == nil ? .disabled : .signedOut
         me = .idle
@@ -79,7 +84,7 @@ final class AppModel {
     func deleteAccount() async throws {
         guard let api else { throw AccountError.notConfigured }
         try await api.deleteAccount()
-        signOut()
+        await signOut()
     }
 
     func refreshMe() async {
@@ -89,7 +94,7 @@ final class AppModel {
             me = .loaded(try await api.me())
         } catch APIError.unauthorized {
             // Session expirée ou refusée par l'API : on repart de l'écran de connexion.
-            signOut()
+            await signOut()
         } catch {
             me = .failed
         }

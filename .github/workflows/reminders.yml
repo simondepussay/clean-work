@@ -1,0 +1,25 @@
+name: Rappels des échéances
+
+# Chaque matin à 8 h (heure du Japon), le serveur envoie les rappels push (S26).
+# Static Web Apps n'a pas de minuterie : c'est ce workflow qui sert de « cron ».
+# GitHub peut le lancer avec quelques minutes de retard ; la route est sans doublon
+# (au plus une notification par jour et par utilisateur), donc un nouvel essai est sans risque.
+on:
+  schedule:
+    - cron: "0 23 * * *" # 23 h UTC = 8 h JST
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Envoyer les rappels du jour
+        env:
+          SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+        run: |
+          curl -fsS --retry 3 --retry-all-errors --max-time 120 -X POST \
+            -H "x-shukatsu-cron: $SECRET" \
+            https://blue-rock-008b52800.2.azurestaticapps.net/api/push/run
+          echo

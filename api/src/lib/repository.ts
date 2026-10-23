@@ -6,6 +6,8 @@ import { randomUUID } from "node:crypto";
 import {
   applicationInputSchema,
   containers,
+  deviceInputSchema,
+  type Device,
   draftInputSchema,
   type Draft,
   nextDeadline,
@@ -122,6 +124,20 @@ export class Repository {
   async listReviews(userId: string, draftId: string) {
     const all = await this.store.list<Review>(containers.reviews, userId);
     return all.filter((r) => r.draftId === draftId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  // -------------------------------------------------------------- appareils (S26)
+
+  /** Enregistre (ou rafraîchit) le jeton APNs d'un iPhone. Le même jeton renvoyé deux fois ne crée pas de doublon. */
+  async registerDevice(userId: string, input: unknown) {
+    const data = deviceInputSchema.parse(input);
+    const at = this.now().toISOString();
+    const current = await this.store.get<Device>(containers.devices, userId, data.token);
+    return this.store.put<Device>(containers.devices, { ...data, id: data.token, userId, createdAt: current?.createdAt ?? at, updatedAt: at });
+  }
+
+  removeDevice(userId: string, token: string) {
+    return this.store.remove(containers.devices, userId, token.toLowerCase());
   }
 
   // -------------------------------------------------------------- suppression du compte (S25)

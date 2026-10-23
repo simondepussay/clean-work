@@ -7,11 +7,13 @@ private final class FakeCenter: NotificationScheduling {
     var removed: [String] = []
     var added: [Reminder] = []
     var authorizationAsked = 0
+    var apnsRequested = 0
 
     func authorizationAllowed() async -> Bool { authorizationAsked += 1; return allowed }
     func pendingIdentifiers() async -> [String] { pending }
     func remove(_ ids: [String]) { removed += ids }
     func add(_ reminder: Reminder) async throws { added.append(reminder) }
+    func registerForRemoteNotifications() { apnsRequested += 1 }
 }
 
 final class DeadlineRemindersTests: XCTestCase {
@@ -77,5 +79,88 @@ final class DeadlineRemindersTests: XCTestCase {
         let count = await DeadlineReminderScheduler(center: center).reschedule([app("a", steps: [step("s1", "2026-10-30")])], now: now)
         XCTAssertEqual(count, 0)
         XCTAssertTrue(center.added.isEmpty)
+        XCTAssertEqual(center.apnsRequested, 0, "pas de jeton APNs sans autorisation")
+    }
+
+    // MARK: S26 — le push serveur prend le relais
+
+    @MainActor
+    func testAuthorizedAsksForAPNsTokenAndKeepsLocalUntilServerConfirms() async {
+        let center = FakeCenter()
+        let count = await DeadlineReminderScheduler(center: center, serverPushActive: { false })
+            .reschedule([app("a", steps: [step("s1", "2026-10-30")])], now: now)
+        XCTAssertEqual(center.apnsRequested, 1)
+        XCTAssertEqual(count, 2, "filet de sécurité : rappels locaux tant que le serveur n'a pas confirmé")
+    }
+
+    @MainActor
+    func testNoLocalDuplicatesWhenServerSendsReminders() async {
+        let center = FakeCenter()
+        let count = await DeadlineReminderScheduler(center: center, serverPushActive: { true })
+            .reschedule([app("a", steps: [step("s1", "2026-10-30")])], now: now)
+        XCTAssertEqual(count, 0)
+        XCTAssertTrue(center.added.isEmpty)
+        XCTAssertEqual(center.removed, ["deadline.old.eve"])
+    }
+}
+
+private final class FakeDevices: DeviceRegistering {
+    var reply: Result<Bool, Error> = .success(true)
+    var registered: [(String, String)] = []
+    var unregistered: [String] = []
+
+    func registerDevice(token: String, environment: String) async throws -> Bool {
+        registered.append((token, environment))
+        return try reply.get()
+    }
+    func unregisterDevice(token: String) async throws { unregistered.append(token) }
+}
+
+@MainActor
+final class PushRegistrationTests: XCTestCase {
+    private var cleared = 0
+    private func make(_ api: FakeDevices) -> PushRegistration {
+        let push = PushRegistration(defaults: UserDefaults(suiteName: UUID().uuidString)!, clearLocal: { self.cleared += 1 })
+        push.api = api
+        return push
+    }
+
+    func testTokenIsSentInHex() {
+        XCTAssertEqual(PushRegistration.hex(Data([0x00, 0xAB, 0x0F, 0xFF])), "00ab0fff")
+    }
+
+    func testServerOnReplacesLocalReminders() async {
+        let api = FakeDevices()
+        let push = make(api)
+        await push.didReceive(deviceToken: Data([0xAB, 0xCD]))
+        XCTAssertEqual(api.registered.first?.0, "abcd")
+        XCTAssertEqual(api.registered.first?.1, "sandbox", "les tests tournent en Debug")
+        XCTAssertTrue(push.isServerActive)
+        XCTAssertEqual(cleared, 1)
+    }
+
+    func testServerOffOrUnreachableKeepsLocalReminders() async {
+        let off = FakeDevices()
+        off.reply = .success(false)
+        let push = make(off)
+        await push.didReceive(deviceToken: Data([0x01]))
+        XCTAssertFalse(push.isServerActive)
+
+        let down = FakeDevices()
+        down.reply = .failure(URLError(.notConnectedToInternet))
+        let push2 = make(down)
+        await push2.didReceive(deviceToken: Data([0x01]))
+        XCTAssertFalse(push2.isServerActive)
+        XCTAssertEqual(cleared, 0)
+    }
+
+    func testSignOutForgetsDeviceAndClearsLocalReminders() async {
+        let api = FakeDevices()
+        let push = make(api)
+        await push.didReceive(deviceToken: Data([0xAB]))
+        await push.signOut()
+        XCTAssertEqual(api.unregistered, ["ab"])
+        XCTAssertFalse(push.isServerActive)
+        XCTAssertEqual(cleared, 2)
     }
 }

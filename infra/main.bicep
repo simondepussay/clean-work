@@ -16,7 +16,7 @@ param suffix string = uniqueString(resourceGroup().id)
 
 var databaseName = 'shukatsu'
 // Toutes les données sont partitionnées par utilisateur (voir api/src/lib/models.ts).
-var containerNames = [ 'profiles', 'applications', 'drafts', 'reviews', 'usage' ]
+var containerNames = [ 'profiles', 'applications', 'drafts', 'reviews', 'usage', 'devices' ]
 var tags = { project: 'shukatsu-pilot' }
 
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' = {

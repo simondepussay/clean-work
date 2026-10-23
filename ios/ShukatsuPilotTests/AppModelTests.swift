@@ -114,11 +114,11 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.me, .failed)
     }
 
-    func testSignOut() {
+    func testSignOut() async {
         let account = FakeAccount()
         account.isSignedIn = true
         let model = makeModel(account)
-        model.signOut()
+        await model.signOut()
         XCTAssertEqual(model.phase, .signedOut)
         XCTAssertEqual(model.me, .idle)
     }

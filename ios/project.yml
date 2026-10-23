@@ -30,6 +30,8 @@ targets:
         keychain-access-groups:
           - $(AppIdentifierPrefix)com.simondepussay.ShukatsuPilot
           - $(AppIdentifierPrefix)com.microsoft.adalcache
+        # Notifications push (S26). Xcode passe à « production » à l'archivage (TestFlight, App Store).
+        aps-environment: development
     info:
       path: ShukatsuPilot/Info.plist
       properties:

@@ -8,3 +8,6 @@ ios/*.xcodeproj/
 ios/build/
 xcuserdata/
 presentation/qa/
+
+# Clés privées (APNs…) : jamais dans le dépôt
+*.p8

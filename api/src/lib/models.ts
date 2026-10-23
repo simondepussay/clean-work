@@ -182,6 +182,21 @@ export type Review = {
   discarded: number;
 };
 
+// ------------------------------------------------------------------ appareils (S26)
+
+/** Environnement APNs : « sandbox » pour les builds lancés depuis Xcode, « production » pour TestFlight et l'App Store. */
+export const pushEnvironments = ["sandbox", "production"] as const;
+
+export const deviceInputSchema = z.object({
+  /** Jeton d'appareil APNs, en hexadécimal (64 caractères aujourd'hui, Apple se réserve de l'allonger). */
+  token: z.string().trim().toLowerCase().regex(/^[0-9a-f]{64,200}$/, "invalid device token"),
+  environment: z.enum(pushEnvironments),
+});
+
+export type DeviceInput = z.infer<typeof deviceInputSchema>;
+/** Un iPhone qui reçoit les rappels. L'identifiant du document est le jeton lui-même. */
+export type Device = DeviceInput & { id: string; userId: string; createdAt: string; updatedAt: string };
+
 // ------------------------------------------------------------------ conteneurs Cosmos
 
 export const containers = {
@@ -191,6 +206,8 @@ export const containers = {
   reviews: "reviews",
   /** Compteurs d'utilisation de l'IA (S16) : un document par utilisateur et par mois. */
   usage: "usage",
+  /** Jetons APNs des iPhone (S26), plusieurs par utilisateur possible. */
+  devices: "devices",
 } as const;
 
 export type ContainerName = (typeof containers)[keyof typeof containers];
