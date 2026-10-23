@@ -56,6 +56,9 @@ const plans = [
 
 const routes: Record<string, unknown> = {
   "GET /api/plans": plans,
+  "GET /api/calendar-link?lang=ja": { url: "https://example.test/api/calendar/demo.token.ics?lang=ja" },
+  "GET /api/calendar-link?lang=en": { url: "https://example.test/api/calendar/demo.token.ics?lang=en" },
+  "GET /api/calendar-link?lang=fr": { url: "https://example.test/api/calendar/demo.token.ics?lang=fr" },
   "GET /api/health": { status: "ok", version: "demo", database: "ok", resume: "ok", push: "ok" },
   "GET /api/me": { userId: "demo", email: "simon@example.com", name: "Simon", hasProfile: true },
   "GET /api/profile": profile,

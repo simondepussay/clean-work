@@ -246,3 +246,9 @@ export const updatePlan = (token: string, id: string, p: Partial<PlanInput>, f?:
   call<Plan>(token, "PUT", `/api/plans/${encodeURIComponent(id)}`, p, f);
 export const deletePlan = (token: string, id: string, f?: typeof fetch) =>
   call<null>(token, "DELETE", `/api/plans/${encodeURIComponent(id)}`, undefined, f);
+
+// ------------------------------------------------------------------ abonnement de calendrier
+
+/** Le lien privé d'abonnement (Google, Apple, Outlook…), dans la langue choisie. */
+export const getCalendarLink = (token: string, lang: string, f?: typeof fetch) =>
+  call<{ url: string }>(token, "GET", `/api/calendar-link?lang=${lang}`, undefined, f);

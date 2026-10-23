@@ -3,6 +3,7 @@ import { createPlan, deletePlan, listApplications, listPlans, updatePlan, type A
 import { useAuth } from "../auth/auth";
 import { CalendarIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, TrashIcon } from "../icons";
 import { apiMessage, formatDay, useTr, type Lang, type T3, type Tr } from "../i18n";
+import { CalendarMenu } from "../apps/CalendarMenu";
 import { buildAgenda, monthGrid, ymd, type AgendaItem, type AgendaKind } from "./agenda";
 
 const WEEKDAYS: Record<Lang, string[]> = {
@@ -196,6 +197,7 @@ export function HomePage({ name, onOpenApps, onPractice }: {
             <button onClick={goToday}>{tr({ ja: "今日", en: "Today", fr: "Aujourd'hui" })}</button>
             <button className="icon-button" onClick={() => shift(1)} aria-label={tr({ ja: "次の月", en: "Next month", fr: "Mois suivant" })}><ChevronRightIcon /></button>
           </div>
+          <CalendarMenu />
           <ul className="legend">
             {(["interview", "step", "event", "goal", "note"] as AgendaKind[]).map((k) => <li key={k}><span className={`dot ${k}`} />{tr(KIND_LABEL[k])}</li>)}
           </ul>

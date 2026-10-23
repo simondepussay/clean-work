@@ -8,7 +8,8 @@ import { ListEditor, type Field } from "../profile/ListEditor";
 import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
 import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, neighbour, statusLabel, stepTypes } from "./statuses";
 import { apiMessage, useTr } from "../i18n";
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, MicIcon, PenIcon, PlusIcon } from "../icons";
+import { CalendarMenu } from "./CalendarMenu";
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, MicIcon, PenIcon, PlusIcon } from "../icons";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
@@ -128,10 +129,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
       <section className="upcoming" aria-label={tr({ ja: "近い締切", en: "Upcoming deadlines", fr: "Échéances proches" })}>
         <div className="upcoming-head">
           <h3>{tr({ ja: "近い締切", en: "Upcoming deadlines", fr: "Échéances proches" })} <span>{tr({ ja: "14日以内", en: "next 14 days", fr: "14 prochains jours" })}</span></h3>
-          <button type="button" onClick={exportCalendar} disabled={allUpcoming.length === 0}
-            title={tr({ ja: "Google・Apple・Outlook のカレンダーに読み込めます", en: "Import into Google, Apple or Outlook calendar", fr: "À importer dans Google, Apple ou Outlook" })}>
-            <CalendarIcon size={16} /> {tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}
-          </button>
+          <CalendarMenu onDownload={exportCalendar} canDownload={allUpcoming.length > 0} />
         </div>
         {soon.length === 0 ? (
           <p className="muted">{tr({ ja: "14日以内の締切はありません", en: "No deadlines in the next 14 days", fr: "Aucune échéance dans les 14 prochains jours" })}</p>

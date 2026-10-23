@@ -122,14 +122,25 @@ describe("ApplicationsBoard", () => {
     expect(within(upcoming).getByText("楽天")).toBeInTheDocument();
     expect(within(upcoming).getByText(/明日/)).toBeInTheDocument();
     await userEvent.click(within(upcoming).getByRole("button", { name: /カレンダーに追加/ }));
+    await userEvent.click(screen.getByRole("menuitem", { name: /\.ics/ }));
     expect(file).toBe("shukatsu-deadlines.ics");
     click.mockRestore();
   });
 
-  it("bouton d'export désactivé sans échéance", async () => {
-    server([app({ id: "a1", company: "楽天" })]);
+  it("calendrier : abonnement Google, Apple et Outlook avec le lien privé, ou lien à copier", async () => {
+    const link = "https://site.example/api/calendar/abc.def.ics?lang=ja";
+    const fetchMock = server([app({ id: "a1", company: "楽天" })]);
+    fetchMock.mockImplementation((async (url: string) => (url.startsWith("/api/calendar-link")
+      ? { ok: true, status: 200, json: async () => ({ url: link }) }
+      : { ok: true, status: 200, json: async () => [] })) as never);
     renderBoard();
-    expect(await screen.findByRole("button", { name: /カレンダーに追加/ })).toBeDisabled();
+    await userEvent.click(await screen.findByRole("button", { name: /カレンダーに追加/ }));
+    const google = await screen.findByRole("menuitem", { name: /Google/ });
+    expect(google).toHaveAttribute("href", `https://calendar.google.com/calendar/render?cid=${encodeURIComponent("webcal://site.example/api/calendar/abc.def.ics?lang=ja")}`);
+    expect(screen.getByRole("menuitem", { name: /Apple/ })).toHaveAttribute("href", "webcal://site.example/api/calendar/abc.def.ics?lang=ja");
+    expect(screen.getByRole("menuitem", { name: /Outlook/ }).getAttribute("href")).toContain(encodeURIComponent(link));
+    expect(screen.getByLabelText(/購読用リンク/)).toHaveValue(link);
+    expect(screen.getByRole("menuitem", { name: /\.ics/ })).toBeDisabled();
   });
 });
 

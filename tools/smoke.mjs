@@ -71,7 +71,7 @@ const protectedRoutes = [
   ["POST", "/api/devices"], ["POST", "/api/push/run"],
   ["GET", "/api/interviews"], ["POST", "/api/interviews"], ["POST", "/api/interviews/x/answers"],
   ["POST", "/api/interviews/x/finish"], ["GET", "/api/interview-usage"],
-  ["GET", "/api/plans"], ["POST", "/api/plans"],
+  ["GET", "/api/plans"], ["POST", "/api/plans"], ["GET", "/api/calendar-link"],
 ];
 await check(`${protectedRoutes.length} routes protégées refusent un visiteur sans jeton`, async () => {
   const open = [];
@@ -80,6 +80,11 @@ await check(`${protectedRoutes.length} routes protégées refusent un visiteur s
     if (res.status !== 401) open.push(`${method} ${path} → ${res.status}`);
   }));
   expect(open.length === 0, open.join(", "));
+});
+
+await check("un faux lien de calendrier ne montre rien", async () => {
+  const res = await get("/api/calendar/ZmFrZQ.AAAAAAAAAAAAAAAAAAAAAAAA.ics");
+  expect(res.status === 404, `HTTP ${res.status}`);
 });
 
 await check("un faux jeton est refusé aussi", async () => {
