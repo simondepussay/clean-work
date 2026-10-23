@@ -70,7 +70,6 @@ export function ResumePanel() {
 
   return (
     <section className="resume" aria-label={tr({ ja: "応募書類PDF", en: "Application documents", fr: "Documents de candidature" })}>
-      <h2>{tr({ ja: "応募書類PDF", en: "Application documents (PDF)", fr: "Documents de candidature (PDF)" })}</h2>
       <div className="grid">
         <label>
           <span>{tr({ ja: "書類", en: "Document", fr: "Document" })}</span>

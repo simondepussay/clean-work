@@ -11,6 +11,7 @@ import { useTr, type T3 } from "./i18n";
 import { InfoPage } from "./info/InfoPage";
 import { InterviewPage, type InterviewSeed } from "./interview/InterviewPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
+import { DocumentsPage } from "./profile/DocumentsPage";
 import { ResumePanel } from "./profile/ResumePanel";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
@@ -25,9 +26,8 @@ function viewFromHash(): View {
 /** Les services de l'app, rassemblés au même endroit (la philosophie de « Clean Work »). */
 const SERVICES: { view: Exclude<View, "home" | "account">; ja: string; en: string; name: T3; text: T3 }[] = [
   { view: "apps", ja: "応募", en: "Applications", name: { ja: "応募", en: "Applications", fr: "Candidatures" }, text: { ja: "選考の進み具合と締切", en: "Progress and deadlines", fr: "Avancement et échéances" } },
-  { view: "es", ja: "ES", en: "Entry sheets", name: { ja: "ES", en: "Entry sheets", fr: "ES (entry sheets)" }, text: { ja: "書き方のガイドとAI添削", en: "Writing guide and AI review", fr: "Guide de rédaction et relecture par IA" } },
   { view: "interview", ja: "面接", en: "Interview", name: { ja: "面接", en: "Interview", fr: "Entretiens" }, text: { ja: "企業に合わせた模擬面接", en: "Mock interviews for each company", fr: "Entretiens simulés pour chaque entreprise" } },
-  { view: "documents", ja: "書類", en: "Documents", name: { ja: "書類", en: "Documents", fr: "Documents" }, text: { ja: "履歴書・職務経歴書のPDF", en: "Résumé PDFs", fr: "CV japonais en PDF" } },
+  { view: "documents", ja: "書類", en: "Documents", name: { ja: "書類", en: "Documents", fr: "Documents" }, text: { ja: "ES（AI添削）と履歴書・職務経歴書のPDF", en: "Entry sheets (AI review) and résumé PDFs", fr: "ES (relecture par IA) et CV japonais en PDF" } },
   { view: "info", ja: "情報", en: "Info", name: { ja: "情報", en: "Info", fr: "Infos" }, text: { ja: "就活ニュース・求人サイト・役立つリンク", en: "Job news, job sites and useful links", fr: "Actualité, sites d'offres et liens utiles" } },
 ];
 
@@ -173,7 +173,7 @@ export default function App() {
         {signedIn && (
           <nav className="tabs" role="tablist" aria-label={tr({ ja: "メニュー", en: "Menu", fr: "Menu" })}>
             {[{ view: "home" as View, ja: "ホーム", en: "Home" }, ...SERVICES].map((s) => (
-              <button key={s.view} role="tab" aria-selected={view === s.view} onClick={() => open(s.view)}>
+              <button key={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && view === "es")} onClick={() => open(s.view)}>
                 {s.ja}<span>{s.en}</span>
               </button>
             ))}
@@ -191,9 +191,12 @@ export default function App() {
               onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
               onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
           )}
-          {signedIn && view === "es" && <EsPage seed={esSeed} />}
+          {signedIn && (view === "es" || view === "documents") && (
+            <DocumentsPage current={view === "es" ? "es" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : "documents")}>
+              {view === "es" ? <EsPage seed={esSeed} /> : <ResumePanel />}
+            </DocumentsPage>
+          )}
           {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
-          {signedIn && view === "documents" && <ResumePanel />}
           {signedIn && view === "info" && <InfoPage />}
         </main>
       </div>
