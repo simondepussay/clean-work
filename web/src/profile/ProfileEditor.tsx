@@ -1,14 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Loader } from "../Loader";
-import { getProfile, saveProfile, type Certification, type Education, type Issue, type Language, type ProfileInput, type Work } from "../api";
+import { getProfile, saveProfile, type CvImport, type Certification, type Education, type Issue, type Language, type ProfileInput, type Work } from "../api";
 import { useAuth } from "../auth/auth";
 import { apiMessage, useTr } from "../i18n";
 import { certificationCategories, certificationSuggestions, languages, levels, options } from "./choices";
+import { CvImportPanel } from "./CvImportPanel";
 import { ListEditor, type Field } from "./ListEditor";
 
 const emptyProfile: ProfileInput = { nameKanji: "", nameKana: "", education: [], work: [], certifications: [], languages: [] };
 
-type Status = { kind: "loading" } | { kind: "ready" } | { kind: "saving" } | { kind: "saved" } | { kind: "error" };
+type Status = { kind: "loading" } | { kind: "ready" } | { kind: "saving" } | { kind: "saved" } | { kind: "error" } | { kind: "imported" };
 
 /** Formulaire du profil (S05) : base du 履歴書 (S11). */
 export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
@@ -90,6 +91,40 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
     }
   }
 
+  /**
+   * Un CV importé remplit le formulaire : les champs vides seulement (rien de ce qui est déjà saisi
+   * n'est écrasé) et les lignes qui manquent. Les mois devinés sont signalés sous leur champ.
+   */
+  function applyCv(cv: CvImport) {
+    const { check, education, work, certifications, languages, ...basics } = cv;
+    const p = { ...profile };
+    for (const [k, v] of Object.entries(basics) as [keyof typeof basics, string][]) {
+      if (v && !p[k]) (p as Record<string, unknown>)[k] = v;
+    }
+    const same = (a: string | undefined, b: string | undefined) => (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
+    const offset = { education: p.education.length, work: p.work.length, certifications: p.certifications.length, languages: p.languages.length };
+    const newEducation = education.filter((e) => !p.education.some((x) => same(x.school, e.school)));
+    const newWork = work.filter((w) => !p.work.some((x) => same(x.company, w.company)));
+    const newCertifications = certifications.filter((c) => !p.certifications.some((x) => same(x.name, c.name)));
+    const newLanguages = languages.filter((l) => !p.languages.some((x) => x.language === l.language));
+    p.education = [...p.education, ...newEducation];
+    p.work = [...p.work, ...newWork];
+    p.certifications = [...p.certifications, ...newCertifications];
+    p.languages = [...p.languages, ...newLanguages];
+    setProfile(p);
+    setStatus({ kind: "imported" });
+    // « education.1.start » dans la réponse → l'index de la ligne dans le formulaire.
+    const kept: Record<string, object[]> = { education: newEducation, work: newWork, certifications: newCertifications, languages: newLanguages };
+    const source: Record<string, object[]> = { education, work, certifications, languages };
+    setIssues(check.flatMap((path) => {
+      const [list, i, field] = path.split(".");
+      const row = source[list]?.[Number(i)];
+      const index = row ? kept[list].indexOf(row) : -1;
+      return index < 0 ? [] : [{ path: `${list}.${offset[list as keyof typeof offset] + index}.${field}`,
+        message: "月を確認してください（CVに書いていませんでした） / Check the month (it wasn't in the CV)" }];
+    }));
+  }
+
   if (status.kind === "loading") return <Loader />;
 
   const text = (key: "nameKanji" | "nameKana" | "nameLatin" | "birthDate" | "email" | "phone" | "address", label: string,
@@ -103,7 +138,17 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
 
   return (
     <form className="profile" onSubmit={submit} noValidate>
-      <h2>{tr({ ja: "プロフィール", en: "Profile", fr: "Profil" })}</h2>
+      <div className="profile-head">
+        <h2>{tr({ ja: "プロフィール", en: "Profile", fr: "Profil" })}</h2>
+        <CvImportPanel onImported={applyCv} />
+      </div>
+      {status.kind === "imported" && (
+        <p role="status" className="notice">{tr({
+          ja: "CVの内容を入力しました。確認してから「保存」を押してください。",
+          en: "Your CV has been filled in. Check it, then press Save.",
+          fr: "Le contenu du CV a été rempli. Vérifiez-le, puis enregistrez.",
+        })}</p>
+      )}
       <fieldset>
         <legend>{tr({ ja: "基本情報", en: "Basic information", fr: "Informations de base" })}</legend>
         <div className="grid">

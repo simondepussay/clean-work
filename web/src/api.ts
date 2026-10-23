@@ -304,3 +304,26 @@ export type InfoCard = {
 export type InfoPageData = { items: InfoCard[]; page: number; pages: number; total: number; sources: { id: string; name: string }[]; articles: InfoCard[] };
 export const getInfoPage = (token: string, page: number, source = "", f?: typeof fetch) =>
   call<InfoPageData>(token, "GET", `/api/info?page=${page}${source ? `&source=${encodeURIComponent(source)}` : ""}`, undefined, f);
+
+// ------------------------------------------------------------------ import d'un CV dans le profil
+
+export type CvImport = Partial<Omit<ProfileInput, "education" | "work" | "certifications" | "languages">> &
+  Pick<ProfileInput, "education" | "work" | "certifications" | "languages"> & { check: string[] };
+export type CvImportOutcome =
+  | { ok: true; profile: CvImport }
+  | { ok: false; error: "limit"; retryAfter: string }
+  | { ok: false; error: "too_short" | "failed" };
+
+/** Le texte du CV rangé dans les champs du profil (rien n'est enregistré). */
+export async function importCv(token: string, text: string, fetcher: typeof fetch = fetch): Promise<CvImportOutcome> {
+  const res = await fetcher("/api/profile/import", {
+    method: "POST",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (res.ok) return { ok: true, profile: body as CvImport };
+  if (body.error === "limit") return { ok: false, error: "limit", retryAfter: body.retryAfter };
+  if (res.status === 400) return { ok: false, error: "too_short" };
+  return { ok: false, error: "failed" };
+}

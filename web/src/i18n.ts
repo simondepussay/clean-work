@@ -32,6 +32,7 @@ const API_FR: Record<string, string> = {
   "Use the format HH:MM": "Format attendu : HH:MM",
   "Write your answer first": "Écrivez d'abord votre réponse",
   "Write or say your answer": "Écrivez ou dites votre réponse",
+  "Check the month (it wasn't in the CV)": "Vérifiez le mois (il n'était pas dans le CV)",
 };
 
 /** Un message de l'API (« 入力してください / Required ») dans la langue choisie. */

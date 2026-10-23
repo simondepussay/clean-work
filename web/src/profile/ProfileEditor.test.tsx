@@ -131,3 +131,37 @@ describe("ProfileEditor", () => {
     expect(options).not.toContain("日本語能力試験 N2");
   });
 });
+
+describe("ProfileEditor — CVから入力", () => {
+  it("remplit les champs vides et ajoute les lignes manquantes, sans rien écraser ni enregistrer ; mois devinés signalés", async () => {
+    const existing = {
+      nameKanji: "シモン", nameKana: "しもん", education: [{ school: "HAL東京", start: "2026-04", status: "expected" }],
+      work: [], certifications: [], languages: [],
+    };
+    const imported = {
+      nameKanji: "別の名前", nameLatin: "Simon Depussay", email: "simon@example.com",
+      education: [{ school: "HAL東京", start: "2026-04", status: "expected" }, { school: "Université de Lyon", start: "2019-01", end: "2023-06", status: "graduated" }],
+      work: [{ company: "WebAgence", role: "Stagiaire", start: "2022-06", end: "2022-08" }],
+      certifications: [{ category: "language", name: "JLPT N2", date: "2024-12" }],
+      languages: [{ language: "fr", level: "native" }],
+      check: ["education.1.start"],
+    };
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) =>
+      url === "/api/profile/import" ? response(200, imported) : init?.method === "PUT" ? response(200, {}) : response(200, existing));
+    vi.stubGlobal("fetch", fetchMock);
+    renderEditor();
+    await userEvent.click(await screen.findByRole("button", { name: /CVから入力/ }));
+    await userEvent.type(screen.getByLabelText(/貼り付け/), "Simon Depussay, HAL Tokyo, Université de Lyon 2019-2023, stage WebAgence.");
+    await userEvent.click(screen.getByRole("button", { name: "読み込む" }));
+
+    expect(await screen.findByText(/CVの内容を入力しました/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/氏名/), "déjà saisi : pas écrasé").toHaveValue("シモン");
+    expect(screen.getByLabelText(/ローマ字/)).toHaveValue("Simon Depussay");
+    const education = screen.getByRole("group", { name: "学歴" });
+    expect(within(education).getAllByLabelText(/学校名/).map((i) => (i as HTMLInputElement).value), "HAL東京 n'est pas ajouté deux fois")
+      .toEqual(["HAL東京", "Université de Lyon"]);
+    const second = within(education).getByRole("group", { name: "学歴 2" });
+    expect(within(second).getByText(/月を確認してください/)).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "PUT"), "rien n'est enregistré").toBe(false);
+  });
+});

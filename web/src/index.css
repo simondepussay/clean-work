@@ -420,3 +420,11 @@ button .icon { vertical-align: -3px; }
 @keyframes loader-turn { to { transform: rotate(360deg); } }
 @keyframes loader-wave { 0% { stroke-dasharray: 8 120; } 50% { stroke-dasharray: 70 120; stroke-dashoffset: -20; } 100% { stroke-dasharray: 8 120; stroke-dashoffset: -119; } }
 @media (prefers-reduced-motion: reduce) { .loader svg, .loader-arc { animation-duration: 3s; } }
+
+/* Profil : import d'un CV */
+.profile-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; position: relative; }
+.profile-head h2 { margin: 0; }
+.cv-import-open { display: inline-flex; align-items: center; gap: 6px; }
+.cv-import { width: 100%; margin: 8px 0 16px; }
+.cv-import h3 { margin: 0 0 6px; font-size: 16px; }
+.cv-import textarea { width: 100%; box-sizing: border-box; }
