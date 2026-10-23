@@ -219,6 +219,8 @@ export const containers = {
   usage: "usage",
   /** Jetons APNs des iPhone (S26), plusieurs par utilisateur possible. */
   devices: "devices",
+  /** Séances d'entraînement aux entretiens (S17–S19). */
+  interviews: "interviews",
 } as const;
 
 export type ContainerName = (typeof containers)[keyof typeof containers];

@@ -69,6 +69,8 @@ const protectedRoutes = [
   ["POST", "/api/drafts/x/review"], ["GET", "/api/drafts/x/reviews"], ["GET", "/api/usage"],
   ["POST", "/api/resume"], ["POST", "/api/work-history"],
   ["POST", "/api/devices"], ["POST", "/api/push/run"],
+  ["GET", "/api/interviews"], ["POST", "/api/interviews"], ["POST", "/api/interviews/x/answers"],
+  ["POST", "/api/interviews/x/finish"], ["GET", "/api/interview-usage"],
 ];
 await check(`${protectedRoutes.length} routes protégées refusent un visiteur sans jeton`, async () => {
   const open = [];

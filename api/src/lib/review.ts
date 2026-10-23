@@ -43,6 +43,12 @@ export interface ReviewModel {
 
 export type ChatMessage = { role: "system" | "user"; content: string };
 
+/** Un modèle qui répond en JSON selon un schéma imposé (relecture d'ES, entretiens…). */
+export interface StructuredModel {
+  readonly name: string;
+  complete<T>(messages: ChatMessage[], schemaName: string, schema: object): Promise<{ result: T; usage: ModelUsage }>;
+}
+
 const LANGUAGE_NAMES: Record<ExplanationLanguage, string> = { ja: "日本語", en: "English", fr: "français" };
 
 /**
@@ -156,7 +162,7 @@ export function costJpy(usage: ModelUsage, pricing = PRICING) {
 
 // ------------------------------------------------------------------ Azure OpenAI
 
-export class AzureOpenAIReviewer implements ReviewModel {
+export class AzureOpenAIReviewer implements ReviewModel, StructuredModel {
   constructor(
     private endpoint: string,
     private key: string,
@@ -166,7 +172,11 @@ export class AzureOpenAIReviewer implements ReviewModel {
     private timeoutMs = 40_000,
   ) {}
 
-  async review(messages: ChatMessage[]) {
+  review(messages: ChatMessage[]) {
+    return this.complete<ReviewResult>(messages, "es_review", reviewSchema);
+  }
+
+  async complete<T>(messages: ChatMessage[], schemaName: string, schema: object) {
     const res = await this.fetcher(new URL("openai/v1/chat/completions", this.endpoint), {
       method: "POST",
       headers: { "api-key": this.key, "content-type": "application/json" },
@@ -176,7 +186,7 @@ export class AzureOpenAIReviewer implements ReviewModel {
         messages,
         reasoning_effort: "low",
         max_completion_tokens: 6000,
-        response_format: { type: "json_schema", json_schema: { name: "es_review", strict: true, schema: reviewSchema } },
+        response_format: { type: "json_schema", json_schema: { name: schemaName, strict: true, schema } },
       }),
     });
     if (!res.ok) throw new Error(`Azure OpenAI ${res.status} ${(await res.text()).slice(0, 200)}`);
@@ -189,13 +199,13 @@ export class AzureOpenAIReviewer implements ReviewModel {
       throw new Error(`réponse incomplète (${choice?.finish_reason ?? "vide"})`);
     }
     return {
-      result: JSON.parse(choice.message.content) as ReviewResult,
+      result: JSON.parse(choice.message.content) as T,
       usage: { inputTokens: body.usage.prompt_tokens, outputTokens: body.usage.completion_tokens },
     };
   }
 }
 
-export function reviewModelFromEnv(env: NodeJS.ProcessEnv = process.env): ReviewModel | null {
+export function reviewModelFromEnv(env: NodeJS.ProcessEnv = process.env): (ReviewModel & StructuredModel) | null {
   const { AI_ENDPOINT, AI_KEY, AI_DEPLOYMENT = "review" } = env;
   if (!AI_ENDPOINT || !AI_KEY) return null;
   return new AzureOpenAIReviewer(AI_ENDPOINT, AI_KEY, AI_DEPLOYMENT);

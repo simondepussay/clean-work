@@ -20,35 +20,42 @@ const USAGE_TTL = 400 * 86400;
 /** Partition des compteurs de l'app entière (aucun utilisateur n'a cet identifiant). */
 export const GLOBAL = "_global";
 
+/** Ce qui est compté : les relectures d'ES (S16) ou les séances d'entretien (S17–S19), chacune avec ses limites. */
+export type Counter = { monthField: string; dayPrefix: string };
+export const REVIEWS: Counter = { monthField: "reviews", dayPrefix: "day_" };
+export const INTERVIEWS: Counter = { monthField: "interviews", dayPrefix: "iday_" };
+/** Une séance d'entretien coûte 5 à 10 appels au modèle : moins de séances que de relectures. */
+export const INTERVIEW_LIMITS = { ...LIMITS, perDay: 3, perMonth: 20 };
+
 export type Refusal = { reason: "day" | "month" | "budget"; retryAfter: string };
 export type Reservation = { release(): Promise<void> };
 
 export class UsageLimiter {
-  constructor(private store: DocStore, private now: () => Date = () => new Date(), private limits = LIMITS) {}
+  constructor(private store: DocStore, private now: () => Date = () => new Date(), private limits = LIMITS, private counter: Counter = REVIEWS) {}
 
   private keys() {
     const iso = this.now().toISOString();
-    return { month: iso.slice(0, 7), dayField: `day_${iso.slice(0, 10)}` };
+    return { month: iso.slice(0, 7), dayField: `${this.counter.dayPrefix}${iso.slice(0, 10)}`, monthField: this.counter.monthField };
   }
 
   /** Réserve une relecture pour l'utilisateur, ou explique pourquoi c'est refusé. */
   async reserve(userId: string): Promise<{ ok: true; reservation: Reservation } | { ok: false; refusal: Refusal }> {
-    const { month, dayField } = this.keys();
+    const { month, dayField, monthField } = this.keys();
 
     const budget = await this.store.increment(containers.usage, GLOBAL, month, { costJpy: 0 }, USAGE_TTL);
     if (budget.costJpy >= this.limits.monthlyBudgetJpy) return { ok: false, refusal: { reason: "budget", retryAfter: this.nextMonth() } };
 
-    const deltas = { reviews: 1, [dayField]: 1 };
+    const deltas = { [monthField]: 1, [dayField]: 1 };
     const counts = await this.store.increment(containers.usage, userId, month, deltas, USAGE_TTL);
     const release = async () => {
-      await this.store.increment(containers.usage, userId, month, { reviews: -1, [dayField]: -1 });
+      await this.store.increment(containers.usage, userId, month, { [monthField]: -1, [dayField]: -1 });
     };
 
     if (counts[dayField] > this.limits.perDay) {
       await release();
       return { ok: false, refusal: { reason: "day", retryAfter: this.tomorrow() } };
     }
-    if (counts.reviews > this.limits.perMonth) {
+    if (counts[monthField] > this.limits.perMonth) {
       await release();
       return { ok: false, refusal: { reason: "month", retryAfter: this.nextMonth() } };
     }
@@ -62,11 +69,11 @@ export class UsageLimiter {
 
   /** Ce qu'il reste à l'utilisateur ce mois-ci et aujourd'hui (pour l'afficher). */
   async remaining(userId: string) {
-    const { month, dayField } = this.keys();
-    const counts = await this.store.increment(containers.usage, userId, month, { reviews: 0, [dayField]: 0 }, USAGE_TTL);
+    const { month, dayField, monthField } = this.keys();
+    const counts = await this.store.increment(containers.usage, userId, month, { [monthField]: 0, [dayField]: 0 }, USAGE_TTL);
     return {
       today: Math.max(0, this.limits.perDay - counts[dayField]),
-      month: Math.max(0, this.limits.perMonth - counts.reviews),
+      month: Math.max(0, this.limits.perMonth - counts[monthField]),
     };
   }
 
