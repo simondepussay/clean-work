@@ -71,4 +71,61 @@ describe("HomePage", () => {
     await userEvent.click(within(goals).getByRole("button", { name: /Done: ES 3本提出/ }));
     expect(fetchMock).toHaveBeenCalledWith("/api/plans/g1", expect.objectContaining({ method: "PUT" }));
   });
+
+  it("clic sur une date : note rapide, ajoutée avec Entrée", async () => {
+    const fetchMock = server();
+    renderHome();
+    const [, m, d] = ymd(today).split("-").map(Number);
+    await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
+    const note = screen.getByRole("form", { name: /Quick note/ });
+    await userEvent.type(within(note).getByLabelText(/Note/), "履歴書の写真を撮る{Enter}");
+
+    const post = fetchMock.mock.calls.find(([url, init]) => url === "/api/plans" && init?.method === "POST")!;
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "note", title: "履歴書の写真を撮る", date: ymd(today) });
+    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    expect((await screen.findAllByText(/履歴書の写真を撮る/)).length).toBeGreaterThan(0);
+  });
+
+  it("Échap ferme la note rapide sans rien ajouter", async () => {
+    const fetchMock = server();
+    renderHome();
+    const [, m, d] = ymd(today).split("-").map(Number);
+    await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/plans", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("clic en dehors : la note écrite est enregistrée, puis la fenêtre se ferme", async () => {
+    const fetchMock = server();
+    renderHome();
+    const [, m, d] = ymd(today).split("-").map(Number);
+    await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
+    await userEvent.type(within(screen.getByRole("form", { name: /Quick note/ })).getByLabelText(/Note/), "OB訪問の質問を準備");
+    await userEvent.click(screen.getByRole("heading", { level: 1 }));
+    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    const post = fetchMock.mock.calls.find(([url, init]) => url === "/api/plans" && init?.method === "POST")!;
+    expect(JSON.parse(post[1]!.body as string)).toMatchObject({ kind: "note", title: "OB訪問の質問を準備" });
+  });
+
+  it("clic en dehors sans rien écrire : ferme sans rien enregistrer", async () => {
+    const fetchMock = server();
+    renderHome();
+    const [, m, d] = ymd(today).split("-").map(Number);
+    await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
+    await userEvent.click(screen.getByRole("heading", { level: 1 }));
+    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/plans", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("une case occupée contient l'aperçu du jour (affiché au survol)", async () => {
+    server([{ id: "p1", kind: "event", title: "説明会", date: ymd(today), time: "10:00", done: false, createdAt: "", updatedAt: "" }]);
+    renderHome();
+    const [, m, d] = ymd(today).split("-").map(Number);
+    const cell = await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) });
+    const peek = await within(cell).findByRole("tooltip");
+    expect(peek).toHaveTextContent("説明会");
+    expect(peek).toHaveTextContent("10:00");
+    expect(peek).toHaveTextContent("ソニー");
+  });
 });

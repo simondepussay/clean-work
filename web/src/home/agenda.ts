@@ -5,7 +5,7 @@ import { stepName } from "../apps/deadlines";
  * Tout ce qui a une date, au même endroit (accueil) : les étapes des candidatures
  * (entretiens, ES, tests…), les événements et les objectifs de l'utilisateur.
  */
-export type AgendaKind = "interview" | "step" | "event" | "goal";
+export type AgendaKind = "interview" | "step" | "event" | "goal" | "note";
 export type AgendaItem = {
   key: string;
   date: string;
@@ -21,7 +21,7 @@ export type AgendaItem = {
 
 const INTERVIEWS = new Set(["interview1", "interview2", "final"]);
 const CLOSED = new Set(["rejected", "withdrawn"]);
-const ORDER: Record<AgendaKind, number> = { interview: 0, goal: 1, step: 2, event: 3 };
+const ORDER: Record<AgendaKind, number> = { interview: 0, goal: 1, step: 2, event: 3, note: 4 };
 
 export function buildAgenda(apps: Application[], plans: Plan[]): AgendaItem[] {
   const steps = apps

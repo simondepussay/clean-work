@@ -236,7 +236,7 @@ export const getInterviewUsage = (token: string, f?: typeof fetch) => call<Usage
 
 // ------------------------------------------------------------------ agenda (événements et objectifs)
 
-export type PlanKind = "event" | "goal";
+export type PlanKind = "event" | "goal" | "note";
 export type PlanInput = { kind: PlanKind; title: string; date: string; time?: string | null; note?: string; done?: boolean };
 export type Plan = PlanInput & { id: string; done: boolean; createdAt: string; updatedAt: string };
 

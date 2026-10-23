@@ -197,9 +197,10 @@ export type Review = {
 
 /**
  * Ce que l'utilisateur ajoute lui-même au calendrier de l'accueil, en plus des étapes des
- * candidatures : un événement (説明会, salon, OB訪問…) ou un objectif (« ES 3本提出 » avant une date).
+ * candidatures : un événement (説明会, salon, OB訪問…), un objectif (« ES 3本提出 » avant une date)
+ * ou une note rapide (« 履歴書の写真を撮る »), écrite en cliquant sur une date.
  */
-export const planKinds = ["event", "goal"] as const;
+export const planKinds = ["event", "goal", "note"] as const;
 
 export const planInputSchema = z.object({
   kind: choice(planKinds).default("event"),

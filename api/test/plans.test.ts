@@ -26,6 +26,12 @@ describe("/api/plans (événements et objectifs)", () => {
     expect(list.every((p) => p.done === false)).toBe(true);
   });
 
+  it("note rapide sur une date", async () => {
+    const res = await api()("u1", "POST", undefined, { kind: "note", title: "履歴書の写真を撮る", date: "2026-10-26" });
+    expect(res.status).toBe(201);
+    expect(res.jsonBody).toMatchObject({ kind: "note", title: "履歴書の写真を撮る", done: false });
+  });
+
   it("coche un objectif ; null efface l'heure", async () => {
     const call = api();
     const created = (await call("u1", "POST", undefined, { title: "説明会", date: "2026-11-02", time: "18:30" })).jsonBody as { id: string };
