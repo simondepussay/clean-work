@@ -56,6 +56,17 @@ const plans = [
 
 const routes: Record<string, unknown> = {
   "GET /api/plans": plans,
+  "GET /api/info?page=1": {
+    page: 1, pages: 1, total: 2, sources: [{ id: "mhlw", name: "厚生労働省" }],
+    items: [
+      { id: "news-1", kind: "news", date: inDays(0), source: "mhlw", link: "https://www.mhlw.go.jp/",
+        title: { ja: "新規学卒者の離職状況を公表", en: "Turnover of new graduates published", fr: "Publication du taux de départ des jeunes diplômés" },
+        summary: { ja: "入社3年以内の離職率は企業選びの参考になります。", en: "Early turnover rates help when choosing a company.", fr: "Le taux de départ précoce aide à choisir une entreprise." } },
+      { id: "bienvenue", kind: "article", date: inDays(0), lang: "ja", body: "Clean Work へようこそ。",
+        title: { ja: "Clean Work へようこそ", en: "Welcome to Clean Work", fr: "Bienvenue sur Clean Work" },
+        summary: { ja: "就活に必要なものを、ひとつの場所に。", en: "Everything for your job hunt, in one place.", fr: "Tout pour votre recherche d'emploi, au même endroit." } },
+    ],
+  },
   "GET /api/news": {
     sources: [{ id: "mhlw", name: "厚生労働省", site: "", lang: "ja" }, { id: "nhk", name: "NHK 経済", site: "", lang: "ja" }, { id: "japantimes", name: "The Japan Times", site: "", lang: "en" }],
     items: [

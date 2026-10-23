@@ -259,21 +259,12 @@ export type NewsSource = { id: string; name: string; site: string; lang: "ja" | 
 export type NewsItem = { source: string; title: string; link: string; date: string | null; excerpt: string };
 export const getNews = (token: string, f?: typeof fetch) => call<{ sources: NewsSource[]; items: NewsItem[] }>(token, "GET", "/api/news", undefined, f);
 
-/** Articles et interviews publiés par Clean Work (web/public/content/articles.json). */
-export type Article = {
-  id: string; date: string; kind: "article" | "interview";
-  /** Langue dans laquelle l'article est écrit ; le titre et le résumé existent dans les trois. */
-  lang: "ja" | "en" | "fr";
+/** Une carte de l'onglet « 情報 » : article ou interview de Clean Work, ou actualité choisie chaque matin. */
+export type InfoCard = {
+  id: string; kind: "article" | "interview" | "news"; date: string;
   title: { ja: string; en: string; fr: string };
   summary: { ja: string; en: string; fr: string };
-  body: string;
+  body?: string; lang?: "ja" | "en" | "fr"; link?: string; source?: string;
 };
-export async function getArticles(fetcher: typeof fetch = fetch): Promise<Article[]> {
-  try {
-    const res = await fetcher("/content/articles.json");
-    const data = res.ok ? await res.json() : [];
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
+export type InfoPageData = { items: InfoCard[]; page: number; pages: number; total: number; sources: { id: string; name: string }[] };
+export const getInfoPage = (token: string, page: number, f?: typeof fetch) => call<InfoPageData>(token, "GET", `/api/info?page=${page}`, undefined, f);

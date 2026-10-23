@@ -249,6 +249,8 @@ export const containers = {
   interviews: "interviews",
   /** Événements et objectifs ajoutés au calendrier par l'utilisateur. */
   plans: "plans",
+  /** Contenu partagé par toute l'app (sélection quotidienne de l'onglet « 情報 ») : partition « _global ». */
+  content: "content",
 } as const;
 
 export type ContainerName = (typeof containers)[keyof typeof containers];

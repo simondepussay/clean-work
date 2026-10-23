@@ -1,4 +1,4 @@
-name: Rappels des échéances
+name: Tâches du matin (rappels et 情報)
 
 # Chaque matin à 8 h (heure du Japon), le serveur envoie les rappels push (S26).
 # Static Web Apps n'a pas de minuterie : c'est ce workflow qui sert de « cron ».
@@ -27,3 +27,12 @@ jobs:
           # GitHub prévient alors par email.
           FAILED=$(echo "$SUMMARY" | jq .failed)
           [ "$FAILED" -eq 0 ] || { echo "::error::$FAILED envoi(s) en échec"; exit 1; }
+      - name: Choisir les 5 actualités du jour (onglet 情報)
+        if: always()
+        env:
+          SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+        run: |
+          curl -fsS --retry 3 --retry-all-errors --max-time 120 -X POST \
+            -H "x-shukatsu-cron: $SECRET" \
+            https://blue-rock-008b52800.2.azurestaticapps.net/api/info/run
+          echo
