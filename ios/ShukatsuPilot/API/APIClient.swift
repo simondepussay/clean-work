@@ -167,6 +167,55 @@ struct APIClient {
         try await send("DELETE", "api/me")
     }
 
+    // MARK: Entraînement aux entretiens (S17–S19)
+
+    func interviews() async throws -> [InterviewListItem] {
+        try decode([InterviewListItem].self, from: try await send("GET", "api/interviews"))
+    }
+
+    func interview(_ id: String) async throws -> Interview {
+        try decode(Interview.self, from: try await send("GET", "api/interviews/\(id)"))
+    }
+
+    func interviewUsage() async throws -> Usage {
+        try decode(Usage.self, from: try await send("GET", "api/interview-usage"))
+    }
+
+    func deleteInterview(_ id: String) async throws {
+        try await send("DELETE", "api/interviews/\(id)")
+    }
+
+    func startInterview(applicationId: String?, stage: InterviewStage, language: HelpLanguage) async throws -> Result<Interview, InterviewRefusal> {
+        struct Body: Encodable { let applicationId: String?; let stage: InterviewStage; let language: String }
+        return try await interviewCall("api/interviews", Body(applicationId: applicationId, stage: stage, language: language.rawValue))
+    }
+
+    func answerInterview(_ id: String, answer: String, durationSec: Int?, spoken: Bool) async throws -> Result<Interview, InterviewRefusal> {
+        struct Body: Encodable { let answer: String; let durationSec: Int?; let spoken: Bool }
+        return try await interviewCall("api/interviews/\(id)/answers", Body(answer: answer, durationSec: durationSec, spoken: spoken))
+    }
+
+    func finishInterview(_ id: String) async throws -> Result<Interview, InterviewRefusal> {
+        try await interviewCall("api/interviews/\(id)/finish", [String: String]())
+    }
+
+    private func interviewCall(_ path: String, _ body: some Encodable) async throws -> Result<Interview, InterviewRefusal> {
+        let (data, status) = try await raw("POST", path, body: try JSONEncoder().encode(body))
+        if (200..<300).contains(status) { return .success(try decode(Interview.self, from: data)) }
+        if status == 401 { throw APIError.unauthorized }
+        let refusal = try? JSONDecoder().decode(RefusalBody.self, from: data)
+        switch (status, refusal?.error) {
+        case (_, "limit"):
+            let date = refusal?.retryAfter.flatMap { ISO8601DateFormatter.withFractions.date(from: $0) }
+            return .failure(.limit(reason: refusal?.reason ?? "day", retryAfter: date))
+        case (400, _): return .failure(.invalid)
+        case (404, _): return .failure(.notFound)
+        case (409, _): return .failure(.finished)
+        case (_, "ai_not_configured"): return .failure(.notConfigured)
+        default: return .failure(.failed)
+        }
+    }
+
     // MARK: Notifications push (S26)
 
     /// Enregistre le jeton APNs de l'iPhone ; renvoie true si le serveur enverra les rappels.
@@ -215,6 +264,10 @@ struct APIClient {
 
 /// Corps d'erreur de l'API : { "error": "…" }.
 private struct ErrorBody: Decodable { let error: String? }
+
+/// Refus d'une fonction IA : limite atteinte (avec la date de reprise), IA indisponible…
+/// Déclaré ici : Swift n'accepte pas un type dans une fonction générique (interviewCall).
+private struct RefusalBody: Decodable { let error: String?; let reason: String?; let retryAfter: String? }
 
 extension ISO8601DateFormatter {
     /// Dates de l'API (« 2026-10-21T00:00:00.000Z »), avec les millisecondes.

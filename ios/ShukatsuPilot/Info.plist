@@ -28,6 +28,10 @@
 	<string>a4837883-e8be-4db5-b6d9-63a5204707cc</string>
 	<key>EntraTenantSubdomain</key>
 	<string>shukatsupilot</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>面接練習で、声で回答するためにマイクを使います。/ The microphone is used to answer interview practice questions by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>声の回答を文字にするために音声認識を使います。音声は本アプリのサーバーには送られません。/ Speech recognition turns your spoken answers into text. Your voice is not sent to our servers.</string>
 	<key>SupportEmail</key>
 	<string>depussay.simon@icloud.com</string>
 	<key>UILaunchScreen</key>

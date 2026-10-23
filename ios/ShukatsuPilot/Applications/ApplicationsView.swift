@@ -132,6 +132,13 @@ struct ApplicationEditor: View {
             if failed { Section { Text("保存できませんでした / Could not save").foregroundStyle(.red) } }
             if let app {
                 Section {
+                    NavigationLink {
+                        InterviewView(model: InterviewModel(api: api, applicationId: app.id))
+                    } label: {
+                        Label("面接を練習する / Practise the interview", systemImage: "mic")
+                    }
+                }
+                Section {
                     Button("削除 / Delete", role: .destructive) { Task { await onDelete(app); dismiss() } }
                 }
             }

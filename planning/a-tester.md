@@ -14,6 +14,7 @@ Site : https://blue-rock-008b52800.2.azurestaticapps.net
 - [ ] Les avis sont-ils utiles et dans la bonne langue ? Une relance (深掘り) apparaît-elle ?
 - [ ] Le bilan final, puis l'historique (これまでの練習).
 - [ ] Depuis une candidature : bouton « 🎤 面接を練習する ».
+- [ ] iPhone : Accueil → « 面接練習 », accepter micro et reconnaissance vocale, répondre à voix haute (le texte apparaît-il pendant que tu parles ?).
 
 ## Notifications push serveur (S26, jour 9) — le plus important
 

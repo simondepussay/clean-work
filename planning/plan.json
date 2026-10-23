@@ -1,574 +1,583 @@
 {
-  "project": {
-    "name": "就活パイロット（仮）",
-    "name_en": "Shukatsu Pilot",
-    "pitch": "日本で就職活動をする留学生のための、応募管理・履歴書作成・ESレビュー・面接練習アプリ（iOS + Web）",
-    "start_date": "2026-10-19",
-    "deadline": "2027-03-31",
-    "deadline_label": "サマーインターン応募開始（2027年4月〜）の前にMVP公開",
-    "pitch_en": "An iOS + web app for international students job hunting in Japan: application tracking, résumé builder, AI entry-sheet review and interview practice.",
-    "deadline_label_en": "MVP live before summer-internship applications open (April 2027)"
-  },
-  "scrum": {
-    "sprint_days": 14,
-    "velocity": 10,
-    "scale": [
-      1,
-      2,
-      3,
-      5,
-      8,
-      13
-    ],
-    "note": "1人開発・授業と並行（週10〜12時間）。ベロシティ10SP/スプリント → 1SP ≒ 1.4日",
-    "note_en": "Solo developer alongside school (10–12 h/week). Velocity 10 SP per sprint → 1 SP ≈ 1.4 days"
-  },
-  "epics": {
-    "E0": "基盤",
-    "E1": "プロフィール",
-    "E2": "応募管理",
-    "E3": "履歴書PDF",
-    "E4": "ESレビュー",
-    "E5": "面接練習",
-    "E6": "企業研究",
-    "E7": "リリース・運用"
-  },
-  "stories": [
-    {
-      "id": "S01",
-      "epic": "E0",
-      "pts": 3,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "リポジトリ・CI・Azure環境の構築",
-      "story": "開発者として、pushするたびに自動でテスト・デプロイしたい。安全に早く出せるから。",
-      "title_en": "Repository, CI and Azure environment",
-      "story_en": "As a developer, I want every push to be tested and deployed automatically, so I can ship safely and quickly."
-    },
-    {
-      "id": "S02",
-      "epic": "E0",
-      "pts": 5,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "Entra IDでサインイン（iOS・Web）",
-      "story": "学生として、iPhoneとPCで同じアカウントを使いたい。どこでも続きができるから。",
-      "title_en": "Sign in with Entra ID (iOS and web)",
-      "story_en": "As a student, I want one account on my iPhone and my PC, so I can pick up where I left off."
-    },
-    {
-      "id": "S03",
-      "epic": "E0",
-      "pts": 3,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "データモデル（Cosmos DB）",
-      "story": "開発者として、ユーザーごとにデータを分けて保存したい。他人のデータが見えないように。",
-      "title_en": "Data model (Cosmos DB)",
-      "story_en": "As a developer, I want each user's data stored separately, so nobody can see someone else's data."
-    },
-    {
-      "id": "S04",
-      "epic": "E7",
-      "pts": 2,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "プライバシーポリシー・利用規約",
-      "story": "学生として、個人情報の扱いを知りたい。履歴書の情報を安心して入れられるように。",
-      "title_en": "Privacy policy and terms of use",
-      "story_en": "As a student, I want to know how my personal data is handled, so I feel safe entering résumé details."
-    },
-    {
-      "id": "S05",
-      "epic": "E1",
-      "pts": 5,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "プロフィール入力（学歴・職歴・資格・言語）",
-      "story": "学生として、自分の情報を一度だけ入力したい。毎回同じことを書かなくていいように。",
-      "title_en": "Profile form (education, work, certifications, languages)",
-      "story_en": "As a student, I want to enter my details only once, so I don't rewrite the same things every time."
-    },
-    {
-      "id": "S06",
-      "epic": "E1",
-      "pts": 3,
-      "moscow": "Could",
-      "release": "後回し",
-      "title": "証明写真の自動トリミング（Vision）",
-      "story": "学生として、スマホの写真を30×40mmの証明写真にしたい。写真館に行かなくていいように。",
-      "title_en": "Automatic ID-photo cropping (Vision)",
-      "story_en": "As a student, I want to turn a phone photo into a 30×40 mm ID photo, so I don't need a photo studio."
-    },
-    {
-      "id": "S07",
-      "epic": "E2",
-      "pts": 3,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "応募企業の追加・編集・削除",
-      "story": "学生として、応募した企業を一か所で管理したい。どこに応募したか忘れないように。",
-      "title_en": "Add, edit and delete companies",
-      "story_en": "As a student, I want all my applications in one place, so I never forget where I applied."
-    },
-    {
-      "id": "S08",
-      "epic": "E2",
-      "pts": 5,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "選考ステップのかんばん表示",
-      "story": "学生として、ES→適性検査→面接→内定の進み具合を見たい。次にやることがすぐ分かるように。",
-      "title_en": "Kanban view of selection steps",
-      "story_en": "As a student, I want to see ES → aptitude test → interviews → offer at a glance, so I know what to do next."
-    },
-    {
-      "id": "S09",
-      "epic": "E2",
-      "pts": 5,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "締切リマインダー（プッシュ通知）",
-      "story": "学生として、締切の前日に通知がほしい。締切を逃さないように。",
-      "title_en": "Deadline reminders (push notifications)",
-      "story_en": "As a student, I want a notification the day before a deadline, so I never miss one."
-    },
-    {
-      "id": "S10",
-      "epic": "E2",
-      "pts": 3,
-      "moscow": "Could",
-      "release": "後回し",
-      "title": "ホーム画面ウィジェット（次の締切）",
-      "story": "学生として、アプリを開かずに次の締切を見たい。",
-      "title_en": "Home-screen widget (next deadline)",
-      "story_en": "As a student, I want to see my next deadline without opening the app."
-    },
-    {
-      "id": "S11",
-      "epic": "E3",
-      "pts": 8,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "JIS形式の履歴書PDFを生成",
-      "story": "学生として、プロフィールから日本式の履歴書を作りたい。形式のミスで落とされないように。",
-      "title_en": "Generate a JIS-format résumé (rirekisho) PDF",
-      "story_en": "As a student, I want a Japanese-format résumé from my profile, so I'm not rejected for formatting mistakes."
-    },
-    {
-      "id": "S12",
-      "epic": "E3",
-      "pts": 5,
-      "moscow": "Should",
-      "release": "MVP",
-      "title": "職務経歴書PDFを生成",
-      "story": "職歴がある学生として、職務経歴書も作りたい。アルバイトや前職をアピールできるように。",
-      "title_en": "Generate a work-history (shokumu keirekisho) PDF",
-      "story_en": "As a student with work experience, I want a work-history document, so I can highlight past jobs."
-    },
-    {
-      "id": "S13",
-      "epic": "E4",
-      "pts": 2,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "ES入力と文字数カウント",
-      "story": "学生として、設問ごとに字数制限を守って書きたい。",
-      "title_en": "Entry-sheet editor with character count",
-      "story_en": "As a student, I want to respect each question's character limit."
-    },
-    {
-      "id": "S14",
-      "epic": "E4",
-      "pts": 8,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "AIレビュー（敬語・構成・STAR）＋FR/EN解説",
-      "story": "留学生として、ESの敬語と構成を直してほしい。理由を母語で理解できるように。",
-      "title_en": "AI review (keigo, structure, STAR) + FR/EN explanations",
-      "story_en": "As an international student, I want my keigo and structure corrected, with explanations in my own language."
-    },
-    {
-      "id": "S15",
-      "epic": "E4",
-      "pts": 3,
-      "moscow": "Should",
-      "release": "MVP",
-      "title": "レビュー履歴と差分表示",
-      "story": "学生として、修正前と修正後を比べたい。自分の成長が分かるように。",
-      "title_en": "Review history and diff view",
-      "story_en": "As a student, I want to compare before and after, so I can see my progress."
-    },
-    {
-      "id": "S16",
-      "epic": "E4",
-      "pts": 3,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "AI利用の回数制限・コスト上限",
-      "story": "運営者として、AIの費用を月額上限内に収めたい。赤字にならないように。",
-      "title_en": "AI rate limits and cost cap",
-      "story_en": "As the operator, I want AI costs to stay under a monthly cap, so the app doesn't lose money."
-    },
-    {
-      "id": "S17",
-      "epic": "E5",
-      "pts": 3,
-      "moscow": "Should",
-      "release": "v1.1",
-      "title": "面接の質問バンク",
-      "story": "学生として、よく聞かれる質問で練習したい。",
-      "title_en": "Interview question bank",
-      "story_en": "As a student, I want to practise with frequently asked questions."
-    },
-    {
-      "id": "S18",
-      "epic": "E5",
-      "pts": 8,
-      "moscow": "Should",
-      "release": "v1.1",
-      "title": "音声で回答・文字起こし（Azure Speech）",
-      "story": "学生として、声に出して答える練習をしたい。本番と同じように話せるように。",
-      "title_en": "Spoken answers + transcription (Azure Speech)",
-      "story_en": "As a student, I want to practise answering out loud, so I speak naturally on the day."
-    },
-    {
-      "id": "S19",
-      "epic": "E5",
-      "pts": 8,
-      "moscow": "Should",
-      "release": "v1.1",
-      "title": "回答へのAIフィードバック（内容・敬語・時間）",
-      "story": "学生として、自分の回答の弱点を知りたい。",
-      "title_en": "AI feedback on answers (content, keigo, timing)",
-      "story_en": "As a student, I want to know the weak points of my answers."
-    },
-    {
-      "id": "S20",
-      "epic": "E6",
-      "pts": 5,
-      "moscow": "Could",
-      "release": "v1.2",
-      "title": "企業メモとAI要約（外国人採用・ビザ）",
-      "story": "留学生として、外国人を採用している企業か知りたい。無駄な応募を減らせるように。",
-      "title_en": "Company notes + AI summary (foreign hires, visas)",
-      "story_en": "As an international student, I want to know which companies hire foreigners, so I apply where it counts."
-    },
-    {
-      "id": "S21",
-      "epic": "E7",
-      "pts": 5,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "自動テスト・E2E・監視（Application Insights）",
-      "story": "開発者として、リリース前に壊れていないことを確かめたい。",
-      "title_en": "Automated tests, E2E and monitoring (Application Insights)",
-      "story_en": "As a developer, I want to confirm nothing is broken before release."
-    },
-    {
-      "id": "S22",
-      "epic": "E7",
-      "pts": 2,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "TestFlightでβテスト（HALの留学生10人）",
-      "story": "開発者として、本物のユーザーに使ってもらいたい。思い込みで作らないように。",
-      "title_en": "TestFlight beta (10 international students at HAL)",
-      "story_en": "As a developer, I want real users to try it, so I don't build on assumptions."
-    },
-    {
-      "id": "S23",
-      "epic": "E7",
-      "pts": 3,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "App Store申請・公開",
-      "story": "学生として、App Storeからダウンロードしたい。",
-      "title_en": "App Store submission and release",
-      "story_en": "As a student, I want to download the app from the App Store."
-    },
-    {
-      "id": "S24",
-      "epic": "E7",
-      "pts": 2,
-      "moscow": "Should",
-      "release": "MVP",
-      "title": "ポートフォリオに「設計と運用」ページ",
-      "story": "就活生（自分）として、作り方を企業に見せたい。面接で話せるように。",
-      "title_en": "“How it's built” page on my portfolio",
-      "story_en": "As a job seeker (me), I want to show companies how I built it, so I can talk about it in interviews."
-    },
-    {
-      "id": "S25",
-      "epic": "E0",
-      "pts": 3,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "アカウント削除（App Storeの必須要件）",
-      "story": "学生として、アプリの中で自分のアカウントとデータを削除したい。いつでもやめられるように。",
-      "title_en": "Account deletion (App Store requirement)",
-      "story_en": "As a student, I want to delete my account and data from inside the app, so I can leave at any time.",
-      "added": "2026-10-16"
-    },
-    {
-      "id": "S26",
-      "epic": "E2",
-      "pts": 5,
-      "moscow": "Must",
-      "release": "MVP",
-      "title": "サーバーからのプッシュ通知（APNs）",
-      "story": "学生として、アプリを開いていなくても、締切が変わったときにも確実に通知を受け取りたい。",
-      "title_en": "Server push notifications (APNs)",
-      "story_en": "As a student, I want reliable notifications even when I haven't opened the app, including when a deadline changes.",
-      "added": "2026-10-22",
-      "note": "ユーザーの要望で追加（重要）。ローカル通知（S09）は残し、オフラインでも届く予備にする。Apple Developer で APNs キーの作成が必要。"
-    }
+ "project": {
+  "name": "就活パイロット（仮）",
+  "name_en": "Shukatsu Pilot",
+  "pitch": "日本で就職活動をする留学生のための、応募管理・履歴書作成・ESレビュー・面接練習アプリ（iOS + Web）",
+  "start_date": "2026-10-19",
+  "deadline": "2027-03-31",
+  "deadline_label": "サマーインターン応募開始（2027年4月〜）の前にMVP公開",
+  "pitch_en": "An iOS + web app for international students job hunting in Japan: application tracking, résumé builder, AI entry-sheet review and interview practice.",
+  "deadline_label_en": "MVP live before summer-internship applications open (April 2027)"
+ },
+ "scrum": {
+  "sprint_days": 14,
+  "velocity": 10,
+  "scale": [
+   1,
+   2,
+   3,
+   5,
+   8,
+   13
   ],
-  "events": [
-    {
-      "id": 1,
-      "col": 0,
-      "row": 1,
-      "label": "開始"
-    },
-    {
-      "id": 2,
-      "col": 1,
-      "row": 1,
-      "label": "基盤完成"
-    },
-    {
-      "id": 3,
-      "col": 2,
-      "row": 1,
-      "label": "認証完成"
-    },
-    {
-      "id": 4,
-      "col": 3,
-      "row": 1,
-      "label": "プロフィール完成"
-    },
-    {
-      "id": 5,
-      "col": 4,
-      "row": 2,
-      "label": "応募管理完成"
-    },
-    {
-      "id": 6,
-      "col": 4.5,
-      "row": 0,
-      "label": "ESレビュー完成"
-    },
-    {
-      "id": 7,
-      "col": 5.5,
-      "row": 1,
-      "label": "全機能完成"
-    },
-    {
-      "id": 8,
-      "col": 6.5,
-      "row": 1,
-      "label": "β開始"
-    },
-    {
-      "id": 9,
-      "col": 7.5,
-      "row": 1,
-      "label": "申請"
-    },
-    {
-      "id": 10,
-      "col": 8.5,
-      "row": 1,
-      "label": "公開"
-    },
-    {
-      "id": 11,
-      "col": 9.5,
-      "row": 1,
-      "label": "完了"
-    }
-  ],
-  "activities": [
-    {
-      "id": "A",
-      "name": "基盤構築",
-      "from": 1,
-      "to": 2,
-      "stories": [
-        "S01",
-        "S03"
-      ],
-      "solo": true,
-      "name_en": "Foundation"
-    },
-    {
-      "id": "B",
-      "name": "認証",
-      "from": 2,
-      "to": 3,
-      "stories": [
-        "S02",
-        "S25"
-      ],
-      "solo": true,
-      "name_en": "Authentication"
-    },
-    {
-      "id": "C",
-      "name": "プロフィール",
-      "from": 3,
-      "to": 4,
-      "stories": [
-        "S05"
-      ],
-      "solo": true,
-      "name_en": "Profile"
-    },
-    {
-      "id": "D",
-      "name": "応募管理",
-      "from": 3,
-      "to": 5,
-      "stories": [
-        "S07",
-        "S08"
-      ],
-      "solo": true,
-      "name_en": "Application tracker"
-    },
-    {
-      "id": "E",
-      "name": "履歴書PDF",
-      "from": 4,
-      "to": 7,
-      "stories": [
-        "S11",
-        "S12"
-      ],
-      "solo": true,
-      "name_en": "Résumé PDF"
-    },
-    {
-      "id": "F",
-      "name": "リマインダー",
-      "from": 5,
-      "to": 7,
-      "stories": [
-        "S09",
-        "S26"
-      ],
-      "solo": true,
-      "name_en": "Reminders"
-    },
-    {
-      "id": "G",
-      "name": "ESレビュー",
-      "from": 4,
-      "to": 6,
-      "stories": [
-        "S13",
-        "S14",
-        "S15",
-        "S16"
-      ],
-      "solo": true,
-      "name_en": "Entry-sheet review"
-    },
-    {
-      "id": "d1",
-      "name": "ダミー",
-      "from": 6,
-      "to": 7,
-      "dummy": true,
-      "name_en": "Dummy"
-    },
-    {
-      "id": "H",
-      "name": "規約・ポリシー",
-      "from": 1,
-      "to": 9,
-      "stories": [
-        "S04"
-      ],
-      "solo": true,
-      "lane": -1.4,
-      "name_en": "Terms & privacy"
-    },
-    {
-      "id": "I",
-      "name": "βテスター募集",
-      "from": 1,
-      "to": 8,
-      "fixed_days": 21,
-      "solo": false,
-      "lane": 3.3,
-      "note": "開発ではない作業（HALの留学生に声をかける）",
-      "name_en": "Recruit beta testers",
-      "note_en": "Non-development work (asking international students at HAL)"
-    },
-    {
-      "id": "J",
-      "name": "統合テスト・監視",
-      "from": 7,
-      "to": 8,
-      "stories": [
-        "S21"
-      ],
-      "solo": true,
-      "name_en": "Integration tests"
-    },
-    {
-      "id": "K",
-      "name": "βテスト",
-      "from": 8,
-      "to": 9,
-      "stories": [
-        "S22"
-      ],
-      "fixed_days": 14,
-      "solo": false,
-      "note": "2週間テスターに使ってもらう（待ち時間が中心）",
-      "name_en": "Beta test",
-      "note_en": "Two weeks of testers using the app (mostly waiting)"
-    },
-    {
-      "id": "L",
-      "name": "App Store審査",
-      "from": 9,
-      "to": 10,
-      "stories": [
-        "S23"
-      ],
-      "fixed_days": 7,
-      "solo": false,
-      "note": "申請後はAppleの審査待ち",
-      "name_en": "App Store review",
-      "note_en": "Waiting for Apple's review after submission"
-    },
-    {
-      "id": "M",
-      "name": "設計ページ公開",
-      "from": 10,
-      "to": 11,
-      "stories": [
-        "S24"
-      ],
-      "solo": true,
-      "name_en": "Publish build page"
-    }
-  ],
-  "epics_en": {
-    "E0": "Foundation",
-    "E1": "Profile",
-    "E2": "Application tracker",
-    "E3": "Résumé PDF",
-    "E4": "Entry-sheet review",
-    "E5": "Interview practice",
-    "E6": "Company research",
-    "E7": "Release & operations"
+  "note": "1人開発・授業と並行（週10〜12時間）。ベロシティ10SP/スプリント → 1SP ≒ 1.4日",
+  "note_en": "Solo developer alongside school (10–12 h/week). Velocity 10 SP per sprint → 1 SP ≈ 1.4 days"
+ },
+ "epics": {
+  "E0": "基盤",
+  "E1": "プロフィール",
+  "E2": "応募管理",
+  "E3": "履歴書PDF",
+  "E4": "ESレビュー",
+  "E5": "面接練習",
+  "E6": "企業研究",
+  "E7": "リリース・運用"
+ },
+ "stories": [
+  {
+   "id": "S01",
+   "epic": "E0",
+   "pts": 3,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "リポジトリ・CI・Azure環境の構築",
+   "story": "開発者として、pushするたびに自動でテスト・デプロイしたい。安全に早く出せるから。",
+   "title_en": "Repository, CI and Azure environment",
+   "story_en": "As a developer, I want every push to be tested and deployed automatically, so I can ship safely and quickly."
+  },
+  {
+   "id": "S02",
+   "epic": "E0",
+   "pts": 5,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "Entra IDでサインイン（iOS・Web）",
+   "story": "学生として、iPhoneとPCで同じアカウントを使いたい。どこでも続きができるから。",
+   "title_en": "Sign in with Entra ID (iOS and web)",
+   "story_en": "As a student, I want one account on my iPhone and my PC, so I can pick up where I left off."
+  },
+  {
+   "id": "S03",
+   "epic": "E0",
+   "pts": 3,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "データモデル（Cosmos DB）",
+   "story": "開発者として、ユーザーごとにデータを分けて保存したい。他人のデータが見えないように。",
+   "title_en": "Data model (Cosmos DB)",
+   "story_en": "As a developer, I want each user's data stored separately, so nobody can see someone else's data."
+  },
+  {
+   "id": "S04",
+   "epic": "E7",
+   "pts": 2,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "プライバシーポリシー・利用規約",
+   "story": "学生として、個人情報の扱いを知りたい。履歴書の情報を安心して入れられるように。",
+   "title_en": "Privacy policy and terms of use",
+   "story_en": "As a student, I want to know how my personal data is handled, so I feel safe entering résumé details."
+  },
+  {
+   "id": "S05",
+   "epic": "E1",
+   "pts": 5,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "プロフィール入力（学歴・職歴・資格・言語）",
+   "story": "学生として、自分の情報を一度だけ入力したい。毎回同じことを書かなくていいように。",
+   "title_en": "Profile form (education, work, certifications, languages)",
+   "story_en": "As a student, I want to enter my details only once, so I don't rewrite the same things every time."
+  },
+  {
+   "id": "S06",
+   "epic": "E1",
+   "pts": 3,
+   "moscow": "Could",
+   "release": "後回し",
+   "title": "証明写真の自動トリミング（Vision）",
+   "story": "学生として、スマホの写真を30×40mmの証明写真にしたい。写真館に行かなくていいように。",
+   "title_en": "Automatic ID-photo cropping (Vision)",
+   "story_en": "As a student, I want to turn a phone photo into a 30×40 mm ID photo, so I don't need a photo studio."
+  },
+  {
+   "id": "S07",
+   "epic": "E2",
+   "pts": 3,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "応募企業の追加・編集・削除",
+   "story": "学生として、応募した企業を一か所で管理したい。どこに応募したか忘れないように。",
+   "title_en": "Add, edit and delete companies",
+   "story_en": "As a student, I want all my applications in one place, so I never forget where I applied."
+  },
+  {
+   "id": "S08",
+   "epic": "E2",
+   "pts": 5,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "選考ステップのかんばん表示",
+   "story": "学生として、ES→適性検査→面接→内定の進み具合を見たい。次にやることがすぐ分かるように。",
+   "title_en": "Kanban view of selection steps",
+   "story_en": "As a student, I want to see ES → aptitude test → interviews → offer at a glance, so I know what to do next."
+  },
+  {
+   "id": "S09",
+   "epic": "E2",
+   "pts": 5,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "締切リマインダー（プッシュ通知）",
+   "story": "学生として、締切の前日に通知がほしい。締切を逃さないように。",
+   "title_en": "Deadline reminders (push notifications)",
+   "story_en": "As a student, I want a notification the day before a deadline, so I never miss one."
+  },
+  {
+   "id": "S10",
+   "epic": "E2",
+   "pts": 3,
+   "moscow": "Could",
+   "release": "後回し",
+   "title": "ホーム画面ウィジェット（次の締切）",
+   "story": "学生として、アプリを開かずに次の締切を見たい。",
+   "title_en": "Home-screen widget (next deadline)",
+   "story_en": "As a student, I want to see my next deadline without opening the app."
+  },
+  {
+   "id": "S11",
+   "epic": "E3",
+   "pts": 8,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "JIS形式の履歴書PDFを生成",
+   "story": "学生として、プロフィールから日本式の履歴書を作りたい。形式のミスで落とされないように。",
+   "title_en": "Generate a JIS-format résumé (rirekisho) PDF",
+   "story_en": "As a student, I want a Japanese-format résumé from my profile, so I'm not rejected for formatting mistakes."
+  },
+  {
+   "id": "S12",
+   "epic": "E3",
+   "pts": 5,
+   "moscow": "Should",
+   "release": "MVP",
+   "title": "職務経歴書PDFを生成",
+   "story": "職歴がある学生として、職務経歴書も作りたい。アルバイトや前職をアピールできるように。",
+   "title_en": "Generate a work-history (shokumu keirekisho) PDF",
+   "story_en": "As a student with work experience, I want a work-history document, so I can highlight past jobs."
+  },
+  {
+   "id": "S13",
+   "epic": "E4",
+   "pts": 2,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "ES入力と文字数カウント",
+   "story": "学生として、設問ごとに字数制限を守って書きたい。",
+   "title_en": "Entry-sheet editor with character count",
+   "story_en": "As a student, I want to respect each question's character limit."
+  },
+  {
+   "id": "S14",
+   "epic": "E4",
+   "pts": 8,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "AIレビュー（敬語・構成・STAR）＋FR/EN解説",
+   "story": "留学生として、ESの敬語と構成を直してほしい。理由を母語で理解できるように。",
+   "title_en": "AI review (keigo, structure, STAR) + FR/EN explanations",
+   "story_en": "As an international student, I want my keigo and structure corrected, with explanations in my own language."
+  },
+  {
+   "id": "S15",
+   "epic": "E4",
+   "pts": 3,
+   "moscow": "Should",
+   "release": "MVP",
+   "title": "レビュー履歴と差分表示",
+   "story": "学生として、修正前と修正後を比べたい。自分の成長が分かるように。",
+   "title_en": "Review history and diff view",
+   "story_en": "As a student, I want to compare before and after, so I can see my progress."
+  },
+  {
+   "id": "S16",
+   "epic": "E4",
+   "pts": 3,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "AI利用の回数制限・コスト上限",
+   "story": "運営者として、AIの費用を月額上限内に収めたい。赤字にならないように。",
+   "title_en": "AI rate limits and cost cap",
+   "story_en": "As the operator, I want AI costs to stay under a monthly cap, so the app doesn't lose money."
+  },
+  {
+   "id": "S17",
+   "epic": "E5",
+   "pts": 3,
+   "moscow": "Should",
+   "release": "MVP",
+   "title": "面接の質問バンク",
+   "story": "学生として、よく聞かれる質問で練習したい。",
+   "title_en": "Interview question bank",
+   "story_en": "As a student, I want to practise with frequently asked questions.",
+   "advanced": "2026-10-23",
+   "note": "ユーザーの要望でMVPに前倒し。企業の業界・種類・メモ、選考段階、プロフィールとESに合わせた模擬面接。音声は端末・ブラウザの音声認識（無料）。",
+   "note_en": "Brought forward into the MVP at the user's request: a mock interview tailored to the company's industry, type and notes, the stage, the profile and the ES. Voice uses on-device / browser speech recognition (free)."
+  },
+  {
+   "id": "S18",
+   "epic": "E5",
+   "pts": 8,
+   "moscow": "Should",
+   "release": "MVP",
+   "title": "音声で回答・文字起こし（Azure Speech）",
+   "story": "学生として、声に出して答える練習をしたい。本番と同じように話せるように。",
+   "title_en": "Spoken answers + transcription (Azure Speech)",
+   "story_en": "As a student, I want to practise answering out loud, so I speak naturally on the day.",
+   "advanced": "2026-10-23",
+   "note": "ユーザーの要望でMVPに前倒し。企業の業界・種類・メモ、選考段階、プロフィールとESに合わせた模擬面接。音声は端末・ブラウザの音声認識（無料）。",
+   "note_en": "Brought forward into the MVP at the user's request: a mock interview tailored to the company's industry, type and notes, the stage, the profile and the ES. Voice uses on-device / browser speech recognition (free)."
+  },
+  {
+   "id": "S19",
+   "epic": "E5",
+   "pts": 8,
+   "moscow": "Should",
+   "release": "MVP",
+   "title": "回答へのAIフィードバック（内容・敬語・時間）",
+   "story": "学生として、自分の回答の弱点を知りたい。",
+   "title_en": "AI feedback on answers (content, keigo, timing)",
+   "story_en": "As a student, I want to know the weak points of my answers.",
+   "advanced": "2026-10-23",
+   "note": "ユーザーの要望でMVPに前倒し。企業の業界・種類・メモ、選考段階、プロフィールとESに合わせた模擬面接。音声は端末・ブラウザの音声認識（無料）。",
+   "note_en": "Brought forward into the MVP at the user's request: a mock interview tailored to the company's industry, type and notes, the stage, the profile and the ES. Voice uses on-device / browser speech recognition (free)."
+  },
+  {
+   "id": "S20",
+   "epic": "E6",
+   "pts": 5,
+   "moscow": "Could",
+   "release": "v1.2",
+   "title": "企業メモとAI要約（外国人採用・ビザ）",
+   "story": "留学生として、外国人を採用している企業か知りたい。無駄な応募を減らせるように。",
+   "title_en": "Company notes + AI summary (foreign hires, visas)",
+   "story_en": "As an international student, I want to know which companies hire foreigners, so I apply where it counts."
+  },
+  {
+   "id": "S21",
+   "epic": "E7",
+   "pts": 5,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "自動テスト・E2E・監視（Application Insights）",
+   "story": "開発者として、リリース前に壊れていないことを確かめたい。",
+   "title_en": "Automated tests, E2E and monitoring (Application Insights)",
+   "story_en": "As a developer, I want to confirm nothing is broken before release."
+  },
+  {
+   "id": "S22",
+   "epic": "E7",
+   "pts": 2,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "TestFlightでβテスト（HALの留学生10人）",
+   "story": "開発者として、本物のユーザーに使ってもらいたい。思い込みで作らないように。",
+   "title_en": "TestFlight beta (10 international students at HAL)",
+   "story_en": "As a developer, I want real users to try it, so I don't build on assumptions."
+  },
+  {
+   "id": "S23",
+   "epic": "E7",
+   "pts": 3,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "App Store申請・公開",
+   "story": "学生として、App Storeからダウンロードしたい。",
+   "title_en": "App Store submission and release",
+   "story_en": "As a student, I want to download the app from the App Store."
+  },
+  {
+   "id": "S24",
+   "epic": "E7",
+   "pts": 2,
+   "moscow": "Should",
+   "release": "MVP",
+   "title": "ポートフォリオに「設計と運用」ページ",
+   "story": "就活生（自分）として、作り方を企業に見せたい。面接で話せるように。",
+   "title_en": "“How it's built” page on my portfolio",
+   "story_en": "As a job seeker (me), I want to show companies how I built it, so I can talk about it in interviews."
+  },
+  {
+   "id": "S25",
+   "epic": "E0",
+   "pts": 3,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "アカウント削除（App Storeの必須要件）",
+   "story": "学生として、アプリの中で自分のアカウントとデータを削除したい。いつでもやめられるように。",
+   "title_en": "Account deletion (App Store requirement)",
+   "story_en": "As a student, I want to delete my account and data from inside the app, so I can leave at any time.",
+   "added": "2026-10-16"
+  },
+  {
+   "id": "S26",
+   "epic": "E2",
+   "pts": 5,
+   "moscow": "Must",
+   "release": "MVP",
+   "title": "サーバーからのプッシュ通知（APNs）",
+   "story": "学生として、アプリを開いていなくても、締切が変わったときにも確実に通知を受け取りたい。",
+   "title_en": "Server push notifications (APNs)",
+   "story_en": "As a student, I want reliable notifications even when I haven't opened the app, including when a deadline changes.",
+   "added": "2026-10-22",
+   "note": "ユーザーの要望で追加（重要）。ローカル通知（S09）は残し、オフラインでも届く予備にする。Apple Developer で APNs キーの作成が必要。"
   }
+ ],
+ "events": [
+  {
+   "id": 1,
+   "col": 0,
+   "row": 1,
+   "label": "開始"
+  },
+  {
+   "id": 2,
+   "col": 1,
+   "row": 1,
+   "label": "基盤完成"
+  },
+  {
+   "id": 3,
+   "col": 2,
+   "row": 1,
+   "label": "認証完成"
+  },
+  {
+   "id": 4,
+   "col": 3,
+   "row": 1,
+   "label": "プロフィール完成"
+  },
+  {
+   "id": 5,
+   "col": 4,
+   "row": 2,
+   "label": "応募管理完成"
+  },
+  {
+   "id": 6,
+   "col": 4.5,
+   "row": 0,
+   "label": "ESレビュー完成"
+  },
+  {
+   "id": 7,
+   "col": 5.5,
+   "row": 1,
+   "label": "全機能完成"
+  },
+  {
+   "id": 8,
+   "col": 6.5,
+   "row": 1,
+   "label": "β開始"
+  },
+  {
+   "id": 9,
+   "col": 7.5,
+   "row": 1,
+   "label": "申請"
+  },
+  {
+   "id": 10,
+   "col": 8.5,
+   "row": 1,
+   "label": "公開"
+  },
+  {
+   "id": 11,
+   "col": 9.5,
+   "row": 1,
+   "label": "完了"
+  }
+ ],
+ "activities": [
+  {
+   "id": "A",
+   "name": "基盤構築",
+   "from": 1,
+   "to": 2,
+   "stories": [
+    "S01",
+    "S03"
+   ],
+   "solo": true,
+   "name_en": "Foundation"
+  },
+  {
+   "id": "B",
+   "name": "認証",
+   "from": 2,
+   "to": 3,
+   "stories": [
+    "S02",
+    "S25"
+   ],
+   "solo": true,
+   "name_en": "Authentication"
+  },
+  {
+   "id": "C",
+   "name": "プロフィール",
+   "from": 3,
+   "to": 4,
+   "stories": [
+    "S05"
+   ],
+   "solo": true,
+   "name_en": "Profile"
+  },
+  {
+   "id": "D",
+   "name": "応募管理",
+   "from": 3,
+   "to": 5,
+   "stories": [
+    "S07",
+    "S08"
+   ],
+   "solo": true,
+   "name_en": "Application tracker"
+  },
+  {
+   "id": "E",
+   "name": "履歴書PDF",
+   "from": 4,
+   "to": 7,
+   "stories": [
+    "S11",
+    "S12"
+   ],
+   "solo": true,
+   "name_en": "Résumé PDF"
+  },
+  {
+   "id": "F",
+   "name": "リマインダー",
+   "from": 5,
+   "to": 7,
+   "stories": [
+    "S09",
+    "S26"
+   ],
+   "solo": true,
+   "name_en": "Reminders"
+  },
+  {
+   "id": "G",
+   "name": "ESレビュー",
+   "from": 4,
+   "to": 6,
+   "stories": [
+    "S13",
+    "S14",
+    "S15",
+    "S16"
+   ],
+   "solo": true,
+   "name_en": "Entry-sheet review"
+  },
+  {
+   "id": "d1",
+   "name": "ダミー",
+   "from": 6,
+   "to": 7,
+   "dummy": true,
+   "name_en": "Dummy"
+  },
+  {
+   "id": "H",
+   "name": "規約・ポリシー",
+   "from": 1,
+   "to": 9,
+   "stories": [
+    "S04"
+   ],
+   "solo": true,
+   "lane": -1.4,
+   "name_en": "Terms & privacy"
+  },
+  {
+   "id": "I",
+   "name": "βテスター募集",
+   "from": 1,
+   "to": 8,
+   "fixed_days": 21,
+   "solo": false,
+   "lane": 3.3,
+   "note": "開発ではない作業（HALの留学生に声をかける）",
+   "name_en": "Recruit beta testers",
+   "note_en": "Non-development work (asking international students at HAL)"
+  },
+  {
+   "id": "J",
+   "name": "統合テスト・監視",
+   "from": 7,
+   "to": 8,
+   "stories": [
+    "S21"
+   ],
+   "solo": true,
+   "name_en": "Integration tests"
+  },
+  {
+   "id": "K",
+   "name": "βテスト",
+   "from": 8,
+   "to": 9,
+   "stories": [
+    "S22"
+   ],
+   "fixed_days": 14,
+   "solo": false,
+   "note": "2週間テスターに使ってもらう（待ち時間が中心）",
+   "name_en": "Beta test",
+   "note_en": "Two weeks of testers using the app (mostly waiting)"
+  },
+  {
+   "id": "L",
+   "name": "App Store審査",
+   "from": 9,
+   "to": 10,
+   "stories": [
+    "S23"
+   ],
+   "fixed_days": 7,
+   "solo": false,
+   "note": "申請後はAppleの審査待ち",
+   "name_en": "App Store review",
+   "note_en": "Waiting for Apple's review after submission"
+  },
+  {
+   "id": "M",
+   "name": "設計ページ公開",
+   "from": 10,
+   "to": 11,
+   "stories": [
+    "S24"
+   ],
+   "solo": true,
+   "name_en": "Publish build page"
+  }
+ ],
+ "epics_en": {
+  "E0": "Foundation",
+  "E1": "Profile",
+  "E2": "Application tracker",
+  "E3": "Résumé PDF",
+  "E4": "Entry-sheet review",
+  "E5": "Interview practice",
+  "E6": "Company research",
+  "E7": "Release & operations"
+ }
 }

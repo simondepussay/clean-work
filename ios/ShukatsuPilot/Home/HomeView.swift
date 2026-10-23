@@ -53,6 +53,11 @@ struct HomeView: View {
                     } label: {
                         Label("ES・AI添削 / Entry sheets", systemImage: "doc.text.magnifyingglass")
                     }
+                    NavigationLink {
+                        InterviewView(model: InterviewModel(api: api))
+                    } label: {
+                        Label("面接練習 / Interview practice", systemImage: "mic.badge.plus")
+                    }
                 }
             }
             Section {
