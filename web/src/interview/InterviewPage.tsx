@@ -4,7 +4,7 @@ import {
   type Application, type Interview, type InterviewListItem, type InterviewOutcome, type InterviewStage, type InterviewTurn, type Usage,
 } from "../api";
 import { useAuth } from "../auth/auth";
-import { LANGS, useHelpLanguage } from "../es/guide";
+import { useHelpLanguage } from "../es/guide";
 import { stageFor, stageName, STAGES } from "./stages";
 import { canListen, canSpeak, listen, speak, stopSpeaking, type Listener } from "./speech";
 import { ArrowRightIcon, ChevronLeftIcon, CloseIcon, LightIcon, MicIcon, SpeakerIcon, StopIcon } from "../icons";
@@ -27,7 +27,7 @@ export type InterviewSeed = { applicationId: string; nonce: number };
 /** Entraînement aux entretiens (S17–S19) : préparation, entretien simulé, bilan. */
 export function InterviewPage({ seed }: { seed?: InterviewSeed }) {
   const auth = useAuth();
-  const [lang, setLang] = useHelpLanguage();
+  const [lang] = useHelpLanguage();
   const [apps, setApps] = useState<Application[]>([]);
   const [history, setHistory] = useState<InterviewListItem[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
@@ -120,12 +120,6 @@ export function InterviewPage({ seed }: { seed?: InterviewSeed }) {
           <span>選考段階 / Stage</span>
           <select value={stage} onChange={(e) => setStage(e.target.value as InterviewStage)}>
             {STAGES.map((s) => <option key={s.value} value={s.value}>{s.ja} / {s.en}</option>)}
-          </select>
-        </label>
-        <label>
-          <span>解説の言語 / Help language</span>
-          <select value={lang} onChange={(e) => setLang(e.target.value as typeof lang)}>
-            {LANGS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
           </select>
         </label>
       </div>

@@ -48,10 +48,19 @@ a { color: var(--blue-700); }
 }
 .brand { display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 4px 0; font-weight: 700; font-size: 19px; letter-spacing: .02em; color: var(--blue-800); }
 .logo-mark { width: 32px; height: 32px; }
-.avatar { margin-left: auto; width: 42px; height: 42px; padding: 0; border-radius: 50%; display: grid; place-items: center;
+/* À droite de l'en-tête : langue (globe) puis compte. */
+.topbar-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.round-button { width: 42px; height: 42px; padding: 0; border-radius: 50%; display: grid; place-items: center; position: relative;
   border: 1.5px solid var(--blue-300); color: var(--blue-700); background: var(--white); }
-.avatar:hover, .avatar.current { border-color: var(--bordeaux); color: var(--bordeaux); }
-.topbar > .primary { margin-left: auto; }
+.round-button:hover, .round-button.current { border-color: var(--bordeaux); color: var(--bordeaux); background: var(--white); }
+.round-button .code { position: absolute; right: -6px; bottom: -4px; font-size: 9px; font-weight: 700; line-height: 1; padding: 2px 4px; border-radius: 6px; background: var(--blue-700); color: #fff; }
+.language-menu { position: relative; }
+.menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: 250px; padding: 8px; border-radius: var(--radius);
+  background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.menu-title { margin: 4px 8px 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.menu button { width: 100%; display: flex; justify-content: space-between; align-items: center; border: 0; border-radius: 10px; padding: 8px 10px; }
+.menu button[aria-checked="true"] { background: var(--blue-100); color: var(--blue-700); font-weight: 700; }
+.menu-note { margin: 6px 8px 2px; font-size: 11px; color: var(--muted); line-height: 1.5; }
 
 .shell { max-width: 1200px; margin: 0 auto; padding: 32px 16px 48px; min-height: 60vh; }
 h1, h2, h3 { color: var(--blue-800); letter-spacing: .01em; }

@@ -35,3 +35,4 @@ export const BriefcaseIcon = (p: IconProps) => <Icon {...p}><rect x="3.5" y="7" 
 export const ChatIcon = (p: IconProps) => <Icon {...p}><path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.4A7.5 7.5 0 1 1 20 12z" /></Icon>;
 export const TrashIcon = (p: IconProps) => <Icon {...p}><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5l1-12.5M9.5 7V4.5h5V7" /></Icon>;
 export const HomeIcon = (p: IconProps) => <Icon {...p}><path d="M4 11l8-6.5 8 6.5M6 9.5V20h12V9.5" /></Icon>;
+export const GlobeIcon = (p: IconProps) => <Icon {...p}><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.3 2.4 3.5 5.2 3.5 8.5s-1.2 6.1-3.5 8.5c-2.3-2.4-3.5-5.2-3.5-8.5S9.7 5.9 12 3.5z" /></Icon>;

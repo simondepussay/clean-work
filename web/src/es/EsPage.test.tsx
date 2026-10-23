@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import guide from "../../public/es-guide.json";
 import { AuthContext, type Auth } from "../auth/auth";
 import { countChars } from "./count";
 import { EsPage } from "./EsPage";
-import { resetGuideCache } from "./guide";
+import { resetGuideCache, setHelpLanguage } from "./guide";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -92,7 +92,8 @@ describe("EsPage", () => {
     renderPage();
     expect(await screen.findByText("ESとは？ / What is an ES?")).toBeInTheDocument();
     expect(screen.getByText(guide.intro.en)).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText(/Help language/), "fr");
+    // La langue se choisit avec le globe de l'en-tête : la page suit tout de suite.
+    act(() => setHelpLanguage("fr"));
     expect(screen.getByText(guide.intro.fr)).toBeInTheDocument();
   });
 

@@ -6,6 +6,7 @@ import { ApplicationsBoard } from "./apps/ApplicationsBoard";
 import { EsPage, type EsSeed } from "./es/EsPage";
 import { HomePage } from "./home/HomePage";
 import { UserIcon } from "./icons";
+import { LanguageMenu } from "./LanguageMenu";
 import { InterviewPage, type InterviewSeed } from "./interview/InterviewPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
 import { ResumePanel } from "./profile/ResumePanel";
@@ -149,14 +150,17 @@ export default function App() {
           <Logo />
           <span>Clean Work</span>
         </button>
+        <div className="topbar-tools">
+        <LanguageMenu />
         {signedIn ? (
-          <button className={`avatar${view === "account" ? " current" : ""}`} onClick={() => open("account")}
+          <button className={`avatar round-button${view === "account" ? " current" : ""}`} onClick={() => open("account")}
             aria-label="アカウント / Account" title={signedIn.name ?? signedIn.email ?? ""}>
             <UserIcon size={22} />
           </button>
         ) : (
           auth.state.status === "signedOut" && <button className="primary" onClick={() => auth.signIn()}>サインイン / Sign in</button>
         )}
+        </div>
       </header>
 
       {/* Le menu en intercalaires de classeur : chaque page est une feuille, l'onglet actif tient à la feuille. */}

@@ -3,7 +3,7 @@ import { createDraft, deleteDraft, listApplications, listDrafts, updateDraft, ty
 import { useAuth } from "../auth/auth";
 import { countChars } from "./count";
 import { GuidePanel, Intro } from "./GuidePanel";
-import { LANGS, useGuide, useHelpLanguage, type GuideType } from "./guide";
+import { useGuide, useHelpLanguage, type GuideType } from "./guide";
 import { ReviewPanel } from "./ReviewPanel";
 import { CheckIcon, PlusIcon } from "../icons";
 
@@ -24,7 +24,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
   const [apps, setApps] = useState<Application[]>([]);
   const pendingSeed = useRef<EsSeed | null>(null);
   const guide = useGuide();
-  const [lang, setLang] = useHelpLanguage();
+  const [lang] = useHelpLanguage();
 
   async function token() {
     const t = await auth.getToken();
@@ -124,14 +124,6 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
 
   return (
     <>
-    <div className="help-bar">
-      <label className="inline">
-        <span>解説の言語 / Help language</span>
-        <select value={lang} onChange={(e) => setLang(e.target.value as typeof lang)}>
-          {LANGS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-        </select>
-      </label>
-    </div>
     {guide && <Intro guide={guide} lang={lang} />}
     <section className="es">
       <aside>

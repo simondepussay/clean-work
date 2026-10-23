@@ -37,21 +37,36 @@ export function resetGuideCache() {
   cached = null;
 }
 
-/** Langue de l'aide et des explications de la relecture, retenue sur cet appareil. */
+const STORAGE_KEY = "help-language";
+const CHANGE_EVENT = "help-language-change";
+
+function savedLanguage(): Lang {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === "ja" || saved === "en" || saved === "fr" ? saved : "en";
+  } catch {
+    return "en";
+  }
+}
+
+/**
+ * Change la langue des explications pour toute l'app (globe en haut à droite) : retenue sur
+ * cet appareil, et annoncée aux écrans ouverts (ES, entretiens) pour qu'ils suivent tout de suite.
+ */
+export function setHelpLanguage(l: Lang) {
+  try {
+    localStorage.setItem(STORAGE_KEY, l);
+  } catch { /* stockage indisponible : le choix vaut pour cette page */ }
+  window.dispatchEvent(new CustomEvent<Lang>(CHANGE_EVENT, { detail: l }));
+}
+
+/** Langue de l'aide, des explications de la relecture et de l'entraînement aux entretiens. */
 export function useHelpLanguage(): [Lang, (l: Lang) => void] {
-  const [lang, setLang] = useState<Lang>(() => {
-    try {
-      const saved = localStorage.getItem("help-language");
-      return saved === "ja" || saved === "en" || saved === "fr" ? saved : "en";
-    } catch {
-      return "en";
-    }
-  });
-  const choose = (l: Lang) => {
-    setLang(l);
-    try {
-      localStorage.setItem("help-language", l);
-    } catch { /* stockage indisponible : le choix vaut pour cette page */ }
-  };
-  return [lang, choose];
+  const [lang, setLang] = useState<Lang>(savedLanguage);
+  useEffect(() => {
+    const onChange = (e: Event) => setLang((e as CustomEvent<Lang>).detail);
+    window.addEventListener(CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(CHANGE_EVENT, onChange);
+  }, []);
+  return [lang, setHelpLanguage];
 }
