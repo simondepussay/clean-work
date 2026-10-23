@@ -26,13 +26,14 @@
 <tr><td>ES</td><td>企業名、設問、文字数制限、本文</td></tr>
 <tr><td>AI添削</td><td>添削した本文、点数、指摘、日時</td></tr>
 <tr><td>利用回数</td><td>AI添削の1日・1か月の回数</td></tr>
+<tr><td>面接練習</td><td>選んだ企業と選考段階、AIの質問、あなたの回答（文字）、評価、回答時間</td></tr>
 <tr><td>通知</td><td>iPhone の通知用トークン（締切のお知らせを送るため。サインアウトすると削除します）</td></tr>
 <tr><td>技術的な記録</td><td>エラーの調査のための記録（IPアドレスなどを含む場合があります。30日で削除します）</td></tr>
 </table>
 
 <h2>2. 利用の目的</h2>
 <ul>
-<li>本サービスの提供（プロフィール・ESの保存、履歴書の作成、AI添削）</li>
+<li>本サービスの提供（プロフィール・ESの保存、履歴書の作成、AI添削、面接練習）</li>
 <li>不正利用の防止（AI添削の回数制限など）</li>
 <li>不具合の調査と改善</li>
 </ul>
@@ -45,7 +46,8 @@
 <tr><td>アカウント</td><td>Microsoft Entra External ID</td><td>テナントの登録国は日本。保存場所は Microsoft の方針によります</td></tr>
 <tr><td>プロフィール・ES・添削</td><td>Azure Cosmos DB</td><td>大韓民国（韓国中部リージョン）</td></tr>
 <tr><td>Webサイト・API</td><td>Azure Static Web Apps</td><td>香港（東アジアリージョン）</td></tr>
-<tr><td>AI添削</td><td>Azure OpenAI（グローバル）</td><td>Azure のいずれかのリージョン（日本以外の国を含みます）</td></tr>
+<tr><td>AI添削・面接練習</td><td>Azure OpenAI（グローバル）</td><td>Azure のいずれかのリージョン（日本以外の国を含みます）</td></tr>
+<tr><td>面接練習の音声</td><td>ブラウザ・端末の音声認識</td><td>本サービスのサーバーには音声を送りません。音声を文字にするのは、お使いのブラウザや iPhone です（Chrome は Google、Safari と iPhone は Apple のサービスを使う場合があります）</td></tr>
 <tr><td>技術的な記録</td><td>Azure Application Insights</td><td>大韓民国（韓国中部リージョン）</td></tr>
 <tr><td>iPhone の通知</td><td>Apple Push Notification service</td><td>Apple のサーバー（米国など）。締切のお知らせの文面（企業名と選考ステップ）が通ります</td></tr>
 </table>
@@ -88,13 +90,14 @@
 <tr><td>Entry sheets</td><td>Company, question, character limit, answer</td></tr>
 <tr><td>AI reviews</td><td>The reviewed text, score, comments, date</td></tr>
 <tr><td>Usage</td><td>Number of AI reviews per day and per month</td></tr>
+<tr><td>Interview practice</td><td>The company and stage you choose, the AI's questions, your answers (as text), feedback, answer time</td></tr>
 <tr><td>Notifications</td><td>Your iPhone's notification token (to send deadline reminders; deleted when you sign out)</td></tr>
 <tr><td>Technical logs</td><td>Records used to investigate errors (may include IP addresses; deleted after 30 days)</td></tr>
 </table>
 
 <h2>2. Purposes</h2>
 <ul>
-<li>Providing the service (saving your profile and entry sheets, creating your résumé, AI review)</li>
+<li>Providing the service (saving your profile and entry sheets, creating your résumé, AI review, interview practice)</li>
 <li>Preventing abuse (limits on AI reviews, etc.)</li>
 <li>Investigating and fixing problems</li>
 </ul>
@@ -107,7 +110,8 @@
 <tr><td>Account</td><td>Microsoft Entra External ID</td><td>Tenant registered in Japan; storage location follows Microsoft's policy</td></tr>
 <tr><td>Profile, entry sheets, reviews</td><td>Azure Cosmos DB</td><td>Republic of Korea (Korea Central region)</td></tr>
 <tr><td>Website and API</td><td>Azure Static Web Apps</td><td>Hong Kong (East Asia region)</td></tr>
-<tr><td>AI review</td><td>Azure OpenAI (global)</td><td>Any Azure region (including countries other than Japan)</td></tr>
+<tr><td>AI review and interview practice</td><td>Azure OpenAI (global)</td><td>Any Azure region (including countries other than Japan)</td></tr>
+<tr><td>Interview practice voice</td><td>Speech recognition in your browser or iPhone</td><td>Your voice is never sent to our servers. Your browser or iPhone turns it into text (Chrome may use Google's service; Safari and iPhone may use Apple's)</td></tr>
 <tr><td>Technical logs</td><td>Azure Application Insights</td><td>Republic of Korea (Korea Central region)</td></tr>
 <tr><td>iPhone notifications</td><td>Apple Push Notification service</td><td>Apple's servers (United States and elsewhere); reminder text (company and selection step) passes through them</td></tr>
 </table>

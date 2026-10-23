@@ -104,3 +104,17 @@ label:has(> input[type="checkbox"]) { flex-direction: row; align-items: center; 
 .upcoming li.soon .when { color: #d4483b; font-weight: 700; }
 .es-badge { display: inline-block; margin: 6px 0 0; padding: 0 8px; border-radius: 999px; font-size: 11px; background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
 small.linked { color: #2f9e6b; }
+
+/* Entraînement aux entretiens (S17–S19) */
+.interview .question { margin: 16px 0; padding: 16px; border-radius: 12px; background: color-mix(in srgb, var(--muted) 10%, transparent); }
+.interview .question .q { font-size: 18px; line-height: 1.7; margin: 4px 0 8px; }
+.interview .tag { font-size: 12px; border: 1px solid var(--muted); border-radius: 999px; padding: 1px 8px; }
+.interview .answer { white-space: pre-wrap; padding: 8px 12px; border-left: 3px solid color-mix(in srgb, var(--muted) 50%, transparent); }
+.interview .feedback { margin: 12px 0; padding: 12px 16px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); }
+.interview .feedback .score { font-size: 24px; margin-right: 6px; }
+.interview .expressions { list-style: none; padding-left: 0; }
+.interview .transcript > li { margin-bottom: 20px; }
+.interview-history { list-style: none; padding-left: 0; }
+.interview-history li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid color-mix(in srgb, var(--muted) 20%, transparent); }
+button.link { background: none; border: none; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; text-align: left; }
+.small { font-size: 12px; }

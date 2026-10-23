@@ -4,6 +4,7 @@ import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
 import { ApplicationsBoard } from "./apps/ApplicationsBoard";
 import { EsPage, type EsSeed } from "./es/EsPage";
+import { InterviewPage, type InterviewSeed } from "./interview/InterviewPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
 import { ResumePanel } from "./profile/ResumePanel";
 
@@ -13,8 +14,9 @@ function Account() {
   const auth = useAuth();
   const [me, setMe] = useState<Me | null | "error">(null);
   const [deleting, setDeleting] = useState<"idle" | "busy" | "error">("idle");
-  const [tab, setTab] = useState<"profile" | "apps" | "es">("profile");
+  const [tab, setTab] = useState<"profile" | "apps" | "es" | "interview">("profile");
   const [esSeed, setEsSeed] = useState<EsSeed | undefined>();
+  const [interviewSeed, setInterviewSeed] = useState<InterviewSeed | undefined>();
 
   async function removeAccount() {
     const ok = window.confirm(
@@ -79,12 +81,16 @@ function Account() {
             <button role="tab" aria-selected={tab === "profile"} onClick={() => setTab("profile")}>プロフィール / Profile</button>
             <button role="tab" aria-selected={tab === "apps"} onClick={() => setTab("apps")}>応募 / Applications</button>
             <button role="tab" aria-selected={tab === "es"} onClick={() => setTab("es")}>ES</button>
+            <button role="tab" aria-selected={tab === "interview"} onClick={() => setTab("interview")}>面接 / Interview</button>
           </nav>
           {tab === "profile" && <><ProfileEditor onSaved={refreshMe} /><ResumePanel /></>}
           {tab === "apps" && (
-            <ApplicationsBoard onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); setTab("es"); }} />
+            <ApplicationsBoard
+              onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); setTab("es"); }}
+              onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); setTab("interview"); }} />
           )}
           {tab === "es" && <EsPage seed={esSeed} />}
+          {tab === "interview" && <InterviewPage seed={interviewSeed} />}
         </div>
       );
   }

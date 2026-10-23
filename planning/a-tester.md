@@ -6,6 +6,15 @@ Cocher `[x]` quand c'est fait, et noter ce qui ne va pas sous la ligne.
 
 Site : https://blue-rock-008b52800.2.azurestaticapps.net
 
+## Entraînement aux entretiens (S17–S19, jour 9) — nouveau
+
+- [ ] Web, onglet 面接 : choisir une entreprise (avec 業界, type et 企業メモ remplis), puis 一次面接, et commencer.
+- [ ] Les questions parlent-elles vraiment de l'entreprise, de ton profil et de ton ES ?
+- [ ] Répondre au micro (Chrome ou Safari) : le texte reconnu est-il correct ? La question est-elle lue à voix haute ?
+- [ ] Les avis sont-ils utiles et dans la bonne langue ? Une relance (深掘り) apparaît-elle ?
+- [ ] Le bilan final, puis l'historique (これまでの練習).
+- [ ] Depuis une candidature : bouton « 🎤 面接を練習する ».
+
 ## Notifications push serveur (S26, jour 9) — le plus important
 
 - [ ] Lancer la nouvelle version de l'app sur l'iPhone depuis Xcode (`ios/`, `xcodegen generate` puis Run).

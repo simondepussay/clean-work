@@ -17,8 +17,14 @@ const stepFields: Field<Step>[] = [
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
-/** Suivi des candidatures (S07) en tableau kanban (S08). `onWriteEs` ouvre l'onglet ES pour une entreprise. */
-export function ApplicationsBoard({ onWriteEs }: { onWriteEs?: (app: { id: string; company: string }) => void } = {}) {
+/**
+ * Suivi des candidatures (S07) en tableau kanban (S08). `onWriteEs` ouvre l'onglet ES pour une entreprise,
+ * `onPractice` l'entraînement aux entretiens (S17–S19).
+ */
+export function ApplicationsBoard({ onWriteEs, onPractice }: {
+  onWriteEs?: (app: { id: string; company: string }) => void;
+  onPractice?: (app: { id: string }) => void;
+} = {}) {
   const auth = useAuth();
   const [apps, setApps] = useState<Application[] | null>(null);
   const [editing, setEditing] = useState<{ id: string | null; form: ApplicationInput } | null>(null);
@@ -229,6 +235,9 @@ export function ApplicationsBoard({ onWriteEs }: { onWriteEs?: (app: { id: strin
               <button type="button" onClick={() => onWriteEs({ id: editing.id!, company: editing.form.company })}>
                 ✍️ このESを書く / Write an ES for this company
               </button>
+            )}
+            {editing.id && onPractice && (
+              <button type="button" onClick={() => onPractice({ id: editing.id! })}>🎤 面接を練習する / Practise the interview</button>
             )}
             {editing.id && <button type="button" className="danger" onClick={remove}>削除 / Delete</button>}
           </div>

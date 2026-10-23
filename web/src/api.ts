@@ -186,3 +186,50 @@ export const updateApplication = (token: string, id: string, a: Partial<Applicat
   call<Application>(token, "PUT", `/api/applications/${encodeURIComponent(id)}`, a, f);
 export const deleteApplication = (token: string, id: string, f?: typeof fetch) =>
   call<null>(token, "DELETE", `/api/applications/${encodeURIComponent(id)}`, undefined, f);
+
+// ------------------------------------------------------------------ entretiens (S17–S19)
+
+export type InterviewStage = "interview1" | "interview2" | "final";
+export type InterviewFeedback = { score: number; comment: string; improvements: string[]; expressions: { quote: string; suggestion: string }[] };
+export type InterviewTurn = {
+  question: string; intent: string; kind: "main" | "followUp";
+  answer?: string; durationSec?: number; spoken?: boolean; feedback?: InterviewFeedback;
+};
+export type InterviewSummary = { score: number; summary: string; strengths: string[]; improvements: string[] };
+export type Interview = {
+  id: string; applicationId?: string; company?: string; stage: InterviewStage; language: string;
+  status: "active" | "finished"; turns: InterviewTurn[]; summary?: InterviewSummary; createdAt: string; updatedAt: string;
+};
+export type InterviewListItem = Pick<Interview, "id" | "company" | "applicationId" | "stage" | "status" | "createdAt"> & { score: number | null; questions: number };
+export type InterviewOutcome =
+  | { ok: true; interview: Interview }
+  | { ok: false; error: "limit"; reason: "day" | "month" | "budget"; retryAfter: string }
+  | { ok: false; error: "ai_failed" | "ai_not_configured" | "finished" | "not_found" | "invalid" };
+
+async function interviewCall(token: string, path: string, body: unknown, fetcher: typeof fetch): Promise<InterviewOutcome> {
+  const res = await fetcher(path, {
+    method: "POST",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (res.ok) return { ok: true, interview: json as Interview };
+  if (json.error === "limit") return { ok: false, error: "limit", reason: json.reason, retryAfter: json.retryAfter };
+  if (res.status === 400) return { ok: false, error: "invalid" };
+  if (res.status === 404) return { ok: false, error: "not_found" };
+  if (res.status === 409) return { ok: false, error: "finished" };
+  if (json.error === "ai_not_configured") return { ok: false, error: "ai_not_configured" };
+  return { ok: false, error: "ai_failed" };
+}
+
+const interviewPath = (id: string) => `/api/interviews/${encodeURIComponent(id)}`;
+
+export const startInterview = (token: string, input: { applicationId?: string; stage: InterviewStage; language: string }, f: typeof fetch = fetch) =>
+  interviewCall(token, "/api/interviews", input, f);
+export const answerInterview = (token: string, id: string, input: { answer: string; durationSec?: number; spoken: boolean }, f: typeof fetch = fetch) =>
+  interviewCall(token, `${interviewPath(id)}/answers`, input, f);
+export const finishInterview = (token: string, id: string, f: typeof fetch = fetch) => interviewCall(token, `${interviewPath(id)}/finish`, {}, f);
+export const listInterviews = (token: string, f?: typeof fetch) => call<InterviewListItem[]>(token, "GET", "/api/interviews", undefined, f);
+export const getInterview = (token: string, id: string, f?: typeof fetch) => call<Interview>(token, "GET", interviewPath(id), undefined, f);
+export const deleteInterview = (token: string, id: string, f?: typeof fetch) => call<null>(token, "DELETE", interviewPath(id), undefined, f);
+export const getInterviewUsage = (token: string, f?: typeof fetch) => call<Usage>(token, "GET", "/api/interview-usage", undefined, f);
