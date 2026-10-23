@@ -6,6 +6,14 @@ Cocher `[x]` quand c'est fait, et noter ce qui ne va pas sous la ligne.
 
 Site : https://blue-rock-008b52800.2.azurestaticapps.net
 
+## Import de CV, vitesse, rapport (24 octobre)
+
+- [ ] Compte (icône en haut à droite) → « CVから入力 » : choisir un CV en PDF, puis « 読み込む ». Les champs se remplissent-ils bien ? Rien n'est écrasé ?
+- [ ] Un mois signalé « 月を確認してください » : le corriger, puis enregistrer.
+- [ ] Un CV scanné (image) : le message demande de coller le texte.
+- [ ] Le site paraît-il plus rapide au 2e chargement et en passant d'un onglet à l'autre ?
+- [ ] Email du rapport de la semaine reçu le lundi.
+
 ## Langue, calendrier et design (jour 9, soir)
 
 - [ ] Globe en haut à droite : passer en 日本語, English, Français ; tout change sauf les intercalaires.
