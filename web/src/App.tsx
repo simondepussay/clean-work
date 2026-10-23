@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react";
-import { deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { clearApiCache, deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
-import { ApplicationsBoard } from "./apps/ApplicationsBoard";
-import { EsPage, type EsSeed } from "./es/EsPage";
+import type { EsSeed } from "./es/EsPage";
 import { HomePage } from "./home/HomePage";
+
+// Chaque onglet est chargé la première fois qu'on l'ouvre : l'accueil s'affiche sans attendre le reste.
+const ApplicationsBoard = lazy(() => import("./apps/ApplicationsBoard").then((m) => ({ default: m.ApplicationsBoard })));
+const EsPage = lazy(() => import("./es/EsPage").then((m) => ({ default: m.EsPage })));
+const InterviewPage = lazy(() => import("./interview/InterviewPage").then((m) => ({ default: m.InterviewPage })));
+const DocumentsPage = lazy(() => import("./profile/DocumentsPage").then((m) => ({ default: m.DocumentsPage })));
+const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => ({ default: m.ResumePanel })));
+const InfoPage = lazy(() => import("./info/InfoPage").then((m) => ({ default: m.InfoPage })));
+const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => ({ default: m.ProfileEditor })));
 import { UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
 import { useTr, type T3 } from "./i18n";
-import { InfoPage } from "./info/InfoPage";
-import { InterviewPage, type InterviewSeed } from "./interview/InterviewPage";
-import { ProfileEditor } from "./profile/ProfileEditor";
-import { DocumentsPage } from "./profile/DocumentsPage";
-import { ResumePanel } from "./profile/ResumePanel";
+import type { InterviewSeed } from "./interview/InterviewPage";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
 const VIEWS = ["home", "apps", "es", "interview", "documents", "info", "account"] as const;
@@ -77,7 +81,7 @@ function Account({ me, onSaved }: { me: Me | null | "error"; onSaved: () => void
           </p>
         </div>
         <div className="actions">
-          <button onClick={() => auth.signOut()}>{tr({ ja: "サインアウト", en: "Sign out", fr: "Se déconnecter" })}</button>
+          <button onClick={() => { clearApiCache(); auth.signOut(); }}>{tr({ ja: "サインアウト", en: "Sign out", fr: "Se déconnecter" })}</button>
           <button className="danger" disabled={deleting === "busy"} onClick={removeAccount}>{tr({ ja: "アカウント削除", en: "Delete account", fr: "Supprimer le compte" })}</button>
         </div>
         {deleting === "error" && <p className="muted">{tr({ ja: "削除できませんでした", en: "Could not delete the account", fr: "Impossible de supprimer le compte" })}</p>}
@@ -180,24 +184,26 @@ export default function App() {
           </nav>
         )}
         <main className={signedIn ? "shell sheet" : "shell"}>
-          {!signedIn && <SignedOut />}
-          {signedIn && view === "home" && (
-            <HomePage name={signedIn.name} onOpenApps={() => open("apps")}
-              onPractice={(t) => { setInterviewSeed({ ...t, nonce: Date.now() }); open("interview"); }} />
-          )}
-          {signedIn && view === "account" && <Account me={me} onSaved={refreshMe} />}
-          {signedIn && view === "apps" && (
-            <ApplicationsBoard
-              onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
-              onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
-          )}
-          {signedIn && (view === "es" || view === "documents") && (
-            <DocumentsPage current={view === "es" ? "es" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : "documents")}>
-              {view === "es" ? <EsPage seed={esSeed} /> : <ResumePanel />}
-            </DocumentsPage>
-          )}
-          {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
-          {signedIn && view === "info" && <InfoPage />}
+          <Suspense fallback={<p className="muted">…</p>}>
+            {!signedIn && <SignedOut />}
+            {signedIn && view === "home" && (
+              <HomePage name={signedIn.name} onOpenApps={() => open("apps")}
+                onPractice={(t) => { setInterviewSeed({ ...t, nonce: Date.now() }); open("interview"); }} />
+            )}
+            {signedIn && view === "account" && <Account me={me} onSaved={refreshMe} />}
+            {signedIn && view === "apps" && (
+              <ApplicationsBoard
+                onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
+                onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
+            )}
+            {signedIn && (view === "es" || view === "documents") && (
+              <DocumentsPage current={view === "es" ? "es" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : "documents")}>
+                {view === "es" ? <EsPage seed={esSeed} /> : <ResumePanel />}
+              </DocumentsPage>
+            )}
+            {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
+            {signedIn && view === "info" && <InfoPage />}
+          </Suspense>
         </main>
       </div>
 

@@ -22,6 +22,7 @@ export async function fetchMe(token: string, fetcher: typeof fetch = fetch): Pro
 
 /** Supprime le compte et toutes ses données (S25). */
 export async function deleteAccount(token: string, fetcher: typeof fetch = fetch): Promise<boolean> {
+  clearApiCache();
   const res = await fetcher("/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: token } });
   return res.ok;
 }
@@ -60,6 +61,7 @@ export async function getProfile(token: string, fetcher: typeof fetch = fetch): 
 }
 
 export async function saveProfile(token: string, profile: ProfileInput, fetcher: typeof fetch = fetch): Promise<SaveResult> {
+  clearApiCache();
   const res = await fetcher("/api/profile", {
     method: "PUT",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
@@ -87,7 +89,38 @@ export function withoutEmptyFields<T>(value: T): T {
 export type DraftInput = { kind?: string; applicationId?: string | null; company?: string; question: string; charLimit?: number; body: string };
 export type Draft = DraftInput & { id: string; createdAt: string; updatedAt: string };
 
+/**
+ * Cache des lectures (GET) : passer d'un onglet à l'autre réutilise ce qui vient d'être chargé
+ * au lieu de tout redemander à l'API. Une réponse sert pendant une minute ; deux demandes
+ * simultanées de la même adresse n'en font qu'une. Toute modification (POST, PUT, DELETE…)
+ * vide le cache : on ne montre jamais une donnée périmée après un changement.
+ */
+const CACHE_MS = 60_000;
+const cache = new Map<string, { at: number; value: Promise<unknown> }>();
+
+export function clearApiCache() {
+  cache.clear();
+}
+
 async function call<T>(token: string, method: string, path: string, body?: unknown, fetcher: typeof fetch = fetch) {
+  if (method !== "GET") {
+    clearApiCache();
+    return send<T>(token, method, path, body, fetcher);
+  }
+  // Le jeton fait partie de la clé : un autre compte (ou un jeton renouvelé) ne lit pas ces données.
+  const key = `${token}\u0000${path}`;
+  const hit = cache.get(key);
+  if (!hit || Date.now() - hit.at > CACHE_MS) {
+    const value = send<T>(token, method, path, body, fetcher);
+    cache.set(key, { at: Date.now(), value });
+    // Une erreur n'est pas gardée : la prochaine demande réessaie.
+    value.then((r) => { if (!r.ok) cache.delete(key); }, () => cache.delete(key));
+  }
+  // Une copie : un écran qui trie ou modifie sa liste ne touche pas celle des autres.
+  return structuredClone(await (cache.get(key)!.value as ReturnType<typeof send<T>>));
+}
+
+async function send<T>(token: string, method: string, path: string, body?: unknown, fetcher: typeof fetch = fetch) {
   const res = await fetcher(path, {
     method,
     headers: { [TOKEN_HEADER]: token, ...(body === undefined ? {} : { "content-type": "application/json" }) },
@@ -119,6 +152,7 @@ export type ReviewOutcome =
   | { ok: false; error: "ai_failed" | "ai_not_configured" | "empty" };
 
 export async function reviewDraft(token: string, id: string, language: string, fetcher: typeof fetch = fetch): Promise<ReviewOutcome> {
+  clearApiCache();
   const res = await fetcher(`/api/drafts/${encodeURIComponent(id)}/review`, {
     method: "POST",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
@@ -207,6 +241,7 @@ export type InterviewOutcome =
   | { ok: false; error: "ai_failed" | "ai_not_configured" | "finished" | "not_found" | "invalid" };
 
 async function interviewCall(token: string, path: string, body: unknown, fetcher: typeof fetch): Promise<InterviewOutcome> {
+  clearApiCache();
   const res = await fetcher(path, {
     method: "POST",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
