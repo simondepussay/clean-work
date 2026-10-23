@@ -99,9 +99,6 @@ function SignedOut() {
       <p className="eyebrow">{tr({ ja: "留学生のための就活アプリ", en: "For international students in Japan", fr: "Pour les étudiants étrangers au Japon" })}</p>
       <h1>Clean Work</h1>
       <p className="lead">{tr({ ja: "就活に必要なものを、ひとつの場所に。", en: "Everything for your job hunt, in one place.", fr: "Tout pour votre recherche d'emploi, au même endroit." })}</p>
-      <ul className="features">
-        {SERVICES.map((s) => <li key={s.view}><strong>{tr(s.name)}</strong><small>{tr(s.text)}</small></li>)}
-      </ul>
       {auth.state.status === "signedOut" && (
         <button className="primary large" onClick={() => auth.signIn()}>{tr({ ja: "サインイン", en: "Sign in", fr: "Se connecter" })}</button>
       )}

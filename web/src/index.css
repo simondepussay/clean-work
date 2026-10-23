@@ -88,11 +88,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .lead { font-size: 18px; color: var(--blue-800); margin: 8px 0 0; }
 .lead span { display: block; font-size: 14px; color: var(--muted); }
 .welcome { max-width: 720px; margin: 32px auto; text-align: center; }
+.welcome .primary.large { margin-top: 28px; }
 .welcome h1 { font-size: clamp(40px, 8vw, 64px); color: var(--blue-700); }
-.features { list-style: none; padding: 0; margin: 28px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; text-align: left; }
-.features li { padding: 14px; border-radius: var(--radius); background: rgba(255, 255, 255, .8); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
-.features strong { color: var(--blue-700); }
-.features small { color: var(--muted); }
 
 .account { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
 .account p { margin: 2px 0; }
