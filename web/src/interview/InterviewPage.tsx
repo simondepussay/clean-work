@@ -7,6 +7,7 @@ import { useAuth } from "../auth/auth";
 import { LANGS, useHelpLanguage } from "../es/guide";
 import { stageFor, stageName, STAGES } from "./stages";
 import { canListen, canSpeak, listen, speak, stopSpeaking, type Listener } from "./speech";
+import { ArrowRightIcon, ChevronLeftIcon, CloseIcon, LightIcon, MicIcon, SpeakerIcon, StopIcon } from "../icons";
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("ja-JP");
 
@@ -129,11 +130,11 @@ export function InterviewPage({ seed }: { seed?: InterviewSeed }) {
         </label>
       </div>
       {applicationId && !apps.find((a) => a.id === applicationId)?.notes && (
-        <p className="muted">💡 応募の「企業メモ」を書くと、質問がもっと具体的になります / Add notes on the company for more specific questions</p>
+        <p className="muted"><LightIcon size={15} /> 応募の「企業メモ」を書くと、質問がもっと具体的になります / Add notes on the company for more specific questions</p>
       )}
       <div className="actions">
         <button className="primary" onClick={start} disabled={busy || usage?.today === 0}>
-          {busy ? "面接官が質問を準備しています… / Preparing questions…" : "🎤 面接を始める / Start"}
+          {busy ? "面接官が質問を準備しています… / Preparing questions…" : <><MicIcon size={16} /> 面接を始める / Start</>}
         </button>
         {usage && <span className="muted">残り：今日 {usage.today}回・今月 {usage.month}回 / Left: {usage.today} today, {usage.month} this month</span>}
       </div>
@@ -149,7 +150,7 @@ export function InterviewPage({ seed }: { seed?: InterviewSeed }) {
                   {day(h.createdAt)} · {h.company ?? "一般 / General"} · {stageName(h.stage)}
                   {h.score !== null ? ` · ${h.score}点` : " · 途中 / unfinished"}
                 </button>
-                <button className="link danger" onClick={() => remove(h.id)} aria-label="削除 / Delete">✕</button>
+                <button className="link danger" onClick={() => remove(h.id)} aria-label="削除 / Delete"><CloseIcon size={16} /></button>
               </li>
             ))}
           </ul>
@@ -168,7 +169,7 @@ function FeedbackCard({ turn }: { turn: InterviewTurn }) {
       {f.improvements.length > 0 && <ul>{f.improvements.map((i) => <li key={i}>{i}</li>)}</ul>}
       {f.expressions.length > 0 && (
         <ul className="expressions">
-          {f.expressions.map((e) => <li key={e.quote}><del>{e.quote}</del> → <ins>{e.suggestion}</ins></li>)}
+          {f.expressions.map((e) => <li key={e.quote}><del>{e.quote}</del> <ArrowRightIcon size={14} /> <ins>{e.suggestion}</ins></li>)}
         </ul>
       )}
       {turn.durationSec !== undefined && <p className="muted">回答時間 / Time: {turn.durationSec}秒</p>}
@@ -274,7 +275,7 @@ function Session({ session, busy, message, onAnswer, onFinish, onClose }: {
           {turn.kind === "followUp" && <span className="tag">深掘り / Follow-up</span>}
           <p className="q">{turn.question}</p>
           <div className="actions">
-            {canSpeak() && <button onClick={() => speak(turn.question)}>🔊 もう一度聞く / Listen again</button>}
+            {canSpeak() && <button onClick={() => speak(turn.question)}><SpeakerIcon size={16} /> もう一度聞く / Listen again</button>}
             {canSpeak() && (
               <label className="inline"><input type="checkbox" checked={autoRead} onChange={(e) => setAutoRead(e.target.checked)} />自動で読み上げ / Read aloud</label>
             )}
@@ -304,7 +305,7 @@ function Session({ session, busy, message, onAnswer, onFinish, onClose }: {
           <div className="actions">
             {canListen() ? (
               <button onClick={toggleMic} className={listening ? "danger" : undefined} aria-pressed={listening}>
-                {listening ? "⏹ 話し終わった / Stop" : "🎙 話して答える / Answer by voice"}
+                {listening ? <><StopIcon size={16} /> 話し終わった / Stop</> : <><MicIcon size={16} /> 話して答える / Answer by voice</>}
               </button>
             ) : (
               <span className="muted">このブラウザでは音声入力が使えません。文字で答えてください / Voice input isn't available in this browser; please type.</span>
@@ -325,7 +326,7 @@ function Session({ session, busy, message, onAnswer, onFinish, onClose }: {
         </div>
       )}
       {message && <p role="alert" className="muted">{message}</p>}
-      <button className="link" onClick={onClose}>← 一覧に戻る / Back to the list</button>
+      <button className="link" onClick={onClose}><ChevronLeftIcon size={15} /> 一覧に戻る / Back to the list</button>
     </section>
   );
 }

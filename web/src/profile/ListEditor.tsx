@@ -1,4 +1,5 @@
 /** Liste éditable (scolarité, expérience, certifications, langues) décrite par ses champs. */
+import { PlusIcon } from "../icons";
 
 export type Field<T> = {
   key: keyof T & string;
@@ -69,7 +70,7 @@ export function ListEditor<T extends Record<string, unknown>>({ title, name, ite
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...items, { ...empty }])}>＋ 追加 / Add</button>
+      <button type="button" onClick={() => onChange([...items, { ...empty }])}><PlusIcon size={16} /> 追加 / Add</button>
     </fieldset>
   );
 }

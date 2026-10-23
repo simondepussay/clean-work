@@ -4,3 +4,6 @@ import { afterEach } from "vitest";
 
 // Sans `globals: true`, Testing Library ne vide pas la page entre deux tests : on le fait ici.
 afterEach(cleanup);
+
+// jsdom ne sait pas faire défiler la page : on ignore scrollTo dans les tests.
+window.scrollTo = () => {};

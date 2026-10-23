@@ -7,6 +7,7 @@ import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
 import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
 import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, STEP_TYPES, daysUntil, deadlineLabel, neighbour, statusLabel } from "./statuses";
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, MicIcon, PenIcon, PlusIcon } from "../icons";
 
 const stepFields: Field<Step>[] = [
   { key: "type", label: "選考 / Step", type: "select", options: STEP_TYPES, placeholder: "選択 / Choose", required: true },
@@ -117,7 +118,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
   return (
     <section className="apps">
       <div className="apps-bar">
-        <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}>＋ 応募を追加 / Add</button>
+        <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}><PlusIcon size={16} /> 応募を追加 / Add</button>
         <span className="muted">{apps.length}社 / {apps.length} companies</span>
         {error && <span role="alert" className="notice">保存できませんでした / Could not save</span>}
       </div>
@@ -127,7 +128,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
           <h3>近い締切 <span>Upcoming deadlines · 14日 / 14 days</span></h3>
           <button type="button" onClick={exportCalendar} disabled={allUpcoming.length === 0}
             title="Google カレンダー・Apple カレンダー・Outlook に読み込めます / Import into Google, Apple or Outlook calendar">
-            📅 カレンダーに追加 / Add to calendar (.ics)
+            <CalendarIcon size={16} /> カレンダーに追加 / Add to calendar (.ics)
           </button>
         </div>
         {soon.length === 0 ? (
@@ -164,12 +165,12 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
                       {a.position && <span>{a.position}</span>}
                       {closed && <span className="muted">{statusLabel(a.status)}</span>}
                     </button>
-                    {days !== null && <p className={days <= 3 ? "due soon" : "due"}>⏰ {deadlineLabel(days)}</p>}
+                    {days !== null && <p className={days <= 3 ? "due soon" : "due"}><ClockIcon size={13} /> {deadlineLabel(days)}</p>}
                     {esCount(a.id) > 0 && <p className="es-badge">ES {esCount(a.id)}</p>}
                     {!closed && (
                       <div className="moves">
-                        <button disabled={!prev} onClick={() => prev && move(a, prev)} aria-label={`${a.company} : 前のステップへ / previous step`}>◀</button>
-                        <button disabled={!next} onClick={() => next && move(a, next)} aria-label={`${a.company} : 次のステップへ / next step`}>▶</button>
+                        <button disabled={!prev} onClick={() => prev && move(a, prev)} aria-label={`${a.company} : 前のステップへ / previous step`}><ChevronLeftIcon size={14} /></button>
+                        <button disabled={!next} onClick={() => next && move(a, next)} aria-label={`${a.company} : 次のステップへ / next step`}><ChevronRightIcon size={14} /></button>
                       </div>
                     )}
                   </article>
@@ -233,11 +234,11 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
             <button type="button" onClick={() => setEditing(null)}>閉じる / Close</button>
             {editing.id && onWriteEs && (
               <button type="button" onClick={() => onWriteEs({ id: editing.id!, company: editing.form.company })}>
-                ✍️ このESを書く / Write an ES for this company
+                <PenIcon size={16} /> このESを書く / Write an ES for this company
               </button>
             )}
             {editing.id && onPractice && (
-              <button type="button" onClick={() => onPractice({ id: editing.id! })}>🎤 面接を練習する / Practise the interview</button>
+              <button type="button" onClick={() => onPractice({ id: editing.id! })}><MicIcon size={16} /> 面接を練習する / Practise the interview</button>
             )}
             {editing.id && <button type="button" className="danger" onClick={remove}>削除 / Delete</button>}
           </div>

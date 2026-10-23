@@ -4,19 +4,45 @@ import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
 import { ApplicationsBoard } from "./apps/ApplicationsBoard";
 import { EsPage, type EsSeed } from "./es/EsPage";
+import { HomePage } from "./home/HomePage";
+import { UserIcon } from "./icons";
 import { InterviewPage, type InterviewSeed } from "./interview/InterviewPage";
 import { ProfileEditor } from "./profile/ProfileEditor";
 import { ResumePanel } from "./profile/ResumePanel";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
+const VIEWS = ["home", "apps", "es", "interview", "documents", "account"] as const;
+type View = (typeof VIEWS)[number];
 
-function Account() {
+function viewFromHash(): View {
+  const hash = location.hash.slice(1);
+  return (VIEWS as readonly string[]).includes(hash) ? (hash as View) : "home";
+}
+
+/** Les services de l'app, rassemblés au même endroit (la philosophie de « Clean Work »). */
+const SERVICES: { view: Exclude<View, "home" | "account">; ja: string; en: string; text: string }[] = [
+  { view: "apps", ja: "応募", en: "Applications", text: "選考の進み具合と締切 / Progress and deadlines" },
+  { view: "es", ja: "ES", en: "Entry sheets", text: "書き方のガイドとAI添削 / Guide and AI review" },
+  { view: "interview", ja: "面接", en: "Interview", text: "企業に合わせた模擬面接 / Mock interviews for each company" },
+  { view: "documents", ja: "書類", en: "Documents", text: "履歴書・職務経歴書のPDF / Résumé PDFs" },
+];
+
+/** Marque « Clean Work » : un trait de vague, rappel des lignes du fond. */
+function Logo() {
+  return (
+    <svg className="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="15" fill="var(--blue-700)" />
+      <path d="M6 18c3.3-4 6.7-4 10 0s6.7 4 10 0" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
+      <circle cx="23" cy="10" r="2.6" fill="var(--bordeaux)" />
+    </svg>
+  );
+}
+
+/** Page « compte » (icône en haut à droite) : le compte, puis le profil du 履歴書. */
+function Account({ me, onSaved }: { me: Me | null | "error"; onSaved: () => void }) {
   const auth = useAuth();
-  const [me, setMe] = useState<Me | null | "error">(null);
   const [deleting, setDeleting] = useState<"idle" | "busy" | "error">("idle");
-  const [tab, setTab] = useState<"profile" | "apps" | "es" | "interview">("profile");
-  const [esSeed, setEsSeed] = useState<EsSeed | undefined>();
-  const [interviewSeed, setInterviewSeed] = useState<InterviewSeed | undefined>();
+  const signedIn = auth.state.status === "signedIn" ? auth.state : null;
 
   async function removeAccount() {
     const ok = window.confirm(
@@ -35,6 +61,60 @@ function Account() {
     }
   }
 
+  return (
+    <>
+      <section className="card account">
+        <div>
+          <h2>アカウント <span>Account</span></h2>
+          <p><strong>{signedIn?.name ?? signedIn?.email}</strong>{signedIn?.name && signedIn.email && <span className="muted"> · {signedIn.email}</span>}</p>
+          <p className="muted">
+            {me && me !== "error" && (me.hasProfile ? "プロフィール登録済み / Profile saved" : "プロフィール未登録 / no profile yet")}
+            {me === "error" && "API エラー / API error"}
+          </p>
+        </div>
+        <div className="actions">
+          <button onClick={() => auth.signOut()}>サインアウト / Sign out</button>
+          <button className="danger" disabled={deleting === "busy"} onClick={removeAccount}>アカウント削除 / Delete account</button>
+        </div>
+        {deleting === "error" && <p className="muted">削除できませんでした / Could not delete the account</p>}
+      </section>
+      <ProfileEditor onSaved={onSaved} />
+    </>
+  );
+}
+
+function SignedOut() {
+  const auth = useAuth();
+  return (
+    <section className="hero welcome">
+      <p className="eyebrow">留学生のための就活アプリ · For international students in Japan</p>
+      <h1>Clean Work</h1>
+      <p className="lead">就活に必要なものを、ひとつの場所に。<span>Everything for your job hunt, in one place.</span></p>
+      <ul className="features">
+        {SERVICES.map((s) => <li key={s.view}><strong>{s.ja} / {s.en}</strong><small>{s.text}</small></li>)}
+      </ul>
+      {auth.state.status === "signedOut" && (
+        <button className="primary large" onClick={() => auth.signIn()}>サインイン / Sign in</button>
+      )}
+      {auth.state.status === "disabled" && <p className="muted">サインインは準備中です / Sign-in coming soon</p>}
+      {auth.state.status === "loading" && <p className="muted">…</p>}
+    </section>
+  );
+}
+
+export default function App() {
+  const auth = useAuth();
+  const [health, setHealth] = useState<HealthState>({ kind: "loading" });
+  const [view, setView] = useState<View>(viewFromHash);
+  const [me, setMe] = useState<Me | null | "error">(null);
+  const [esSeed, setEsSeed] = useState<EsSeed | undefined>();
+  const [interviewSeed, setInterviewSeed] = useState<InterviewSeed | undefined>();
+  const signedIn = auth.state.status === "signedIn" ? auth.state : null;
+
+  useEffect(() => {
+    fetchHealth().then((h) => setHealth(h ? { kind: "ready", health: h } : { kind: "offline" }));
+  }, []);
+
   const refreshMe = () =>
     auth.getToken()
       .then((token) => (token ? fetchMe(token) : null))
@@ -47,76 +127,74 @@ function Account() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.state.status]);
 
-  switch (auth.state.status) {
-    case "disabled":
-      return <p className="muted">サインインは準備中です / Sign-in coming soon</p>;
-    case "loading":
-      return <p className="muted">…</p>;
-    case "signedOut":
-      return (
-        <button className="primary" onClick={() => auth.signIn()}>
-          サインイン / Sign in
-        </button>
-      );
-    case "signedIn":
-      return (
-        <div>
-          <div className="account">
-          <p>
-            ようこそ、<strong>{auth.state.name ?? auth.state.email}</strong>
-            {me && me !== "error" && (
-              <span className="muted"> · {me.hasProfile ? "プロフィール登録済み" : "プロフィール未登録 / no profile yet"}</span>
-            )}
-            {me === "error" && <span className="muted"> · API エラー / API error</span>}
-          </p>
-          <div className="actions">
-            <button onClick={() => auth.signOut()}>サインアウト / Sign out</button>
-            <button className="danger" disabled={deleting === "busy"} onClick={removeAccount}>
-              アカウント削除 / Delete account
-            </button>
-          </div>
-          </div>
-          {deleting === "error" && <p className="muted">削除できませんでした / Could not delete the account</p>}
-          <nav className="tabs" role="tablist">
-            <button role="tab" aria-selected={tab === "profile"} onClick={() => setTab("profile")}>プロフィール / Profile</button>
-            <button role="tab" aria-selected={tab === "apps"} onClick={() => setTab("apps")}>応募 / Applications</button>
-            <button role="tab" aria-selected={tab === "es"} onClick={() => setTab("es")}>ES</button>
-            <button role="tab" aria-selected={tab === "interview"} onClick={() => setTab("interview")}>面接 / Interview</button>
-          </nav>
-          {tab === "profile" && <><ProfileEditor onSaved={refreshMe} /><ResumePanel /></>}
-          {tab === "apps" && (
-            <ApplicationsBoard
-              onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); setTab("es"); }}
-              onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); setTab("interview"); }} />
-          )}
-          {tab === "es" && <EsPage seed={esSeed} />}
-          {tab === "interview" && <InterviewPage seed={interviewSeed} />}
-        </div>
-      );
-  }
-}
-
-export default function App() {
-  const [health, setHealth] = useState<HealthState>({ kind: "loading" });
-
+  // Chaque page a son adresse (#apps, #es…) : le bouton « retour » du navigateur fonctionne,
+  // et on peut garder une page en favori.
   useEffect(() => {
-    fetchHealth().then((h) => setHealth(h ? { kind: "ready", health: h } : { kind: "offline" }));
+    const onHash = () => setView(viewFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
+  const open = (v: View) => {
+    setView(v);
+    if (viewFromHash() !== v) history.pushState(null, "", v === "home" ? `${location.pathname}${location.search}` : `#${v}`);
+    window.scrollTo?.({ top: 0 });
+  };
+
   return (
-    <main className="shell">
-      <h1>就活パイロット</h1>
-      <p className="tagline">Shukatsu Pilot — 留学生の就職活動をサポート</p>
-      <Account />
-      <footer className="legal">
-        <a href="/privacy.html">プライバシーポリシー / Privacy</a> · <a href="/terms.html">利用規約 / Terms</a>
+    <div className="page">
+      <div className="waves" aria-hidden="true" />
+      <header className="topbar">
+        <button className="brand" onClick={() => open("home")} aria-label="Clean Work — ホーム / Home">
+          <Logo />
+          <span>Clean Work</span>
+        </button>
+        {signedIn ? (
+          <button className={`avatar${view === "account" ? " current" : ""}`} onClick={() => open("account")}
+            aria-label="アカウント / Account" title={signedIn.name ?? signedIn.email ?? ""}>
+            <UserIcon size={22} />
+          </button>
+        ) : (
+          auth.state.status === "signedOut" && <button className="primary" onClick={() => auth.signIn()}>サインイン / Sign in</button>
+        )}
+      </header>
+
+      {/* Le menu en intercalaires de classeur : chaque page est une feuille, l'onglet actif tient à la feuille. */}
+      <div className="binder">
+        {signedIn && (
+          <nav className="tabs" role="tablist" aria-label="メニュー / Menu">
+            {[{ view: "home" as View, ja: "ホーム", en: "Home" }, ...SERVICES].map((s) => (
+              <button key={s.view} role="tab" aria-selected={view === s.view} onClick={() => open(s.view)}>
+                {s.ja}<span>{s.en}</span>
+              </button>
+            ))}
+          </nav>
+        )}
+        <main className={signedIn ? "shell sheet" : "shell"}>
+          {!signedIn && <SignedOut />}
+          {signedIn && view === "home" && <HomePage name={signedIn.name} onOpenApps={() => open("apps")} />}
+          {signedIn && view === "account" && <Account me={me} onSaved={refreshMe} />}
+          {signedIn && view === "apps" && (
+            <ApplicationsBoard
+              onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
+              onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
+          )}
+          {signedIn && view === "es" && <EsPage seed={esSeed} />}
+          {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
+          {signedIn && view === "documents" && <ResumePanel />}
+        </main>
+      </div>
+
+      <footer className="footer">
+        <span>© Clean Work</span>
+        <a href="/privacy.html">プライバシーポリシー / Privacy</a>
+        <a href="/terms.html">利用規約 / Terms</a>
+        <span className="status" role="status">
+          {health.kind === "loading" && "API…"}
+          {health.kind === "offline" && "API: オフライン / offline"}
+          {health.kind === "ready" && `API: ${health.health.status} · DB: ${health.health.database} · v${health.health.version}`}
+        </span>
       </footer>
-      <p className="status" role="status">
-        {health.kind === "loading" && "API…"}
-        {health.kind === "offline" && "API: オフライン / offline"}
-        {health.kind === "ready" &&
-          `API: ${health.health.status} · DB: ${health.health.database} · v${health.health.version}`}
-      </p>
-    </main>
+    </div>
   );
 }

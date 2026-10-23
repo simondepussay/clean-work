@@ -5,7 +5,10 @@ import { deleteAccount, fetchHealth, fetchMe, TOKEN_HEADER } from "./api";
 import App from "./App";
 import { AuthContext, type Auth } from "./auth/auth";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  history.replaceState(null, "", "/");
+});
 
 const json = (body: unknown, ok = true) => ({ ok, json: async () => body });
 const health = { status: "ok", version: "abc123", database: "ok" };
@@ -46,7 +49,7 @@ describe("App", () => {
   it("affiche l'état de l'API", async () => {
     stubApi();
     renderWith({});
-    expect(screen.getByRole("heading", { name: "就活パイロット" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Clean Work" })).toBeInTheDocument();
     expect(await screen.findByText("API: ok · DB: ok · vabc123")).toBeInTheDocument();
   });
 
@@ -60,19 +63,23 @@ describe("App", () => {
     stubApi();
     renderWith({ state: { status: "disabled" } });
     expect(screen.getByText(/Sign-in coming soon/)).toBeInTheDocument();
-    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Sign in/ })).toBeNull();
   });
 
   it("lance la connexion au clic", async () => {
     stubApi();
     const auth = renderWith({ state: { status: "signedOut" } });
-    await userEvent.click(screen.getByRole("button", { name: /Sign in/ }));
+    // En haut à droite et au centre de la page d'accueil.
+    const buttons = screen.getAllByRole("button", { name: /Sign in/ });
+    expect(buttons).toHaveLength(2);
+    await userEvent.click(buttons[0]);
     expect(auth.signIn).toHaveBeenCalled();
   });
 
   it("une fois connecté, appelle /api/me avec le jeton et affiche le compte", async () => {
     const fetchMock = stubApi();
     renderWith({ state: { status: "signedIn", email: "simon@example.com", name: "Simon" }, getToken: async () => "jeton" });
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     expect(await screen.findByText(/プロフィール未登録/)).toBeInTheDocument();
     expect(screen.getByText("Simon")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/me", { headers: { [TOKEN_HEADER]: "jeton" } });
@@ -81,12 +88,14 @@ describe("App", () => {
   it("signale une erreur si l'API refuse le jeton", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? json({}, false) : json(health))));
     renderWith({ state: { status: "signedIn", email: "simon@example.com", name: null }, getToken: async () => "jeton" });
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     expect(await screen.findByText(/API error/)).toBeInTheDocument();
   });
 
   it("se déconnecte au clic", async () => {
     stubApi();
     const auth = renderWith({ state: { status: "signedIn", email: "s@example.com", name: "Simon" }, getToken: async () => "jeton" });
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     await userEvent.click(screen.getByRole("button", { name: /Sign out/ }));
     expect(auth.signOut).toHaveBeenCalled();
   });
@@ -106,6 +115,7 @@ describe("suppression du compte (S25)", () => {
     const confirm = vi.fn<(message?: string) => boolean>(() => false);
     vi.stubGlobal("confirm", confirm);
     renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
     expect(confirm.mock.calls[0][0]).toMatch(/30日後に完全に削除/);
     expect(confirm.mock.calls[0][0]).toMatch(/permanently deleted after 30 days/);
@@ -116,6 +126,7 @@ describe("suppression du compte (S25)", () => {
     const fetchMock = stubApi();
     vi.stubGlobal("confirm", vi.fn(() => false));
     const auth = renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
     expect(fetchMock).not.toHaveBeenCalledWith("/api/me", expect.objectContaining({ method: "DELETE" }));
     expect(auth.signOut).not.toHaveBeenCalled();
@@ -125,6 +136,7 @@ describe("suppression du compte (S25)", () => {
     const fetchMock = stubApi();
     vi.stubGlobal("confirm", vi.fn(() => true));
     const auth = renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
     expect(fetchMock).toHaveBeenCalledWith("/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: "jeton" } });
     expect(auth.signOut).toHaveBeenCalled();
@@ -135,6 +147,7 @@ describe("suppression du compte (S25)", () => {
       init?.method === "DELETE" ? json({ error: "deletion_not_configured" }, false) : url === "/api/me" ? json({ hasProfile: false }) : json(health)));
     vi.stubGlobal("confirm", vi.fn(() => true));
     const auth = renderWith(signedIn);
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     await userEvent.click(screen.getByRole("button", { name: /Delete account/ }));
     expect(await screen.findByText(/Could not delete/)).toBeInTheDocument();
     expect(auth.signOut).not.toHaveBeenCalled();

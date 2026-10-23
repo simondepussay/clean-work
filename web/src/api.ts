@@ -233,3 +233,16 @@ export const listInterviews = (token: string, f?: typeof fetch) => call<Intervie
 export const getInterview = (token: string, id: string, f?: typeof fetch) => call<Interview>(token, "GET", interviewPath(id), undefined, f);
 export const deleteInterview = (token: string, id: string, f?: typeof fetch) => call<null>(token, "DELETE", interviewPath(id), undefined, f);
 export const getInterviewUsage = (token: string, f?: typeof fetch) => call<Usage>(token, "GET", "/api/interview-usage", undefined, f);
+
+// ------------------------------------------------------------------ agenda (événements et objectifs)
+
+export type PlanKind = "event" | "goal";
+export type PlanInput = { kind: PlanKind; title: string; date: string; time?: string | null; note?: string; done?: boolean };
+export type Plan = PlanInput & { id: string; done: boolean; createdAt: string; updatedAt: string };
+
+export const listPlans = (token: string, f?: typeof fetch) => call<Plan[]>(token, "GET", "/api/plans", undefined, f);
+export const createPlan = (token: string, p: PlanInput, f?: typeof fetch) => call<Plan>(token, "POST", "/api/plans", p, f);
+export const updatePlan = (token: string, id: string, p: Partial<PlanInput>, f?: typeof fetch) =>
+  call<Plan>(token, "PUT", `/api/plans/${encodeURIComponent(id)}`, p, f);
+export const deletePlan = (token: string, id: string, f?: typeof fetch) =>
+  call<null>(token, "DELETE", `/api/plans/${encodeURIComponent(id)}`, undefined, f);

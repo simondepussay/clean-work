@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getUsage, listReviews, reviewDraft, type Review, type ReviewOutcome, type Usage } from "../api";
 import { useAuth } from "../auth/auth";
 import { diff, stats } from "./diff";
+import { ArrowRightIcon, CheckIcon } from "../icons";
 
 const CATEGORY: Record<string, string> = {
   keigo: "敬語 / Keigo",
@@ -122,13 +123,13 @@ export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
           <p className="score"><strong>{review.score}</strong> / 100 <span className="muted">{new Date(review.createdAt).toLocaleString("ja-JP")}</span></p>
           <p>{review.summary}</p>
           {review.strengths.length > 0 && (
-            <ul className="strengths">{review.strengths.map((s) => <li key={s}>✓ {s}</li>)}</ul>
+            <ul className="strengths">{review.strengths.map((s) => <li key={s}><CheckIcon size={15} /> {s}</li>)}</ul>
           )}
           <ol className="issues">
             {review.issues.map((issue, i) => (
               <li key={i}>
                 <span className="tag">{CATEGORY[issue.category] ?? issue.category}</span>
-                <p><mark>{issue.quote}</mark> → <ins>{issue.suggestion}</ins></p>
+                <p><mark>{issue.quote}</mark> <ArrowRightIcon size={14} /> <ins>{issue.suggestion}</ins></p>
                 <p className="muted">{issue.problem}</p>
                 <button type="button" disabled={applied.has(i)}
                   onClick={() => { onApply(issue.quote, issue.suggestion); setApplied((a) => new Set(a).add(i)); }}>

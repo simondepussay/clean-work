@@ -7,6 +7,8 @@ import {
   applicationInputSchema,
   containers,
   deviceInputSchema,
+  planInputSchema,
+  type Plan,
   type Device,
   draftInputSchema,
   type Draft,
@@ -131,6 +133,36 @@ export class Repository {
   async listReviews(userId: string, draftId: string) {
     const all = await this.store.list<Review>(containers.reviews, userId);
     return all.filter((r) => r.draftId === draftId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  // -------------------------------------------------------------- agenda (événements et objectifs)
+
+  async listPlans(userId: string) {
+    const plans = await this.store.list<Plan>(containers.plans, userId);
+    return plans.sort((a, b) => `${a.date}${a.time ?? ""}`.localeCompare(`${b.date}${b.time ?? ""}`));
+  }
+
+  async createPlan(userId: string, input: unknown) {
+    const data = planInputSchema.parse(input);
+    const at = this.now().toISOString();
+    return this.store.put<Plan>(containers.plans, { ...data, id: randomUUID(), userId, createdAt: at, updatedAt: at });
+  }
+
+  async updatePlan(userId: string, id: string, input: unknown) {
+    const current = await this.store.get<Plan>(containers.plans, userId, id);
+    if (!current) return null;
+    const { id: _id, userId: _u, createdAt, updatedAt: _t, ...editable } = current;
+    const merged: Record<string, unknown> = { ...editable };
+    for (const [key, value] of Object.entries((input ?? {}) as object)) {
+      if (value === null) delete merged[key];
+      else merged[key] = value;
+    }
+    const data = planInputSchema.parse(merged);
+    return this.store.put<Plan>(containers.plans, { ...data, id, userId, createdAt, updatedAt: this.now().toISOString() });
+  }
+
+  deletePlan(userId: string, id: string) {
+    return this.store.remove(containers.plans, userId, id);
   }
 
   // -------------------------------------------------------------- appareils (S26)

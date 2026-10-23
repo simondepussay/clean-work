@@ -193,6 +193,28 @@ export type Review = {
   discarded: number;
 };
 
+// ------------------------------------------------------------------ agenda : événements et objectifs
+
+/**
+ * Ce que l'utilisateur ajoute lui-même au calendrier de l'accueil, en plus des étapes des
+ * candidatures : un événement (説明会, salon, OB訪問…) ou un objectif (« ES 3本提出 » avant une date).
+ */
+export const planKinds = ["event", "goal"] as const;
+
+export const planInputSchema = z.object({
+  kind: choice(planKinds).default("event"),
+  title: required(100),
+  date: isoDate,
+  /** Heure de début (HH:MM), pour les événements. */
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "HH:MM の形式で入力してください / Use the format HH:MM").optional(),
+  note: text(500).optional(),
+  /** Objectif atteint, ou événement passé coché. */
+  done: z.boolean().default(false),
+});
+
+export type PlanInput = z.infer<typeof planInputSchema>;
+export type Plan = PlanInput & { id: string; userId: string; createdAt: string; updatedAt: string };
+
 // ------------------------------------------------------------------ appareils (S26)
 
 /** Environnement APNs : « sandbox » pour les builds lancés depuis Xcode, « production » pour TestFlight et l'App Store. */
@@ -221,6 +243,8 @@ export const containers = {
   devices: "devices",
   /** Séances d'entraînement aux entretiens (S17–S19). */
   interviews: "interviews",
+  /** Événements et objectifs ajoutés au calendrier par l'utilisateur. */
+  plans: "plans",
 } as const;
 
 export type ContainerName = (typeof containers)[keyof typeof containers];

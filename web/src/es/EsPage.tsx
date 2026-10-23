@@ -5,6 +5,7 @@ import { countChars } from "./count";
 import { GuidePanel, Intro } from "./GuidePanel";
 import { LANGS, useGuide, useHelpLanguage, type GuideType } from "./guide";
 import { ReviewPanel } from "./ReviewPanel";
+import { CheckIcon, PlusIcon } from "../icons";
 
 const blank: DraftInput = { question: "", body: "" };
 
@@ -134,7 +135,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
     {guide && <Intro guide={guide} lang={lang} />}
     <section className="es">
       <aside>
-        <button className="primary" onClick={() => setChoosing(true)}>＋ 新しいES / New</button>
+        <button className="primary" onClick={() => setChoosing(true)}><PlusIcon size={16} /> 新しいES / New</button>
         <ul aria-label="ES">
           {drafts.map((d) => (
             <li key={d.id}>
@@ -172,7 +173,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
               <span>企業 / Company（空欄＝共通 / blank = general）</span>
               <input value={form.company ?? ""} list="es-companies" onChange={(e) => edit({ company: e.target.value })} />
               <datalist id="es-companies">{apps.map((a) => <option key={a.id} value={a.company} />)}</datalist>
-              {apps.some((a) => a.company === form.company?.trim()) && <small className="linked">🔗 応募と連携 / Linked to your application</small>}
+              {apps.some((a) => a.company === form.company?.trim()) && <small className="linked"><CheckIcon size={13} /> 応募と連携 / Linked to your application</small>}
             </label>
             <label className={error("charLimit") ? "invalid" : undefined}>
               <span>文字数制限 / Character limit</span>
