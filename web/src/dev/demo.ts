@@ -57,11 +57,18 @@ const plans = [
 const routes: Record<string, unknown> = {
   "GET /api/plans": plans,
   "GET /api/info?page=1": {
-    page: 1, pages: 1, total: 2, sources: [{ id: "mhlw", name: "厚生労働省" }],
+    page: 1, pages: 2, total: 9, sources: [{ id: "mhlw", name: "厚生労働省" }, { id: "japantimes", name: "The Japan Times" }],
     items: [
-      { id: "news-1", kind: "news", date: inDays(0), source: "mhlw", link: "https://www.mhlw.go.jp/",
-        title: { ja: "新規学卒者の離職状況を公表", en: "Turnover of new graduates published", fr: "Publication du taux de départ des jeunes diplômés" },
-        summary: { ja: "入社3年以内の離職率は企業選びの参考になります。", en: "Early turnover rates help when choosing a company.", fr: "Le taux de départ précoce aide à choisir une entreprise." } },
+      ["mhlw", "新規学卒者の離職状況を公表", "Turnover of new graduates published", "Publication du taux de départ des jeunes diplômés"],
+      ["japantimes", "日本のインフレ率が今年初めて2％超に", "Japanese inflation tops 2% for the first time this year", "L'inflation japonaise dépasse 2 % pour la première fois de l'année"],
+      ["japantimes", "最大の労組連合、2027年に6％の賃上げを要求", "Biggest labour federation calls for 6% wage hike in 2027", "La plus grande fédération syndicale demande 6 % de hausse en 2027"],
+      ["mhlw", "労働政策審議会 労働条件分科会の開催", "Labour policy council: working conditions subcommittee", "Conseil de politique du travail : conditions de travail"],
+      ["mhlw", "外国人雇用状況の届出まとめ", "Summary of foreign employment notifications", "Bilan des déclarations d'emploi d'étrangers"],
+      ["japantimes", "求人倍率は高い水準が続く", "Job-to-applicant ratio stays high", "Le ratio offres/demandeurs reste élevé"],
+      ["mhlw", "キャリアコンサルタント制度の検討会", "Review of the career consultant system", "Réflexion sur le système des conseillers en carrière"],
+    ].map(([source, ja, en, fr], i) => ({ id: `news-${i}`, kind: "news", date: inDays(-Math.floor(i / 5)), source, link: "https://www.mhlw.go.jp/",
+      title: { ja, en, fr }, summary: { ja: "就活の参考になるニュースです。", en: "Useful context for your job hunt.", fr: "Un contexte utile pour votre recherche d'emploi." } })),
+    articles: [
       { id: "bienvenue", kind: "article", date: inDays(0), lang: "ja", body: "Clean Work へようこそ。",
         title: { ja: "Clean Work へようこそ", en: "Welcome to Clean Work", fr: "Bienvenue sur Clean Work" },
         summary: { ja: "就活に必要なものを、ひとつの場所に。", en: "Everything for your job hunt, in one place.", fr: "Tout pour votre recherche d'emploi, au même endroit." } },

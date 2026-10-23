@@ -128,18 +128,22 @@ export async function runDigest(store: DocStore, model: StructuredModel, now = n
   return { added: picks.length, costJpy: costJpy(usage), skipped: false };
 }
 
-/** Une page de l'onglet : articles de Clean Work et actualités choisies, les plus récents d'abord. */
-export async function infoPage(store: DocStore, page: number, articles = readArticles()) {
-  const picks = await store.list<StoredPick>(containers.content, GLOBAL);
-  const cards: InfoCard[] = [
-    ...articles,
-    ...picks.map(({ userId: _u, createdAt: _c, ...card }) => card),
-  ].sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
-  const pages = Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
+/**
+ * Une page de « 最新の見出し » : les actualités choisies jour après jour (archive), les plus
+ * récentes d'abord, 7 par page, éventuellement d'une seule source. Les articles et interviews
+ * de Clean Work sont à part (section « お知らせ », sous les titres).
+ */
+export async function infoPage(store: DocStore, page: number, source?: string, articles = readArticles()) {
+  const picks = (await store.list<StoredPick>(containers.content, GLOBAL))
+    .filter((p) => p.kind === "news" && (!source || p.source === source))
+    .map(({ userId: _u, createdAt: _c, ...card }) => card as InfoCard)
+    .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  const pages = Math.max(1, Math.ceil(picks.length / PAGE_SIZE));
   const current = Math.min(Math.max(1, page), pages);
   return {
-    items: cards.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE),
-    page: current, pages, total: cards.length,
+    items: picks.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE),
+    page: current, pages, total: picks.length,
     sources: NEWS_SOURCES.map(({ id, name }) => ({ id, name })),
+    articles: [...articles].sort((a, b) => b.date.localeCompare(a.date)),
   };
 }

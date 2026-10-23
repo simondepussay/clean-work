@@ -18,7 +18,7 @@ function sameSecret(given: string | null, expected: string | undefined) {
 
 /**
  * Onglet « 情報 » :
- *   GET  /api/info?page=N   (connecté) 7 cartes par page : articles de Clean Work et sélection quotidienne
+ *   GET  /api/info?page=N&source=S   (connecté) « 最新の見出し » : 7 actualités par page (archive), et les articles du site
  *   POST /api/info/run      (tâche du matin, secret x-shukatsu-cron) ajoute les 5 actualités du jour
  */
 export function infoHandlers(deps: Deps = {}) {
@@ -26,7 +26,8 @@ export function infoHandlers(deps: Deps = {}) {
 
   const page = withUser(async (req) => {
     const n = Number.parseInt(req.query.get("page") ?? "1", 10);
-    return { jsonBody: await infoPage(store(), Number.isFinite(n) ? n : 1) };
+    const source = req.query.get("source") || undefined;
+    return { jsonBody: await infoPage(store(), Number.isFinite(n) ? n : 1, source) };
   }, deps.verifier);
 
   const run = async (req: HttpRequest) => {

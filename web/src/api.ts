@@ -266,5 +266,6 @@ export type InfoCard = {
   summary: { ja: string; en: string; fr: string };
   body?: string; lang?: "ja" | "en" | "fr"; link?: string; source?: string;
 };
-export type InfoPageData = { items: InfoCard[]; page: number; pages: number; total: number; sources: { id: string; name: string }[] };
-export const getInfoPage = (token: string, page: number, f?: typeof fetch) => call<InfoPageData>(token, "GET", `/api/info?page=${page}`, undefined, f);
+export type InfoPageData = { items: InfoCard[]; page: number; pages: number; total: number; sources: { id: string; name: string }[]; articles: InfoCard[] };
+export const getInfoPage = (token: string, page: number, source = "", f?: typeof fetch) =>
+  call<InfoPageData>(token, "GET", `/api/info?page=${page}${source ? `&source=${encodeURIComponent(source)}` : ""}`, undefined, f);

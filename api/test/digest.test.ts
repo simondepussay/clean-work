@@ -55,19 +55,21 @@ describe("sélection quotidienne (情報)", () => {
     expect(model.calls[0][1].content).toContain("<news>");
   });
 
-  it("pages de 7 : articles et actualités, les plus récents d'abord", async () => {
+  it("最新の見出し : archive de 7 par page, filtrable par source ; articles du site à part", async () => {
     const store = new MemoryStore();
     const model = new Picker();
     await runDigest(store, model, NOW, async () => news(20));
     await runDigest(store, model, new Date("2026-10-23T23:00:00Z"), async () => news(20, "m").map((n) => ({ ...n, date: "2026-10-23T20:00:00Z" })));
     const article: InfoCard = { id: "bienvenue", kind: "article", date: "2026-10-23", title: t("a"), summary: t("b"), body: "…", lang: "ja" };
-    const p1 = await infoPage(store, 1, [article]);
-    expect(p1).toMatchObject({ page: 1, pages: 2, total: 11 });
+    const p1 = await infoPage(store, 1, undefined, [article]);
+    expect(p1).toMatchObject({ page: 1, pages: 2, total: 10 });
     expect(p1.items).toHaveLength(PAGE_SIZE);
+    expect(p1.items.every((i) => i.kind === "news")).toBe(true);
     expect(p1.items[0].date).toBe("2026-10-24");
-    const p2 = await infoPage(store, 2, [article]);
-    expect(p2.items).toHaveLength(4);
-    expect((await infoPage(store, 99, [article])).page, "une page trop loin donne la dernière").toBe(2);
+    expect(p1.articles).toEqual([article]);
+    expect((await infoPage(store, 2, undefined, [article])).items).toHaveLength(3);
+    expect((await infoPage(store, 99, undefined, [article])).page, "une page trop loin donne la dernière").toBe(2);
+    expect((await infoPage(store, 1, "nhk", [article])).total, "filtre par source").toBe(0);
   });
 
   it("POST /api/info/run exige le secret de la tâche du matin", async () => {
