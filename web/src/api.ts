@@ -197,10 +197,10 @@ export type InterviewTurn = {
 };
 export type InterviewSummary = { score: number; summary: string; strengths: string[]; improvements: string[] };
 export type Interview = {
-  id: string; applicationId?: string; company?: string; stage: InterviewStage; language: string;
+  id: string; applicationId?: string; company?: string; stepId?: string; stepDate?: string; stage: InterviewStage; language: string;
   status: "active" | "finished"; turns: InterviewTurn[]; summary?: InterviewSummary; createdAt: string; updatedAt: string;
 };
-export type InterviewListItem = Pick<Interview, "id" | "company" | "applicationId" | "stage" | "status" | "createdAt"> & { score: number | null; questions: number };
+export type InterviewListItem = Pick<Interview, "id" | "company" | "applicationId" | "stepId" | "stepDate" | "stage" | "status" | "createdAt"> & { score: number | null; questions: number };
 export type InterviewOutcome =
   | { ok: true; interview: Interview }
   | { ok: false; error: "limit"; reason: "day" | "month" | "budget"; retryAfter: string }
@@ -224,7 +224,7 @@ async function interviewCall(token: string, path: string, body: unknown, fetcher
 
 const interviewPath = (id: string) => `/api/interviews/${encodeURIComponent(id)}`;
 
-export const startInterview = (token: string, input: { applicationId?: string; stage: InterviewStage; language: string }, f: typeof fetch = fetch) =>
+export const startInterview = (token: string, input: { applicationId?: string; stepId?: string; stage: InterviewStage; language: string }, f: typeof fetch = fetch) =>
   interviewCall(token, "/api/interviews", input, f);
 export const answerInterview = (token: string, id: string, input: { answer: string; durationSec?: number; spoken: boolean }, f: typeof fetch = fetch) =>
   interviewCall(token, `${interviewPath(id)}/answers`, input, f);

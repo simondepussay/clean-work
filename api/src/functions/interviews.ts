@@ -29,7 +29,8 @@ function reply(result: Interview | CoachError, created = false): HttpResponseIni
 /**
  * Entraînement aux entretiens (S17–S19) :
  *   GET    /api/interviews                séances, la plus récente d'abord (sans le détail des réponses)
- *   POST   /api/interviews                { applicationId?, stage, language } → 201, avec les questions
+ *   POST   /api/interviews                { applicationId?, stepId?, stage, language } → 201, avec les questions
+ *                                        (stepId : l'entretien prévu de la candidature, qui fixe l'étape)
  *   GET    /api/interviews/{id}           une séance complète
  *   POST   /api/interviews/{id}/answers   { answer, durationSec?, spoken? } → avis, et parfois une relance
  *   POST   /api/interviews/{id}/finish    bilan (possible avant la dernière question)
@@ -58,7 +59,7 @@ export function interviewHandlers(deps: Deps = {}) {
       const all = await store().list<Interview>(containers.interviews, user.userId);
       return {
         jsonBody: all.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((i) => ({
-          id: i.id, company: i.company, applicationId: i.applicationId, stage: i.stage, status: i.status,
+          id: i.id, company: i.company, applicationId: i.applicationId, stepId: i.stepId, stepDate: i.stepDate, stage: i.stage, status: i.status,
           score: i.summary?.score ?? null, questions: i.turns.length, createdAt: i.createdAt,
         })),
       };

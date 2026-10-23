@@ -55,32 +55,32 @@ describe("EsPage", () => {
   it("indique qu'il n'y a pas encore d'ES", async () => {
     api();
     renderPage();
-    expect(await screen.findByText(/No entry sheets yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/まだESがありません/)).toBeInTheDocument();
   });
 
   it("compte les caractères en direct et signale le dépassement", async () => {
     api();
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: /New/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /新しいES/ }));
     await userEvent.click(await screen.findByRole("button", { name: /自由/ }));
-    await userEvent.type(screen.getByLabelText(/Character limit/), "5");
-    await userEvent.type(screen.getByLabelText(/Answer/), "あいうえ");
+    await userEvent.type(screen.getByLabelText(/文字数制限/), "5");
+    await userEvent.type(screen.getByLabelText(/本文/), "あいうえ");
     expect(screen.getByText("4 / 5字")).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText(/Answer/), "おか");
+    await userEvent.type(screen.getByLabelText(/本文/), "おか");
     expect(screen.getByText(/6 \/ 5字 — 1字オーバー/)).toHaveClass("over");
   });
 
   it("crée une ES et l'ajoute à la liste", async () => {
     const fetchMock = api();
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: /New/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /新しいES/ }));
     await userEvent.click(await screen.findByRole("button", { name: /自由/ }));
-    await userEvent.type(screen.getByLabelText(/Company/), "楽天");
-    await userEvent.type(screen.getByLabelText(/Question/), "志望動機");
-    await userEvent.type(screen.getByLabelText(/Answer/), "貴社を志望する理由は…");
-    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await userEvent.type(screen.getByLabelText(/^企業/), "楽天");
+    await userEvent.type(screen.getByLabelText(/設問/), "志望動機");
+    await userEvent.type(screen.getByLabelText(/本文/), "貴社を志望する理由は…");
+    await userEvent.click(screen.getByRole("button", { name: /保存/ }));
 
-    expect(await screen.findByText("保存しました / Saved")).toBeInTheDocument();
+    expect(await screen.findByText("保存しました")).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST")!;
     // Pas de candidature « 楽天 » : ES commune (applicationId null).
     expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "free", company: "楽天", applicationId: null, question: "志望動機", body: "貴社を志望する理由は…" });
@@ -90,18 +90,19 @@ describe("EsPage", () => {
   it("explique ce qu'est une ES, dans la langue choisie", async () => {
     api();
     renderPage();
-    expect(await screen.findByText("ESとは？ / What is an ES?")).toBeInTheDocument();
-    expect(screen.getByText(guide.intro.en)).toBeInTheDocument();
+    expect(await screen.findByText("ESとは？")).toBeInTheDocument();
+    expect(screen.getByText(guide.intro.ja)).toBeInTheDocument();
     // La langue se choisit avec le globe de l'en-tête : la page suit tout de suite.
     act(() => setHelpLanguage("fr"));
     expect(screen.getByText(guide.intro.fr)).toBeInTheDocument();
   });
 
-  it("un type de question préremplit la question et la limite, et affiche son guide", async () => {
+  it("un type de question préremplit la question et la limite, et affiche son guide (en anglais)", async () => {
+    setHelpLanguage("en");
     api();
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: /New/ }));
-    await userEvent.click(await screen.findByRole("button", { name: /ガクチカ/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /New entry sheet/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /ガクチカ|Gakuchika/ }));
     expect(screen.getByLabelText(/Question/)).toHaveValue("学生時代に最も力を入れたことを教えてください。");
     expect(screen.getByLabelText(/Character limit/)).toHaveValue(400);
     const panel = screen.getByRole("complementary", { name: /How to write/ });
@@ -119,11 +120,11 @@ describe("EsPage", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<AuthContext.Provider value={auth}><EsPage seed={{ company: "楽天", applicationId: "a1", nonce: 1 }} /></AuthContext.Provider>);
     await userEvent.click(await screen.findByRole("button", { name: /志望動機/ }));
-    expect(screen.getByLabelText(/Company/)).toHaveValue("楽天");
-    expect(await screen.findByText(/Linked to your application/)).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText(/Answer/), "貴社を");
-    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
-    await screen.findByText("保存しました / Saved");
+    expect(screen.getByLabelText(/^企業/)).toHaveValue("楽天");
+    expect(await screen.findByText(/応募と連携/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/本文/), "貴社を");
+    await userEvent.click(screen.getByRole("button", { name: /保存/ }));
+    await screen.findByText("保存しました");
     const post = fetchMock.mock.calls.find(([, i]) => i?.method === "POST")!;
     expect(JSON.parse(post[1]!.body as string)).toMatchObject({ company: "楽天", applicationId: "a1", kind: "motivation" });
   });

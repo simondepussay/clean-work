@@ -21,7 +21,8 @@ const profile: Profile = {
 };
 const sony: Application = {
   id: "a1", userId: "u1", company: "ソニー", position: "エンジニア", industry: "maker", companyType: "large", notes: "ゲームと半導体。",
-  status: "interview1", steps: [], nextDeadline: null, createdAt: "", updatedAt: "",
+  status: "interview1", steps: [{ id: "st1", type: "interview2", dueDate: "2026-10-29", done: false }, { id: "st0", type: "es", dueDate: "2026-10-10", done: true }],
+  nextDeadline: null, createdAt: "", updatedAt: "",
 };
 const draft = (id: string, applicationId: string | undefined, body: string): Draft =>
   ({ id, userId: "u1", kind: "motivation", question: `設問${id}`, body, ...(applicationId ? { applicationId } : {}), createdAt: "", updatedAt: "" });
@@ -109,6 +110,15 @@ describe("/api/interviews", () => {
     const system = model.calls[0].messages[0].content;
     expect(system).toContain("公正な採用選考");
     expect(system).toContain("français");
+  });
+
+  it("rattachée à l'entretien prévu de la candidature : l'étape vient de cette étape", async () => {
+    const { api, model } = await setup();
+    const res = await api.start({ applicationId: "a1", stepId: "st1", stage: "interview1", language: "en" });
+    expect(res.jsonBody).toMatchObject({ stepId: "st1", stepDate: "2026-10-29", stage: "interview2" });
+    expect(model.calls[0].messages[1].content).toContain("二次面接");
+    expect((await api.list()).jsonBody).toMatchObject([{ stepId: "st1", stepDate: "2026-10-29" }]);
+    expect((await api.start({ applicationId: "a1", stepId: "inconnue" })).status, "étape d'une autre candidature").toBe(404);
   });
 
   it("avis sur la réponse : note bornée, 3 conseils au plus, expressions vraiment présentes", async () => {

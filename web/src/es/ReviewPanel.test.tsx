@@ -38,7 +38,7 @@ describe("ReviewPanel", () => {
   it("enregistre, relit dans la langue choisie et affiche le résultat", async () => {
     const fetchMock = api({ status: 201, body: review });
     const { prepare } = renderPanel();
-    await userEvent.click(screen.getByRole("button", { name: /AI review/ }));
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
 
     expect(await screen.findByText("/ 100", { exact: false, selector: ".score" })).toHaveTextContent("65 / 100");
     expect(screen.getByText("« 御社 » s'emploie à l'oral.")).toBeInTheDocument();
@@ -51,31 +51,31 @@ describe("ReviewPanel", () => {
   it("applique une correction une seule fois", async () => {
     api({ status: 201, body: review });
     const { onApply } = renderPanel();
-    await userEvent.click(screen.getByRole("button", { name: /AI review/ }));
-    await userEvent.click(await screen.findByRole("button", { name: /Apply/ }));
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /^適用$/ }));
     expect(onApply).toHaveBeenCalledWith("御社", "貴社");
-    expect(screen.getByRole("button", { name: /Applied/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /適用済み/ })).toBeDisabled();
   });
 
   it("explique la limite du jour avec la date de reprise", async () => {
     api({ status: 429, body: { error: "limit", reason: "day", retryAfter: "2026-10-21T00:00:00.000Z" } });
     renderPanel();
-    await userEvent.click(screen.getByRole("button", { name: /AI review/ }));
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/上限/);
   });
 
   it("précise qu'un échec n'est pas compté", async () => {
     api({ status: 502, body: { error: "ai_failed" } });
     renderPanel();
-    await userEvent.click(screen.getByRole("button", { name: /AI review/ }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/not counted/);
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/回数は使われていません/);
   });
 
   it("désactive le bouton quand il ne reste plus de relecture aujourd'hui", async () => {
     api({ status: 201, body: review }, { today: 0, month: 20 });
     renderPanel();
     await screen.findByText(/今日 0/);
-    expect(screen.getByRole("button", { name: /AI review/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /AI添削/ })).toBeDisabled();
   });
 
   it("montre l'évolution de la note et ce qui a changé depuis la relecture choisie (S15)", async () => {
@@ -83,19 +83,19 @@ describe("ReviewPanel", () => {
     api({ status: 201, body: review }, { today: 9, month: 29 }, [review, older]);
     renderPanel(vi.fn(), vi.fn(async () => "d1"), "貴社で働きたい");
 
-    const history = await screen.findByRole("group", { name: /History/ });
+    const history = await screen.findByRole("group", { name: /履歴/ });
     expect(history).toHaveTextContent("58");
     expect(history).toHaveTextContent("65");
-    expect(screen.getByText(/\+1 \/ −1字/)).toBeInTheDocument();
+    expect(screen.getByText(/\+1 \/ −1/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "58" }));
     // 御 et と思う ont disparu (4 caractères), 貴 est apparu (1).
-    expect(screen.getByText(/\+1 \/ −4字/)).toBeInTheDocument();
+    expect(screen.getByText(/\+1 \/ −4/)).toBeInTheDocument();
   });
 
   it("indique quand le texte n'a pas changé depuis la relecture", async () => {
     api({ status: 201, body: review }, { today: 9, month: 29 }, [review]);
     renderPanel(vi.fn(), vi.fn(async () => "d1"), review.bodySnapshot);
-    expect(await screen.findByText(/No changes since this review/)).toBeInTheDocument();
+    expect(await screen.findByText(/この添削のあと、本文は変わっていません/)).toBeInTheDocument();
   });
 });

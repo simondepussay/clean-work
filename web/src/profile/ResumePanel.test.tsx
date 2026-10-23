@@ -41,12 +41,12 @@ describe("ResumePanel", () => {
     });
 
     render(<AuthContext.Provider value={auth}><ResumePanel /></AuthContext.Provider>);
-    await userEvent.selectOptions(await screen.findByRole("combobox", { name: /Fill from an ES/ }), "d1");
-    expect(screen.getByLabelText(/Motivation/)).toHaveValue("私の強みは粘り強さです。");
-    await userEvent.selectOptions(screen.getByLabelText(/Years/), "japanese");
-    await userEvent.click(screen.getByRole("button", { name: /Download PDF/ }));
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: /ESから入れる/ }), "d1");
+    expect(screen.getByLabelText(/志望の動機/)).toHaveValue("私の強みは粘り強さです。");
+    await userEvent.selectOptions(screen.getByLabelText(/年の書き方/), "japanese");
+    await userEvent.click(screen.getByRole("button", { name: /PDFをダウンロード/ }));
 
-    expect(await screen.findByText(/Downloaded/)).toBeInTheDocument();
+    expect(await screen.findByText(/ダウンロードしました/)).toBeInTheDocument();
     expect(click).toHaveBeenCalled();
     expect(downloaded).toBe("履歴書_シモン.pdf");
     click.mockRestore();
@@ -60,11 +60,11 @@ describe("ResumePanel", () => {
       : new Response(JSON.stringify({ error: "no_work" }), { status: 400 })));
     vi.stubGlobal("fetch", fetchMock);
     render(<AuthContext.Provider value={auth}><ResumePanel /></AuthContext.Provider>);
-    await userEvent.selectOptions(screen.getByLabelText(/Document/), "workHistory");
-    await userEvent.type(screen.getByLabelText(/Summary/), "日仏間の事務を経験");
+    await userEvent.selectOptions(screen.getByLabelText(/^書類$/), "workHistory");
+    await userEvent.type(screen.getByLabelText(/職務要約/), "日仏間の事務を経験");
     expect(screen.queryByLabelText(/Your requests/)).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: /Download PDF/ }));
-    expect(await screen.findByText(/Add work experience/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /PDFをダウンロード/ }));
+    expect(await screen.findByText(/職歴がありません/)).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([url]) => url === "/api/work-history") as unknown as [string, RequestInit];
     expect(JSON.parse(post[1].body as string)).toEqual({ era: "western", summary: "日仏間の事務を経験" });
   });

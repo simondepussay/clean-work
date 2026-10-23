@@ -31,6 +31,8 @@ export const MAX_ANSWER_LENGTH = 3000;
 export const startSchema = z.object({
   /** Candidature visée ; absente pour un entretien « général ». */
   applicationId: z.string().min(1).optional(),
+  /** L'étape d'entretien de cette candidature (« 一次面接 du 29/10 ») : la séance lui est rattachée. */
+  stepId: z.string().min(1).optional(),
   stage: z.enum(interviewStages).default("interview1"),
   language: z.enum(explanationLanguages).default("en"),
 });
@@ -68,6 +70,9 @@ export type Interview = {
   userId: string;
   applicationId?: string;
   company?: string;
+  /** Étape d'entretien de la candidature à laquelle la séance prépare, et sa date. */
+  stepId?: string;
+  stepDate?: string;
   stage: InterviewStage;
   language: ExplanationLanguage;
   status: "active" | "finished";
@@ -112,7 +117,7 @@ export function buildContext(input: { application: Application | null; profile: 
       ...(app.position ? [`職種：${app.position}`] : []),
       ...(app.industry ? [`業界：${INDUSTRY_NAMES[app.industry] ?? app.industry}`] : []),
       ...(app.companyType ? [`企業の種類：${TYPE_NAMES[app.companyType] ?? app.companyType}`] : []),
-      ...(app.notes ? [`学生のメモ：${cut(app.notes, 1500)}`] : []),
+      ...(app.notes ? [`学生のメモ（募集要項を含む場合あり）：${cut(app.notes, 3000)}`] : []),
     );
   } else {
     lines.push("## 企業", "特定の企業なし（一般的な日本企業の面接として）");
@@ -372,6 +377,10 @@ export class InterviewCoach {
     const input = startSchema.parse(raw ?? {});
     const application = input.applicationId ? await this.store.get<Application>(containers.applications, userId, input.applicationId) : null;
     if (input.applicationId && !application) return { error: "not_found" };
+    // Une étape précise : elle doit appartenir à cette candidature, et c'est elle qui fixe l'étape d'entretien.
+    const step = input.stepId ? application?.steps.find((s) => s.id === input.stepId) : undefined;
+    if (input.stepId && !step) return { error: "not_found" };
+    const stage: InterviewStage = step && (interviewStages as readonly string[]).includes(step.type) ? (step.type as InterviewStage) : input.stage;
 
     const reserved = await this.limiter().reserve(userId);
     if (!reserved.ok) return { error: "limit", refusal: reserved.refusal };
@@ -380,7 +389,7 @@ export class InterviewCoach {
       this.store.get<Profile>(containers.profiles, userId, userId),
       this.store.list<Draft>(containers.drafts, userId),
     ]);
-    const context = buildContext({ application, profile, drafts, stage: input.stage });
+    const context = buildContext({ application, profile, drafts, stage });
     const answer = await this.ask<{ questions: { question: string; intent: string }[] }>(questionMessages(context, input.language), "interview_questions", questionsSchema(input.language));
     const turns = answer ? sanitizeQuestions(answer.result) : [];
     if (!answer || turns.length === 0) {
@@ -391,8 +400,9 @@ export class InterviewCoach {
 
     const at = this.now().toISOString();
     const interview: Interview = {
-      id: randomUUID(), userId, stage: input.stage, language: input.language, status: "active", context, turns,
+      id: randomUUID(), userId, stage, language: input.language, status: "active", context, turns,
       ...(application ? { applicationId: application.id, company: application.company } : {}),
+      ...(step ? { stepId: step.id, ...(step.dueDate ? { stepDate: step.dueDate } : {}) } : {}),
       costJpy: answer.cost, createdAt: at, updatedAt: at,
     };
     return this.store.put(containers.interviews, interview);

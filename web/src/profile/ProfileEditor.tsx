@@ -1,50 +1,52 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { getProfile, saveProfile, type Certification, type Education, type Issue, type Language, type ProfileInput, type Work } from "../api";
 import { useAuth } from "../auth/auth";
-import { certificationCategories, certificationSuggestions, languages, levels } from "./choices";
+import { apiMessage, useTr } from "../i18n";
+import { certificationCategories, certificationSuggestions, languages, levels, options } from "./choices";
 import { ListEditor, type Field } from "./ListEditor";
 
 const emptyProfile: ProfileInput = { nameKanji: "", nameKana: "", education: [], work: [], certifications: [], languages: [] };
-
-const educationFields: Field<Education>[] = [
-  { key: "school", label: "学校名 / School", required: true },
-  { key: "faculty", label: "学部・学科 / Faculty" },
-  { key: "start", label: "入学 / Start", type: "month", required: true },
-  { key: "end", label: "卒業・卒業予定 / End (or expected)", type: "month" },
-  {
-    key: "status", label: "状態 / Status", type: "select", options: [
-      { value: "enrolled", label: "在学中 / Enrolled" },
-      { value: "expected", label: "卒業見込み / Expected" },
-      { value: "graduated", label: "卒業 / Graduated" },
-      { value: "completed", label: "修了（日本語学校・留学）/ Completed" },
-      { value: "left", label: "中退 / Left" },
-    ],
-  },
-];
-const workFields: Field<Work>[] = [
-  { key: "company", label: "会社名 / Company", required: true },
-  { key: "role", label: "職種 / Role" },
-  { key: "start", label: "入社 / Start", type: "month", required: true },
-  { key: "end", label: "退社 / End", type: "month" },
-  { key: "description", label: "内容 / Description", type: "textarea" },
-];
-const choose = "選択 / Choose";
-const certificationFields: Field<Certification>[] = [
-  { key: "category", label: "分類 / Category", type: "select", options: certificationCategories, placeholder: choose, required: true },
-  { key: "name", label: "資格名 / Name", required: true, suggestions: (c) => certificationSuggestions[c.category] ?? [] },
-  { key: "date", label: "取得 / Date", type: "month", required: true },
-];
-const languageFields: Field<Language>[] = [
-  { key: "language", label: "言語 / Language", type: "select", options: languages, placeholder: choose, required: true },
-  { key: "languageOther", label: "どの言語？ / Which language?", required: true, visible: (l) => l.language === "other" },
-  { key: "level", label: "レベル / Level", type: "select", options: levels, placeholder: choose, required: true },
-];
 
 type Status = { kind: "loading" } | { kind: "ready" } | { kind: "saving" } | { kind: "saved" } | { kind: "error" };
 
 /** Formulaire du profil (S05) : base du 履歴書 (S11). */
 export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
   const auth = useAuth();
+  const tr = useTr();
+  const lang = tr.lang;
+  const choose = tr({ ja: "選択", en: "Choose", fr: "Choisir" });
+  const educationFields: Field<Education>[] = [
+    { key: "school", label: tr({ ja: "学校名", en: "School", fr: "Établissement" }), required: true },
+    { key: "faculty", label: tr({ ja: "学部・学科", en: "Faculty", fr: "Faculté / filière" }) },
+    { key: "start", label: tr({ ja: "入学", en: "Start", fr: "Entrée" }), type: "month", required: true },
+    { key: "end", label: tr({ ja: "卒業・卒業予定", en: "End (or expected)", fr: "Fin (ou prévue)" }), type: "month" },
+    {
+      key: "status", label: tr({ ja: "状態", en: "Status", fr: "Statut" }), type: "select", options: [
+        { value: "enrolled", label: tr({ ja: "在学中", en: "Enrolled", fr: "En cours" }) },
+        { value: "expected", label: tr({ ja: "卒業見込み", en: "Expected to graduate", fr: "Diplôme prévu" }) },
+        { value: "graduated", label: tr({ ja: "卒業", en: "Graduated", fr: "Diplômé" }) },
+        { value: "completed", label: tr({ ja: "修了（日本語学校・留学）", en: "Completed (language school, exchange)", fr: "Terminé (école de langue, échange)" }) },
+        { value: "left", label: tr({ ja: "中退", en: "Left", fr: "Abandon" }) },
+      ],
+    },
+  ];
+  const workFields: Field<Work>[] = [
+    { key: "company", label: tr({ ja: "会社名", en: "Company", fr: "Entreprise" }), required: true },
+    { key: "role", label: tr({ ja: "職種", en: "Role", fr: "Poste" }) },
+    { key: "start", label: tr({ ja: "入社", en: "Start", fr: "Début" }), type: "month", required: true },
+    { key: "end", label: tr({ ja: "退社", en: "End", fr: "Fin" }), type: "month" },
+    { key: "description", label: tr({ ja: "内容", en: "Description", fr: "Description" }), type: "textarea" },
+  ];
+  const certificationFields: Field<Certification>[] = [
+    { key: "category", label: tr({ ja: "分類", en: "Category", fr: "Catégorie" }), type: "select", options: options(certificationCategories, lang), placeholder: choose, required: true },
+    { key: "name", label: tr({ ja: "資格名", en: "Name", fr: "Intitulé" }), required: true, suggestions: (c) => certificationSuggestions[c.category] ?? [] },
+    { key: "date", label: tr({ ja: "取得", en: "Date", fr: "Date d'obtention" }), type: "month", required: true },
+  ];
+  const languageFields: Field<Language>[] = [
+    { key: "language", label: tr({ ja: "言語", en: "Language", fr: "Langue" }), type: "select", options: options(languages, lang), placeholder: choose, required: true },
+    { key: "languageOther", label: tr({ ja: "どの言語？", en: "Which language?", fr: "Quelle langue ?" }), required: true, visible: (l) => l.language === "other" },
+    { key: "level", label: tr({ ja: "レベル", en: "Level", fr: "Niveau" }), type: "select", options: options(levels, lang), placeholder: choose, required: true },
+  ];
   const [profile, setProfile] = useState<ProfileInput>(emptyProfile);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "loading" });
@@ -61,7 +63,7 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const errors = new Map(issues.map((i) => [i.path, i.message]));
+  const errors = new Map(issues.map((i) => [i.path, apiMessage(i.message, lang)]));
   const set = <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => {
     setProfile((p) => ({ ...p, [key]: value }));
     if (status.kind === "saved") setStatus({ kind: "ready" });
@@ -100,34 +102,34 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
 
   return (
     <form className="profile" onSubmit={submit} noValidate>
-      <h2>プロフィール / Profile</h2>
+      <h2>{tr({ ja: "プロフィール", en: "Profile", fr: "Profil" })}</h2>
       <fieldset>
-        <legend>基本情報 / Basic information</legend>
+        <legend>{tr({ ja: "基本情報", en: "Basic information", fr: "Informations de base" })}</legend>
         <div className="grid">
-          {text("nameKanji", "氏名 / Name (漢字・カタカナ)", "text", true)}
-          {text("nameKana", "ふりがな（ひらがな・カタカナ）/ Reading in kana", "text", true)}
-          {text("nameLatin", "ローマ字 / Name (Latin)")}
-          {text("birthDate", "生年月日 / Date of birth", "date")}
-          {text("email", "メール / Email", "email")}
-          {text("phone", "電話 / Phone", "tel")}
+          {text("nameKanji", tr({ ja: "氏名（漢字・カタカナ）", en: "Name (kanji or katakana)", fr: "Nom (kanji ou katakana)" }), "text", true)}
+          {text("nameKana", tr({ ja: "ふりがな（ひらがな・カタカナ）", en: "Reading in kana", fr: "Lecture en kana" }), "text", true)}
+          {text("nameLatin", tr({ ja: "ローマ字", en: "Name (Latin letters)", fr: "Nom (alphabet latin)" }))}
+          {text("birthDate", tr({ ja: "生年月日", en: "Date of birth", fr: "Date de naissance" }), "date")}
+          {text("email", tr({ ja: "メール", en: "Email", fr: "E-mail" }), "email")}
+          {text("phone", tr({ ja: "電話", en: "Phone", fr: "Téléphone" }), "tel")}
         </div>
-        {text("address", "住所 / Address")}
+        {text("address", tr({ ja: "住所", en: "Address", fr: "Adresse" }))}
       </fieldset>
-      <ListEditor title="学歴 / Education" name="education" items={profile.education} fields={educationFields}
+      <ListEditor title={tr({ ja: "学歴", en: "Education", fr: "Formation" })} name="education" items={profile.education} fields={educationFields}
         empty={{ school: "", start: "", status: "enrolled" }} errors={errors} onChange={(v) => set("education", v)} />
-      <ListEditor title="職歴 / Work experience" name="work" items={profile.work} fields={workFields}
+      <ListEditor title={tr({ ja: "職歴", en: "Work experience", fr: "Expérience professionnelle" })} name="work" items={profile.work} fields={workFields}
         empty={{ company: "", start: "" }} errors={errors} onChange={(v) => set("work", v)} />
-      <ListEditor title="資格 / Certifications" name="certifications" items={profile.certifications} fields={certificationFields}
+      <ListEditor title={tr({ ja: "資格", en: "Certifications", fr: "Certifications" })} name="certifications" items={profile.certifications} fields={certificationFields}
         empty={{ category: "", name: "", date: "" }} errors={errors} onChange={(v) => set("certifications", v)} />
-      <ListEditor title="語学 / Languages" name="languages" items={profile.languages} fields={languageFields}
+      <ListEditor title={tr({ ja: "語学", en: "Languages", fr: "Langues" })} name="languages" items={profile.languages} fields={languageFields}
         empty={{ language: "", level: "" }} errors={errors} onChange={(v) => set("languages", v)} />
 
       <div className="actions">
-        <button className="primary" type="submit" disabled={status.kind === "saving"}>保存 / Save</button>
+        <button className="primary" type="submit" disabled={status.kind === "saving"}>{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
         <span role="status" className="muted">
-          {status.kind === "saved" && "保存しました / Saved"}
-          {status.kind === "error" && "保存できませんでした / Could not save"}
-          {issues.length > 0 && `入力を確認してください（${issues.length}件）/ Please check ${issues.length} field(s)`}
+          {status.kind === "saved" && tr({ ja: "保存しました", en: "Saved", fr: "Enregistré" })}
+          {status.kind === "error" && tr({ ja: "保存できませんでした", en: "Could not save", fr: "Enregistrement impossible" })}
+          {issues.length > 0 && tr({ ja: `入力を確認してください（${issues.length}件）`, en: `Please check ${issues.length} field(s)`, fr: `Vérifiez ${issues.length} champ(s)` })}
         </span>
       </div>
     </form>

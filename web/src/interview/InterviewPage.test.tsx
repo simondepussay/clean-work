@@ -56,13 +56,13 @@ describe("InterviewPage", () => {
     const fetchMock = server({ ...base, "POST /api/interviews": { status: 201, body: session() } });
     renderPage({ applicationId: "a1", nonce: 1 });
     expect(await screen.findByText(/今日 3回/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Company/)).toHaveValue("a1");
-    await waitFor(() => expect(screen.getByLabelText(/Stage/)).toHaveValue("interview2"));
+    expect(screen.getByLabelText(/^企業$/)).toHaveValue("a1");
+    await waitFor(() => expect(screen.getByLabelText(/選考段階/)).toHaveValue("interview2"));
 
-    await userEvent.click(screen.getByRole("button", { name: /Start/ }));
+    await userEvent.click(screen.getByRole("button", { name: /面接を始める/ }));
     expect(await screen.findByText("自己紹介をお願いします。")).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([url, init]) => url === "/api/interviews" && init?.method === "POST")!;
-    expect(JSON.parse(post[1]!.body as string)).toEqual({ applicationId: "a1", stage: "interview2", language: "en" });
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ applicationId: "a1", stage: "interview2", language: "ja" });
   });
 
   it("répondre par écrit : avis affiché, puis question suivante, puis bilan", async () => {
@@ -78,38 +78,55 @@ describe("InterviewPage", () => {
       "POST /api/interviews/i1/finish": { body: finished },
     });
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: /Start/ }));
-    await userEvent.type(await screen.findByLabelText(/Your answer/), "バイトを頑張りました。");
+    await userEvent.click(await screen.findByRole("button", { name: /面接を始める/ }));
+    await userEvent.type(await screen.findByLabelText(/あなたの回答/), "バイトを頑張りました。");
     await userEvent.click(screen.getByRole("button", { name: /^回答する/ }));
 
-    const card = await screen.findByLabelText(/Feedback/);
-    expect(within(card).getByText("72点")).toBeInTheDocument();
+    const card = await screen.findByLabelText(/フィードバック/);
+    expect(within(card).getByText("72/100")).toBeInTheDocument();
     expect(within(card).getByText("Ajoute un chiffre.")).toBeInTheDocument();
     expect(within(card).getByText("アルバイト")).toBeInTheDocument();
     const body = JSON.parse(fetchMock.mock.calls.find(([url]) => url === "/api/interviews/i1/answers")![1]!.body as string);
     expect(body).toEqual({ answer: "バイトを頑張りました。", spoken: false });
 
-    await userEvent.click(screen.getByRole("button", { name: /Next question/ }));
+    await userEvent.click(screen.getByRole("button", { name: /次の質問へ/ }));
     expect(screen.getByText("志望動機を教えてください。")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /Stop here/ }));
+    await userEvent.click(screen.getByRole("button", { name: /ここで終了/ }));
     expect(await screen.findByText("Bonne base.")).toBeInTheDocument();
     expect(screen.getByText("Chiffres")).toBeInTheDocument();
+  });
+
+  it("propose d'abord l'entretien prévu dans la candidature, et la séance y est rattachée", async () => {
+    const soon = new Date(Date.now() + 3 * 86400_000);
+    const date = `${soon.getFullYear()}-${String(soon.getMonth() + 1).padStart(2, "0")}-${String(soon.getDate()).padStart(2, "0")}`;
+    const fetchMock = server({
+      ...base,
+      "GET /api/applications": { body: [{ ...sony, steps: [{ id: "st1", type: "final", dueDate: date, done: false }] }] },
+      "POST /api/interviews": { status: 201, body: session() },
+    });
+    renderPage();
+    const which = await screen.findByLabelText(/どの面接の練習/);
+    await waitFor(() => expect(which).toHaveValue("step:a1:st1"));
+    expect(screen.queryByLabelText(/^企業$/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /面接を始める/ }));
+    const post = fetchMock.mock.calls.find(([url, init]) => url === "/api/interviews" && init?.method === "POST")!;
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ applicationId: "a1", stepId: "st1", stage: "final", language: "ja" });
   });
 
   it("limite atteinte : message clair, pas de séance", async () => {
     server({ ...base, "POST /api/interviews": { status: 429, body: { error: "limit", reason: "day", retryAfter: "2026-10-24T00:00:00Z" } } });
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: /Start/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /面接を始める/ }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/上限/);
   });
 
   it("navigateur sans reconnaissance vocale : on propose d'écrire", async () => {
     server({ ...base, "POST /api/interviews": { status: 201, body: session() } });
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: /Start/ }));
-    expect(await screen.findByText(/Voice input isn't available/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Answer by voice/ })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: /面接を始める/ }));
+    expect(await screen.findByText(/音声入力が使えません/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /話して答える/ })).not.toBeInTheDocument();
   });
 
   it("réponse dictée : le texte reconnu remplit la réponse, envoyée comme orale avec sa durée", async () => {
@@ -128,13 +145,13 @@ describe("InterviewPage", () => {
       "POST /api/interviews/i1/answers": { body: session({ turns: [{ ...turns[0], answer: "私はシモンです", spoken: true, durationSec: 0, feedback }, turns[1]] }) },
     });
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: /Start/ }));
-    await userEvent.click(await screen.findByRole("button", { name: /Answer by voice/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /面接を始める/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /話して答える/ }));
     act(() => instance!.onresult({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript: "私はシモンです" } }] }));
-    expect(screen.getByLabelText(/Your answer/)).toHaveValue("私はシモンです");
-    await userEvent.click(screen.getByRole("button", { name: /Stop/ }));
+    expect(screen.getByLabelText(/あなたの回答/)).toHaveValue("私はシモンです");
+    await userEvent.click(screen.getByRole("button", { name: /話し終わった/ }));
     await userEvent.click(screen.getByRole("button", { name: /^回答する/ }));
-    await screen.findByLabelText(/Feedback/);
+    await screen.findByLabelText(/フィードバック/);
     const body = JSON.parse(fetchMock.mock.calls.find(([url]) => url === "/api/interviews/i1/answers")![1]!.body as string);
     expect(body).toMatchObject({ answer: "私はシモンです", spoken: true });
     expect(typeof body.durationSec).toBe("number");

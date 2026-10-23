@@ -127,8 +127,11 @@ export const applicationInputSchema = z.object({
   // ne ressemble pas à celui d'une ベンチャー IT.
   industry: choice(industries).optional(),
   companyType: choice(companyTypes).optional(),
-  /** Ce que l'étudiant sait de l'entreprise (produits, valeurs, ce qui l'attire) : S20, notes entreprise. */
-  notes: text(2000).optional(),
+  /**
+   * Ce que l'étudiant sait de l'entreprise (produits, valeurs, ce qui l'attire), et souvent l'offre
+   * d'emploi collée telle quelle (募集要項) : S20, notes entreprise. Assez long pour une offre entière.
+   */
+  notes: text(5000).optional(),
   url: z.string().url().optional(),
   status: choice(applicationStatuses).default("interested"),
   steps: z.array(stepSchema).max(20).default([]),

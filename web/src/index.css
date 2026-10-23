@@ -354,3 +354,5 @@ button .icon { vertical-align: -3px; }
 .quick-head .icon-button { width: 26px; height: 26px; }
 .quick-note input { width: 100%; box-sizing: border-box; }
 @media (max-width: 760px) { .peek { display: none !important; } }
+.practice { padding: 4px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; border-color: var(--bordeaux); color: var(--bordeaux); }
+.practice:hover { background: var(--bordeaux-50); }

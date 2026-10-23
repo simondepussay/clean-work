@@ -55,12 +55,12 @@ describe("ProfileEditor", () => {
 
     await userEvent.type(await screen.findByLabelText(/氏名/), "デプセ シモン");
     await userEvent.type(screen.getByLabelText(/ふりがな/), "でぷせ しもん");
-    const education = screen.getByRole("group", { name: "学歴 / Education" });
-    await userEvent.click(within(education).getByRole("button", { name: /Add/ }));
+    const education = screen.getByRole("group", { name: "学歴" });
+    await userEvent.click(within(education).getByRole("button", { name: /^追加$/ }));
     await userEvent.type(within(education).getByLabelText(/学校名/), "HAL東京");
-    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await userEvent.click(screen.getByRole("button", { name: /保存/ }));
 
-    expect(await screen.findByText("保存しました / Saved")).toBeInTheDocument();
+    expect(await screen.findByText("保存しました")).toBeInTheDocument();
     expect(sent).toEqual({
       nameKanji: "デプセ シモン",
       nameKana: "でぷせ しもん",
@@ -76,8 +76,8 @@ describe("ProfileEditor", () => {
     stub(200, { nameKanji: "シモン", nameKana: "シモン", education: [{ school: "HAL", start: "", status: "enrolled" }], work: [], certifications: [], languages: [] },
       () => ({ status: 400, body: { error: "invalid", issues: [{ path: "education.0.start", message: "Required" }] } }));
     renderEditor();
-    await userEvent.click(await screen.findByRole("button", { name: /Save/ }));
-    const row = screen.getByRole("group", { name: "学歴 / Education 1" });
+    await userEvent.click(await screen.findByRole("button", { name: /保存/ }));
+    const row = screen.getByRole("group", { name: "学歴 1" });
     expect(await within(row).findByRole("alert")).toHaveTextContent("Required");
     expect(screen.getByText(/1件/)).toBeInTheDocument();
   });
@@ -85,8 +85,8 @@ describe("ProfileEditor", () => {
   it("supprime une ligne", async () => {
     stub(200, { nameKanji: "シモン", nameKana: "シモン", education: [], work: [], certifications: [], languages: [{ language: "ja", level: "business" }] }, () => ({ status: 200, body: {} }));
     renderEditor();
-    const languages = await screen.findByRole("group", { name: "語学 / Languages" });
-    await userEvent.click(within(languages).getByRole("button", { name: /Remove/ }));
+    const languages = await screen.findByRole("group", { name: "語学" });
+    await userEvent.click(within(languages).getByRole("button", { name: /^削除$/ }));
     expect(screen.queryByDisplayValue("日本語 / Japanese")).toBeNull();
   });
 
@@ -95,12 +95,12 @@ describe("ProfileEditor", () => {
     stub(200, { nameKanji: "シモン", nameKana: "しもん", education: [], work: [], certifications: [], languages: [] },
       (body) => { sent = body as typeof sent; return { status: 200, body }; });
     renderEditor();
-    const group = await screen.findByRole("group", { name: "語学 / Languages" });
-    await userEvent.click(within(group).getByRole("button", { name: /Add/ }));
+    const group = await screen.findByRole("group", { name: "語学" });
+    await userEvent.click(within(group).getByRole("button", { name: /^追加$/ }));
     await userEvent.selectOptions(within(group).getByLabelText(/言語/), "fr");
     await userEvent.selectOptions(within(group).getByLabelText(/レベル/), "native");
-    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
-    await screen.findByText("保存しました / Saved");
+    await userEvent.click(screen.getByRole("button", { name: /保存/ }));
+    await screen.findByText("保存しました");
     expect(sent.languages).toEqual([{ language: "fr", level: "native" }]);
   });
 
@@ -109,15 +109,15 @@ describe("ProfileEditor", () => {
     stub(200, { nameKanji: "シモン", nameKana: "しもん", education: [], work: [], certifications: [], languages: [] },
       (body) => { sent = body as typeof sent; return { status: 200, body }; });
     renderEditor();
-    const group = await screen.findByRole("group", { name: "語学 / Languages" });
-    await userEvent.click(within(group).getByRole("button", { name: /Add/ }));
-    expect(within(group).queryByLabelText(/Which language/)).toBeNull();
+    const group = await screen.findByRole("group", { name: "語学" });
+    await userEvent.click(within(group).getByRole("button", { name: /^追加$/ }));
+    expect(within(group).queryByLabelText(/どの言語/)).toBeNull();
 
     await userEvent.selectOptions(within(group).getByLabelText(/言語/), "other");
-    await userEvent.type(within(group).getByLabelText(/Which language/), "タガログ語");
+    await userEvent.type(within(group).getByLabelText(/どの言語/), "タガログ語");
     await userEvent.selectOptions(within(group).getByLabelText(/レベル/), "basic");
-    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
-    await screen.findByText("保存しました / Saved");
+    await userEvent.click(screen.getByRole("button", { name: /保存/ }));
+    await screen.findByText("保存しました");
     expect(sent.languages).toEqual([{ language: "other", languageOther: "タガログ語", level: "basic" }]);
   });
 
@@ -125,7 +125,7 @@ describe("ProfileEditor", () => {
     stub(200, { nameKanji: "シモン", nameKana: "しもん", education: [], work: [], languages: [],
       certifications: [{ category: "it", name: "", date: "" }] }, () => ({ status: 200, body: {} }));
     const { container } = render(<AuthContext.Provider value={auth}><ProfileEditor /></AuthContext.Provider>);
-    await screen.findByRole("group", { name: "資格 / Certifications" });
+    await screen.findByRole("group", { name: "資格" });
     const options = [...container.querySelectorAll("datalist option")].map((o) => o.getAttribute("value"));
     expect(options).toContain("基本情報技術者試験");
     expect(options).not.toContain("日本語能力試験 N2");

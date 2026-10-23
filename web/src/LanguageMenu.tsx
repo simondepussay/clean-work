@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LANGS, useHelpLanguage } from "./es/guide";
 import { CheckIcon, GlobeIcon } from "./icons";
+import { useTr } from "./i18n";
 
 /**
  * Globe de l'en-tête : la langue des explications (guide des ES, avis de l'IA, entretiens).
@@ -8,6 +9,8 @@ import { CheckIcon, GlobeIcon } from "./icons";
  */
 export function LanguageMenu() {
   const [lang, setLang] = useHelpLanguage();
+  const tr = useTr();
+  const title = tr({ ja: "表示言語", en: "Language", fr: "Langue" });
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
@@ -27,19 +30,19 @@ export function LanguageMenu() {
   return (
     <div className="language-menu" ref={root}>
       <button className={`round-button${open ? " current" : ""}`} onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu" aria-expanded={open} aria-label={`解説の言語 / Help language: ${LANGS.find((l) => l.value === lang)?.label}`}>
+        aria-haspopup="menu" aria-expanded={open} aria-label={`${title}: ${LANGS.find((l) => l.value === lang)?.label}`}>
         <GlobeIcon size={22} />
         <span className="code">{lang.toUpperCase()}</span>
       </button>
       {open && (
-        <div className="menu" role="menu" aria-label="解説の言語 / Help language">
-          <p className="menu-title">解説の言語 / Help language</p>
+        <div className="menu" role="menu" aria-label={title}>
+          <p className="menu-title">{title}</p>
           {LANGS.map((l) => (
             <button key={l.value} role="menuitemradio" aria-checked={l.value === lang} onClick={() => { setLang(l.value); setOpen(false); }}>
               <span>{l.label}</span>{l.value === lang && <CheckIcon size={16} />}
             </button>
           ))}
-          <p className="menu-note">AIの添削・面接練習・ESガイドの説明に使います / Used for AI feedback, interview practice and the ES guide</p>
+          <p className="menu-note">{tr({ ja: "画面の表示と、AIの添削・面接練習の説明に使います", en: "For the whole interface, and for AI feedback and interview practice", fr: "Pour toute l'interface, et pour les avis de l'IA et les entretiens" })}</p>
         </div>
       )}
     </div>

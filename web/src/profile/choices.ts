@@ -1,35 +1,41 @@
-/** Listes de choix du profil, avec leurs libellés (codes identiques à l'API). */
+/** Listes de choix du profil, avec leurs libellés dans les trois langues (codes identiques à l'API). */
+import type { Lang, T3 } from "../i18n";
 
-export const languages = [
-  { value: "ja", label: "日本語 / Japanese" },
-  { value: "en", label: "英語 / English" },
-  { value: "zh", label: "中国語 / Chinese" },
-  { value: "ko", label: "韓国語 / Korean" },
-  { value: "vi", label: "ベトナム語 / Vietnamese" },
-  { value: "ne", label: "ネパール語 / Nepali" },
-  { value: "id", label: "インドネシア語 / Indonesian" },
-  { value: "th", label: "タイ語 / Thai" },
-  { value: "fr", label: "フランス語 / French" },
-  { value: "es", label: "スペイン語 / Spanish" },
-  { value: "de", label: "ドイツ語 / German" },
-  { value: "pt", label: "ポルトガル語 / Portuguese" },
-  { value: "other", label: "その他 / Other" },
+type Choice = { value: string; label: T3 };
+
+/** Les options d'une liste, libellées dans la langue choisie. */
+export const options = (list: Choice[], lang: Lang) => list.map((c) => ({ value: c.value, label: c.label[lang] }));
+
+export const languages: Choice[] = [
+  { value: "ja", label: { ja: "日本語", en: "Japanese", fr: "Japonais" } },
+  { value: "en", label: { ja: "英語", en: "English", fr: "Anglais" } },
+  { value: "zh", label: { ja: "中国語", en: "Chinese", fr: "Chinois" } },
+  { value: "ko", label: { ja: "韓国語", en: "Korean", fr: "Coréen" } },
+  { value: "vi", label: { ja: "ベトナム語", en: "Vietnamese", fr: "Vietnamien" } },
+  { value: "ne", label: { ja: "ネパール語", en: "Nepali", fr: "Népalais" } },
+  { value: "id", label: { ja: "インドネシア語", en: "Indonesian", fr: "Indonésien" } },
+  { value: "th", label: { ja: "タイ語", en: "Thai", fr: "Thaï" } },
+  { value: "fr", label: { ja: "フランス語", en: "French", fr: "Français" } },
+  { value: "es", label: { ja: "スペイン語", en: "Spanish", fr: "Espagnol" } },
+  { value: "de", label: { ja: "ドイツ語", en: "German", fr: "Allemand" } },
+  { value: "pt", label: { ja: "ポルトガル語", en: "Portuguese", fr: "Portugais" } },
+  { value: "other", label: { ja: "その他", en: "Other", fr: "Autre" } },
 ];
 
-export const levels = [
-  { value: "native", label: "ネイティブ / Native" },
-  { value: "business", label: "ビジネス / Business" },
-  { value: "conversational", label: "日常会話 / Conversational" },
-  { value: "basic", label: "基礎 / Basic" },
+export const levels: Choice[] = [
+  { value: "native", label: { ja: "ネイティブ", en: "Native", fr: "Langue maternelle" } },
+  { value: "business", label: { ja: "ビジネス", en: "Business", fr: "Professionnel" } },
+  { value: "conversational", label: { ja: "日常会話", en: "Conversational", fr: "Conversation courante" } },
+  { value: "basic", label: { ja: "基礎", en: "Basic", fr: "Notions" } },
 ];
 
-export const certificationCategories = [
-  { value: "language", label: "語学 / Language" },
-  { value: "it", label: "IT" },
-  { value: "business", label: "ビジネス / Business" },
-  { value: "degree", label: "学位・学校 / Degree" },
-  { value: "driving", label: "運転免許 / Driving licence" },
-  { value: "other", label: "その他 / Other" },
+export const certificationCategories: Choice[] = [
+  { value: "language", label: { ja: "語学", en: "Language", fr: "Langues" } },
+  { value: "it", label: { ja: "IT", en: "IT", fr: "Informatique" } },
+  { value: "business", label: { ja: "ビジネス", en: "Business", fr: "Gestion" } },
+  { value: "degree", label: { ja: "学位・学校", en: "Degree", fr: "Diplôme" } },
+  { value: "driving", label: { ja: "運転免許", en: "Driving licence", fr: "Permis de conduire" } },
+  { value: "other", label: { ja: "その他", en: "Other", fr: "Autre" } },
 ];
 
 /** Suggestions de noms selon la catégorie ; on peut toujours écrire autre chose. */

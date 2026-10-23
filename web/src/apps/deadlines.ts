@@ -1,4 +1,5 @@
 import type { Application, StepType } from "../api";
+import type { Lang } from "../i18n";
 import { COLUMNS, daysUntil } from "./statuses";
 
 export type Deadline = { applicationId: string; stepId: string; company: string; step: StepType; date: string; days: number; note?: string };
@@ -19,7 +20,7 @@ export function upcomingDeadlines(apps: Application[], today = new Date(), withi
     .sort((a, b) => a.date.localeCompare(b.date) || a.company.localeCompare(b.company));
 }
 
-export const stepName = (step: StepType) => COLUMNS.find((c) => c.status === step)?.ja ?? step;
+export const stepName = (step: StepType, lang: Lang = "ja") => COLUMNS.find((c) => c.status === step)?.[lang] ?? step;
 
 // ------------------------------------------------------------------ calendrier (.ics, RFC 5545)
 

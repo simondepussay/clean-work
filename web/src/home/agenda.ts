@@ -1,5 +1,6 @@
 import type { Application, Plan } from "../api";
 import { stepName } from "../apps/deadlines";
+import type { Lang } from "../i18n";
 
 /**
  * Tout ce qui a une date, au même endroit (accueil) : les étapes des candidatures
@@ -17,13 +18,15 @@ export type AgendaItem = {
   done: boolean;
   plan?: Plan;
   applicationId?: string;
+  /** L'étape de la candidature (pour s'entraîner à cet entretien précis). */
+  stepId?: string;
 };
 
 const INTERVIEWS = new Set(["interview1", "interview2", "final"]);
 const CLOSED = new Set(["rejected", "withdrawn"]);
 const ORDER: Record<AgendaKind, number> = { interview: 0, goal: 1, step: 2, event: 3, note: 4 };
 
-export function buildAgenda(apps: Application[], plans: Plan[]): AgendaItem[] {
+export function buildAgenda(apps: Application[], plans: Plan[], lang: Lang = "ja"): AgendaItem[] {
   const steps = apps
     .filter((a) => !CLOSED.has(a.status))
     .flatMap((a) => a.steps.filter((s) => s.dueDate).map((s): AgendaItem => ({
@@ -31,9 +34,10 @@ export function buildAgenda(apps: Application[], plans: Plan[]): AgendaItem[] {
       date: s.dueDate!,
       kind: INTERVIEWS.has(s.type) ? "interview" : "step",
       title: a.company,
-      detail: stepName(s.type),
+      detail: stepName(s.type, lang),
       done: s.done,
       applicationId: a.id,
+      stepId: s.id,
     })));
   const own = plans.map((p): AgendaItem => ({
     key: `plan-${p.id}`, date: p.date, ...(p.time ? { time: p.time } : {}), kind: p.kind, title: p.title, done: p.done, plan: p,

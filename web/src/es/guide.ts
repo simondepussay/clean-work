@@ -40,13 +40,26 @@ export function resetGuideCache() {
 const STORAGE_KEY = "help-language";
 const CHANGE_EVENT = "help-language-change";
 
+/** Le choix de cette visite, gardé en mémoire aussi : il vaut même si le stockage du navigateur est bloqué. */
+let current: Lang | null = null;
+
 function savedLanguage(): Lang {
+  if (current) return current;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === "ja" || saved === "en" || saved === "fr" ? saved : "en";
-  } catch {
-    return "en";
+    if (saved === "ja" || saved === "en" || saved === "fr") return saved;
+  } catch { /* stockage indisponible */ }
+  return firstVisitLanguage();
+}
+
+/** Première visite : la langue du navigateur si c'est ja, en ou fr ; sinon l'anglais. */
+function firstVisitLanguage(): Lang {
+  const prefs = typeof navigator === "undefined" ? [] : navigator.languages ?? [navigator.language];
+  for (const p of prefs) {
+    const code = (p ?? "").slice(0, 2).toLowerCase();
+    if (code === "ja" || code === "en" || code === "fr") return code;
   }
+  return "en";
 }
 
 /**
@@ -54,6 +67,7 @@ function savedLanguage(): Lang {
  * cet appareil, et annoncée aux écrans ouverts (ES, entretiens) pour qu'ils suivent tout de suite.
  */
 export function setHelpLanguage(l: Lang) {
+  current = l;
   try {
     localStorage.setItem(STORAGE_KEY, l);
   } catch { /* stockage indisponible : le choix vaut pour cette page */ }

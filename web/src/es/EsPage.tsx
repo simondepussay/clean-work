@@ -3,7 +3,8 @@ import { createDraft, deleteDraft, listApplications, listDrafts, updateDraft, ty
 import { useAuth } from "../auth/auth";
 import { countChars } from "./count";
 import { GuidePanel, Intro } from "./GuidePanel";
-import { useGuide, useHelpLanguage, type GuideType } from "./guide";
+import { useGuide, type GuideType } from "./guide";
+import { apiMessage, useTr } from "../i18n";
 import { ReviewPanel } from "./ReviewPanel";
 import { CheckIcon, PlusIcon } from "../icons";
 
@@ -24,7 +25,8 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
   const [apps, setApps] = useState<Application[]>([]);
   const pendingSeed = useRef<EsSeed | null>(null);
   const guide = useGuide();
-  const [lang] = useHelpLanguage();
+  const tr = useTr();
+  const lang = tr.lang;
 
   async function token() {
     const t = await auth.getToken();
@@ -100,7 +102,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
 
   async function remove() {
     if (selected === null || selected === "new") return;
-    if (!window.confirm("このESを削除しますか？ / Delete this entry sheet?")) return;
+    if (!window.confirm(tr({ ja: "このESを削除しますか？", en: "Delete this entry sheet?", fr: "Supprimer cette ES ?" }))) return;
     try {
       await deleteDraft(await token(), selected);
       setDrafts((all) => (all ?? []).filter((d) => d.id !== selected));
@@ -110,7 +112,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
     }
   }
 
-  const error = (path: string) => issues.find((i) => i.path === path)?.message;
+  const error = (path: string) => { const m = issues.find((i) => i.path === path)?.message; return m && apiMessage(m, lang); };
   const count = countChars(form.body);
   const over = form.charLimit !== undefined && count > form.charLimit;
   const edit = (patch: Partial<DraftInput>) => {
@@ -127,33 +129,33 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
     {guide && <Intro guide={guide} lang={lang} />}
     <section className="es">
       <aside>
-        <button className="primary" onClick={() => setChoosing(true)}><PlusIcon size={16} /> 新しいES / New</button>
+        <button className="primary" onClick={() => setChoosing(true)}><PlusIcon size={16} /> {tr({ ja: "新しいES", en: "New entry sheet", fr: "Nouvelle ES" })}</button>
         <ul aria-label="ES">
           {drafts.map((d) => (
             <li key={d.id}>
               <button className={d.id === selected ? "current" : undefined} onClick={() => open(d)}>
-                <strong>{d.company || "共通 / General"}</strong>
+                <strong>{d.company || tr({ ja: "共通", en: "General", fr: "Commune" })}</strong>
                 <span>{d.question}</span>
               </button>
             </li>
           ))}
-          {drafts.length === 0 && <li className="muted">まだESがありません / No entry sheets yet</li>}
+          {drafts.length === 0 && <li className="muted">{tr({ ja: "まだESがありません", en: "No entry sheets yet", fr: "Pas encore d'ES" })}</li>}
         </ul>
       </aside>
 
       {choosing && (
-        <div className="kinds" role="group" aria-label="設問のタイプ / Question type">
-          <h3>設問のタイプを選ぶ / Choose the type of question</h3>
+        <div className="kinds" role="group" aria-label={tr({ ja: "設問のタイプ", en: "Question type", fr: "Type de question" })}>
+          <h3>{tr({ ja: "設問のタイプを選ぶ", en: "Choose the type of question", fr: "Choisissez le type de question" })}</h3>
           {guide?.types.map((t) => (
             <button key={t.id} onClick={() => start(t)}>
               <strong>{t.label.ja}</strong>
-              <span>{t.label[lang]} · {t.charLimit}字</span>
+              <span>{t.label[lang]} · {tr({ ja: `${t.charLimit}字`, en: `${t.charLimit} characters`, fr: `${t.charLimit} caractères` })}</span>
               <span className="muted">{t.purpose[lang]}</span>
             </button>
           ))}
           <button onClick={() => start(null)}>
-            <strong>自由 / Other</strong>
-            <span className="muted">設問を自分で入力 / Type the question yourself</span>
+            <strong>{tr({ ja: "自由", en: "Other", fr: "Autre" })}</strong>
+            <span className="muted">{tr({ ja: "設問を自分で入力", en: "Type the question yourself", fr: "Saisir la question vous-même" })}</span>
           </button>
         </div>
       )}
@@ -162,38 +164,38 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
         <form className="editor" onSubmit={(e) => { e.preventDefault(); save(); }} noValidate>
           <div className="grid">
             <label>
-              <span>企業 / Company（空欄＝共通 / blank = general）</span>
+              <span>{tr({ ja: "企業（空欄＝共通）", en: "Company (blank = general)", fr: "Entreprise (vide = commune)" })}</span>
               <input value={form.company ?? ""} list="es-companies" onChange={(e) => edit({ company: e.target.value })} />
               <datalist id="es-companies">{apps.map((a) => <option key={a.id} value={a.company} />)}</datalist>
-              {apps.some((a) => a.company === form.company?.trim()) && <small className="linked"><CheckIcon size={13} /> 応募と連携 / Linked to your application</small>}
+              {apps.some((a) => a.company === form.company?.trim()) && <small className="linked"><CheckIcon size={13} /> {tr({ ja: "応募と連携", en: "Linked to your application", fr: "Liée à votre candidature" })}</small>}
             </label>
             <label className={error("charLimit") ? "invalid" : undefined}>
-              <span>文字数制限 / Character limit</span>
+              <span>{tr({ ja: "文字数制限", en: "Character limit", fr: "Limite de caractères" })}</span>
               <input type="number" min={1} max={5000} value={form.charLimit ?? ""}
                 onChange={(e) => edit({ charLimit: e.target.value === "" ? undefined : Number(e.target.value) })} />
               {error("charLimit") && <small role="alert">{error("charLimit")}</small>}
             </label>
           </div>
           <label className={error("question") ? "invalid" : undefined}>
-            <span>設問 / Question *</span>
+            <span>{tr({ ja: "設問", en: "Question", fr: "Question" })} *</span>
             <input value={form.question} onChange={(e) => edit({ question: e.target.value })} />
             {error("question") && <small role="alert">{error("question")}</small>}
           </label>
           {guide && type && <GuidePanel guide={guide} type={type} lang={lang} />}
           <label>
-            <span>本文 / Answer</span>
+            <span>{tr({ ja: "本文", en: "Answer", fr: "Réponse" })}</span>
             <textarea rows={12} value={form.body} onChange={(e) => edit({ body: e.target.value })} />
           </label>
           <p className={over ? "count over" : "count"} aria-live="polite">
-            {count}{form.charLimit ? ` / ${form.charLimit}` : ""}字
-            {over && ` — ${count - form.charLimit!}字オーバー / ${count - form.charLimit!} over`}
+            {count}{form.charLimit ? ` / ${form.charLimit}` : ""}{tr({ ja: "字", en: " characters", fr: " caractères" })}
+            {over && tr({ ja: ` — ${count - form.charLimit!}字オーバー`, en: ` — ${count - form.charLimit!} over`, fr: ` — ${count - form.charLimit!} de trop` })}
           </p>
           <div className="actions">
-            <button className="primary" type="submit" disabled={status === "saving"}>保存 / Save</button>
-            {selected !== "new" && <button type="button" className="danger" onClick={remove}>削除 / Delete</button>}
+            <button className="primary" type="submit" disabled={status === "saving"}>{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
+            {selected !== "new" && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
             <span role="status" className="muted">
-              {status === "saved" && "保存しました / Saved"}
-              {status === "error" && "エラー / Error"}
+              {status === "saved" && tr({ ja: "保存しました", en: "Saved", fr: "Enregistré" })}
+              {status === "error" && tr({ ja: "エラー", en: "Error", fr: "Erreur" })}
             </span>
           </div>
           <ReviewPanel

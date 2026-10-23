@@ -52,9 +52,10 @@ describe("statuses", () => {
 
   it("jours restants et libellé", () => {
     expect(daysUntil("2026-11-01", new Date(2026, 9, 29))).toBe(3);
-    expect(deadlineLabel(0)).toBe("今日 / today");
-    expect(deadlineLabel(1)).toBe("明日 / tomorrow");
-    expect(deadlineLabel(5)).toBe("あと5日 / 5 days left");
+    expect(deadlineLabel(0, "ja")).toBe("今日");
+    expect(deadlineLabel(1, "en")).toBe("Tomorrow");
+    expect(deadlineLabel(5, "ja")).toBe("あと5日");
+    expect(deadlineLabel(5, "fr")).toBe("Dans 5 jours");
   });
 });
 
@@ -63,7 +64,7 @@ describe("ApplicationsBoard", () => {
     server([app({ id: "a1", company: "楽天", status: "es" }), app({ id: "a2", company: "LINEヤフー", status: "rejected" })]);
     renderBoard();
     await screen.findByText("楽天");
-    expect(within(column(/^ES \/ Entry sheet$/)).getByText("楽天")).toBeInTheDocument();
+    expect(within(column(/^ES$/)).getByText("楽天")).toBeInTheDocument();
     expect(within(column(/終了/)).getByText("LINEヤフー")).toBeInTheDocument();
     expect(within(column(/終了/)).getByText(/不合格/)).toBeInTheDocument();
   });
@@ -71,7 +72,7 @@ describe("ApplicationsBoard", () => {
   it("▶ fait passer à l'étape suivante (PUT du statut seulement)", async () => {
     const fetchMock = server([app({ id: "a1", company: "楽天", status: "es" })]);
     renderBoard();
-    await userEvent.click(await screen.findByRole("button", { name: /楽天 : 次のステップへ/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /楽天：次のステップへ/ }));
     expect(within(column(/適性検査/)).getByText("楽天")).toBeInTheDocument();
     const put = fetchMock.mock.calls.find(([, i]) => i?.method === "PUT") as unknown as [string, RequestInit];
     expect(put[0]).toBe("/api/applications/a1");
@@ -88,13 +89,13 @@ describe("ApplicationsBoard", () => {
   it("ajoute une candidature avec une étape datée", async () => {
     const fetchMock = server([]);
     renderBoard();
-    await userEvent.click(await screen.findByRole("button", { name: /Add$/ }));
-    const form = screen.getByRole("form", { name: "応募 / Application" });
+    await userEvent.click(await screen.findByRole("button", { name: /応募を追加/ }));
+    const form = screen.getByRole("form", { name: "応募" });
     await userEvent.type(within(form).getByLabelText(/企業名/), "ソニー");
-    await userEvent.click(within(form).getByRole("button", { name: /追加 \/ Add/ }));
-    await userEvent.selectOptions(within(form).getByLabelText(/^選考 \/ Step/), "es");
-    await userEvent.type(within(form).getByLabelText(/Date/), "2026-11-01");
-    await userEvent.click(within(form).getByRole("button", { name: /Save/ }));
+    await userEvent.click(within(form).getByRole("button", { name: /^追加$/ }));
+    await userEvent.selectOptions(within(form).getByLabelText(/^選考 \*/), "es");
+    await userEvent.type(within(form).getByLabelText(/締切・日程/), "2026-11-01");
+    await userEvent.click(within(form).getByRole("button", { name: /保存/ }));
 
     expect(await within(column(/^気になる/)).findByText("ソニー")).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([, i]) => i?.method === "POST") as unknown as [string, RequestInit];
@@ -106,8 +107,8 @@ describe("ApplicationsBoard", () => {
   it("montre l'erreur de l'API sous le champ", async () => {
     server([]);
     renderBoard();
-    await userEvent.click(await screen.findByRole("button", { name: /Add$/ }));
-    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /応募を追加/ }));
+    await userEvent.click(screen.getByRole("button", { name: /保存/ }));
     expect(await screen.findByRole("alert")).toHaveTextContent("入力してください");
   });
 
@@ -117,10 +118,10 @@ describe("ApplicationsBoard", () => {
     let file = "";
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { file = this.download; });
     renderBoard();
-    const upcoming = await screen.findByRole("region", { name: /Upcoming deadlines/ });
+    const upcoming = await screen.findByRole("region", { name: /近い締切/ });
     expect(within(upcoming).getByText("楽天")).toBeInTheDocument();
     expect(within(upcoming).getByText(/明日/)).toBeInTheDocument();
-    await userEvent.click(within(upcoming).getByRole("button", { name: /Add to calendar/ }));
+    await userEvent.click(within(upcoming).getByRole("button", { name: /カレンダーに追加/ }));
     expect(file).toBe("shukatsu-deadlines.ics");
     click.mockRestore();
   });
@@ -128,7 +129,7 @@ describe("ApplicationsBoard", () => {
   it("bouton d'export désactivé sans échéance", async () => {
     server([app({ id: "a1", company: "楽天" })]);
     renderBoard();
-    expect(await screen.findByRole("button", { name: /Add to calendar/ })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: /カレンダーに追加/ })).toBeDisabled();
   });
 });
 
@@ -142,7 +143,7 @@ describe("ES et candidatures", () => {
     render(<AuthContext.Provider value={auth}><ApplicationsBoard onWriteEs={onWriteEs} /></AuthContext.Provider>);
     expect(await screen.findByText("ES 2")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "楽天" }));
-    await userEvent.click(screen.getByRole("button", { name: /Write an ES/ }));
+    await userEvent.click(screen.getByRole("button", { name: /この企業のESを書く/ }));
     expect(onWriteEs).toHaveBeenCalledWith({ id: "a1", company: "楽天" });
   });
 });

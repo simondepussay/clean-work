@@ -39,8 +39,8 @@ describe("HomePage", () => {
   it("le calendrier montre l'entretien du jour, et le prochain entretien en évidence", async () => {
     server();
     renderHome();
-    expect(screen.getByRole("region", { name: /Calendar/ })).toBeInTheDocument();
-    expect(await screen.findByText("次の面接 / Next interview")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /カレンダー/ })).toBeInTheDocument();
+    expect(await screen.findByText("次の面接")).toBeInTheDocument();
     expect(screen.getAllByText(/ソニー/).length).toBeGreaterThan(0);
   });
 
@@ -50,12 +50,12 @@ describe("HomePage", () => {
     const target = inDays(1);
     const [, m, d] = target.split("-").map(Number);
     // La case du lendemain peut être dans le mois suivant : on y va si besoin.
-    if (Number(target.slice(5, 7)) !== today.getMonth() + 1) await userEvent.click(screen.getByRole("button", { name: /Next month/ }));
+    if (Number(target.slice(5, 7)) !== today.getMonth() + 1) await userEvent.click(screen.getByRole("button", { name: /次の月/ }));
     await userEvent.click(screen.getByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
-    const form = screen.getByRole("form", { name: /Add an event or goal/ });
-    await userEvent.type(within(form).getByLabelText(/Event/), "合同説明会");
-    await userEvent.type(within(form).getByLabelText(/Time/), "13:00");
-    await userEvent.click(within(form).getByRole("button", { name: /Add/ }));
+    const form = screen.getByRole("form", { name: /予定・目標を追加/ });
+    await userEvent.type(within(form).getByLabelText(/予定（/), "合同説明会");
+    await userEvent.type(within(form).getByLabelText(/時刻/), "13:00");
+    await userEvent.click(within(form).getByRole("button", { name: /^追加$/ }));
 
     const post = fetchMock.mock.calls.find(([url, init]) => url === "/api/plans" && init?.method === "POST")!;
     expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "event", title: "合同説明会", date: target, time: "13:00" });
@@ -66,9 +66,9 @@ describe("HomePage", () => {
     const goal = { id: "g1", kind: "goal", title: "ES 3本提出", date: inDays(3), done: false, createdAt: "", updatedAt: "" };
     const fetchMock = server([goal]);
     renderHome();
-    const goals = await screen.findByRole("region", { name: /Goals/ });
+    const goals = await screen.findByRole("region", { name: /目標/ });
     expect(await within(goals).findByText("ES 3本提出")).toBeInTheDocument();
-    await userEvent.click(within(goals).getByRole("button", { name: /Done: ES 3本提出/ }));
+    await userEvent.click(within(goals).getByRole("button", { name: /完了: ES 3本提出/ }));
     expect(fetchMock).toHaveBeenCalledWith("/api/plans/g1", expect.objectContaining({ method: "PUT" }));
   });
 
@@ -77,12 +77,12 @@ describe("HomePage", () => {
     renderHome();
     const [, m, d] = ymd(today).split("-").map(Number);
     await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
-    const note = screen.getByRole("form", { name: /Quick note/ });
-    await userEvent.type(within(note).getByLabelText(/Note/), "履歴書の写真を撮る{Enter}");
+    const note = screen.getByRole("form", { name: /メモを追加/ });
+    await userEvent.type(within(note).getByLabelText(/^メモ$/), "履歴書の写真を撮る{Enter}");
 
     const post = fetchMock.mock.calls.find(([url, init]) => url === "/api/plans" && init?.method === "POST")!;
     expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "note", title: "履歴書の写真を撮る", date: ymd(today) });
-    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: /メモを追加/ })).not.toBeInTheDocument();
     expect((await screen.findAllByText(/履歴書の写真を撮る/)).length).toBeGreaterThan(0);
   });
 
@@ -92,7 +92,7 @@ describe("HomePage", () => {
     const [, m, d] = ymd(today).split("-").map(Number);
     await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
     await userEvent.keyboard("{Escape}");
-    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: /メモを追加/ })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith("/api/plans", expect.objectContaining({ method: "POST" }));
   });
 
@@ -101,9 +101,9 @@ describe("HomePage", () => {
     renderHome();
     const [, m, d] = ymd(today).split("-").map(Number);
     await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
-    await userEvent.type(within(screen.getByRole("form", { name: /Quick note/ })).getByLabelText(/Note/), "OB訪問の質問を準備");
+    await userEvent.type(within(screen.getByRole("form", { name: /メモを追加/ })).getByLabelText(/^メモ$/), "OB訪問の質問を準備");
     await userEvent.click(screen.getByRole("heading", { level: 1 }));
-    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: /メモを追加/ })).not.toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([url, init]) => url === "/api/plans" && init?.method === "POST")!;
     expect(JSON.parse(post[1]!.body as string)).toMatchObject({ kind: "note", title: "OB訪問の質問を準備" });
   });
@@ -114,7 +114,7 @@ describe("HomePage", () => {
     const [, m, d] = ymd(today).split("-").map(Number);
     await userEvent.click(await screen.findByRole("gridcell", { name: new RegExp(`^${m}月${d}日`) }));
     await userEvent.click(screen.getByRole("heading", { level: 1 }));
-    expect(screen.queryByRole("form", { name: /Quick note/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: /メモを追加/ })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith("/api/plans", expect.objectContaining({ method: "POST" }));
   });
 

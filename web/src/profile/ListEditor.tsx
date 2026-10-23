@@ -1,5 +1,6 @@
 /** Liste éditable (scolarité, expérience, certifications, langues) décrite par ses champs. */
 import { PlusIcon } from "../icons";
+import { useTr } from "../i18n";
 
 export type Field<T> = {
   key: keyof T & string;
@@ -26,6 +27,7 @@ type Props<T> = {
 };
 
 export function ListEditor<T extends Record<string, unknown>>({ title, name, items, fields, empty, errors, onChange }: Props<T>) {
+  const tr = useTr();
   const update = (index: number, key: keyof T, value: string | boolean) =>
     onChange(items.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
 
@@ -66,11 +68,11 @@ export function ListEditor<T extends Record<string, unknown>>({ title, name, ite
             );
           })}
           <button type="button" className="remove" onClick={() => onChange(items.filter((_, j) => j !== i))}>
-            削除 / Remove
+            {tr({ ja: "削除", en: "Remove", fr: "Retirer" })}
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...items, { ...empty }])}><PlusIcon size={16} /> 追加 / Add</button>
+      <button type="button" onClick={() => onChange([...items, { ...empty }])}><PlusIcon size={16} /> {tr({ ja: "追加", en: "Add", fr: "Ajouter" })}</button>
     </fieldset>
   );
 }
