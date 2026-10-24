@@ -201,7 +201,7 @@ async function downloadPdf(token: string, path: string, options: object, fetcher
 
 // ------------------------------------------------------------------ candidatures (S07, S08)
 
-export type StepType = "es" | "test" | "interview1" | "interview2" | "final" | "offer";
+export type StepType = "es" | "applied" | "test" | "interview1" | "interview2" | "final" | "offer";
 export type AppStatus = "interested" | StepType | "rejected" | "withdrawn";
 export type Step = { id: string; type: StepType; dueDate?: string; done: boolean; note?: string };
 export type Industry = "it" | "maker" | "trading" | "finance" | "consulting" | "retail" | "service" | "media" | "infrastructure" | "public" | "other";

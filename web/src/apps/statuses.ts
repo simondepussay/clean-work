@@ -2,16 +2,21 @@ import type { AppStatus, CompanyType, Industry, StepType } from "../api";
 import type { Lang } from "../i18n";
 
 type Named = { ja: string; en: string; fr: string };
+type Hint = { hint: Named };
 
 /** Étapes du 就活 dans l'ordre : une colonne du tableau chacune (S08). */
-export const COLUMNS: (Named & { status: AppStatus })[] = [
-  { status: "interested", ja: "気になる", en: "Interested", fr: "Intéressé" },
-  { status: "es", ja: "ES", en: "Entry sheet", fr: "ES" },
-  { status: "test", ja: "適性検査", en: "Aptitude test", fr: "Test d'aptitude" },
-  { status: "interview1", ja: "一次面接", en: "1st interview", fr: "1er entretien" },
-  { status: "interview2", ja: "二次面接", en: "2nd interview", fr: "2e entretien" },
-  { status: "final", ja: "最終面接", en: "Final interview", fr: "Entretien final" },
-  { status: "offer", ja: "内定", en: "Offer", fr: "Offre" },
+export const COLUMNS: (Named & Hint & { status: AppStatus })[] = [
+  { status: "interested", ja: "気になる", en: "Interested", fr: "Intéressé",
+    hint: { ja: "まだ応募していない、気になる企業", en: "Companies you like, not applied yet", fr: "Entreprises qui vous intéressent, pas encore postulé" } },
+  { status: "es", ja: "ES", en: "Entry sheet", fr: "ES",
+    hint: { ja: "エントリーシートを準備中", en: "Preparing the entry sheet", fr: "ES (entry sheet) en préparation" } },
+  { status: "applied", ja: "応募済み", en: "Applied", fr: "Postulé",
+    hint: { ja: "応募した・結果待ち", en: "Applied, waiting for a reply", fr: "Candidature envoyée, en attente de réponse" } },
+  { status: "test", ja: "適性検査", en: "Aptitude test", fr: "Test d'aptitude", hint: { ja: "SPI・Webテストなど", en: "SPI, online tests…", fr: "SPI, tests en ligne…" } },
+  { status: "interview1", ja: "一次面接", en: "1st interview", fr: "1er entretien", hint: { ja: "一次面接", en: "First interview", fr: "Premier entretien" } },
+  { status: "interview2", ja: "二次面接", en: "2nd interview", fr: "2e entretien", hint: { ja: "二次面接", en: "Second interview", fr: "Deuxième entretien" } },
+  { status: "final", ja: "最終面接", en: "Final interview", fr: "Entretien final", hint: { ja: "最終面接", en: "Final interview", fr: "Entretien final" } },
+  { status: "offer", ja: "内定", en: "Offer", fr: "Offre", hint: { ja: "内定をもらった", en: "You got an offer", fr: "Offre reçue" } },
 ];
 
 /** Fin de parcours : dernière colonne « 終了 ». */
@@ -23,6 +28,15 @@ export const CLOSED: (Named & { status: AppStatus })[] = [
 /** Étapes proposées dans une candidature, libellées dans la langue choisie. */
 export const stepTypes = (lang: Lang): { value: StepType; label: string }[] => COLUMNS.filter((c) => c.status !== "interested")
   .map((c) => ({ value: c.status as StepType, label: c[lang] }));
+
+/** Statuts « déjà postulé » : tout ce qui vient après l'ES, y compris les candidatures terminées. */
+export const isApplied = (s: AppStatus) => !["interested", "es"].includes(s);
+
+/** Recherche dans le nom, le poste et les notes, sans tenir compte des majuscules. */
+export const matches = (a: { company: string; position?: string | null; notes?: string | null }, query: string) => {
+  const q = query.trim().toLowerCase();
+  return !q || [a.company, a.position, a.notes].some((t) => t?.toLowerCase().includes(q));
+};
 
 export const statusLabel = (s: AppStatus, lang: Lang) => [...COLUMNS, ...CLOSED].find((c) => c.status === s)?.[lang] ?? s;
 

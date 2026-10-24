@@ -103,7 +103,7 @@ export type Profile = ProfileInput & { id: string; userId: string; updatedAt: st
 // ------------------------------------------------------------------ candidatures
 
 /** Ordre des étapes du 就活, de la candidature à l'offre. */
-export const stepTypes = ["es", "test", "interview1", "interview2", "final", "offer"] as const;
+export const stepTypes = ["es", "applied", "test", "interview1", "interview2", "final", "offer"] as const;
 
 export const applicationStatuses = ["interested", ...stepTypes, "rejected", "withdrawn"] as const;
 

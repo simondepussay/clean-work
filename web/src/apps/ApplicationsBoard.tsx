@@ -7,10 +7,10 @@ import {
 import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
 import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
-import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, neighbour, statusLabel, stepTypes } from "./statuses";
+import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, isApplied, matches, neighbour, statusLabel, stepTypes } from "./statuses";
 import { apiMessage, useTr } from "../i18n";
 import { CalendarMenu } from "./CalendarMenu";
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, MicIcon, PenIcon, PlusIcon } from "../icons";
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
@@ -36,6 +36,8 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [error, setError] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [query, setQuery] = useState("");
+  const [appliedOnly, setAppliedOnly] = useState(false);
 
   async function token() {
     const t = await auth.getToken();
@@ -117,12 +119,26 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
   const errors = new Map(issues.map((i) => [i.path, apiMessage(i.message, lang)]));
   const esCount = (id: string) => drafts.filter((d) => d.applicationId === id).length;
   const set = (patch: Partial<ApplicationInput>) => setEditing((ed) => (ed ? { ...ed, form: { ...ed.form, ...patch } } : ed));
-  const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", fr: "Terminé", statuses: CLOSED.map((c) => c.status) }];
+  const closedHint = { ja: "不合格・辞退", en: "Rejected or withdrawn", fr: "Refusé ou désisté" };
+  const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", fr: "Terminé", hint: closedHint, statuses: CLOSED.map((c) => c.status) }]
+    // « Postulées » : on cache les colonnes d'avant la candidature.
+    .filter((c) => !appliedOnly || c.statuses.every(isApplied));
+  const visible = apps.filter((a) => matches(a, query) && (!appliedOnly || isApplied(a.status)));
+  const appliedCount = apps.filter((a) => isApplied(a.status)).length;
 
   return (
     <section className="apps">
       <div className="apps-bar">
         <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}><PlusIcon size={16} /> {tr({ ja: "応募を追加", en: "Add an application", fr: "Ajouter une candidature" })}</button>
+        <label className="apps-search">
+          <SearchIcon size={15} />
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
+            placeholder={tr({ ja: "企業名・職種・メモで検索", en: "Search company, position, notes", fr: "Chercher entreprise, poste, notes" })}
+            aria-label={tr({ ja: "応募を検索", en: "Search applications", fr: "Chercher une candidature" })} />
+        </label>
+        <button type="button" className="filter-toggle" aria-pressed={appliedOnly} onClick={() => setAppliedOnly((v) => !v)}>
+          {tr({ ja: "応募済み", en: "Applied", fr: "Postulées" })} <span>{appliedCount}</span>
+        </button>
         <span className="muted">{tr({ ja: `${apps.length}社`, en: `${apps.length} companies`, fr: `${apps.length} entreprises` })}</span>
         {error && <span role="alert" className="notice">{tr({ ja: "保存できませんでした", en: "Could not save", fr: "Enregistrement impossible" })}</span>}
       </div>
@@ -148,12 +164,12 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
 
       <div className="board" role="list" aria-label={tr({ ja: "選考状況", en: "Selection board", fr: "Suivi des candidatures" })}>
         {columns.map((col) => {
-          const cards = apps.filter((a) => col.statuses.includes(a.status));
+          const cards = visible.filter((a) => col.statuses.includes(a.status));
           const closed = col.ja === "終了";
           return (
             <div key={col.ja} className="column" role="listitem" aria-label={col[lang]}
               onDragOver={closed ? undefined : (e) => e.preventDefault()} onDrop={closed ? undefined : onDrop(col.status)}>
-              <h3>{col[lang]}<span>{cards.length}</span></h3>
+              <h3 title={col.hint[lang]}>{col[lang]}<span>{cards.length}</span></h3>
               {cards.map((a) => {
                 const days = a.nextDeadline ? daysUntil(a.nextDeadline) : null;
                 const prev = neighbour(a.status, -1);

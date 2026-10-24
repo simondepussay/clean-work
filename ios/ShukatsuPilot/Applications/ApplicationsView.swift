@@ -21,6 +21,9 @@ struct ApplicationsView: View {
             case let apps? where apps.isEmpty:
                 ContentUnavailableView(tr("まだ応募がありません", "No applications yet", "Pas encore de candidature"), systemImage: "tray", description: Text(tr("＋ で追加できます", "Tap + to add one", "Touchez + pour en ajouter une")))
             default:
+                Toggle(isOn: $model.appliedOnly) {
+                    Text(tr("応募済みのみ", "Applied only", "Postulées seulement")) + Text("  \(model.appliedCount)").foregroundStyle(.secondary)
+                }
                 ForEach(model.sections, id: \.stage.id) { section in
                     Section("\(section.stage.name) · \(section.items.count)") {
                         ForEach(section.items) { app in row(app) }
@@ -30,6 +33,7 @@ struct ApplicationsView: View {
         }
         .navigationTitle(tr("応募", "Applications", "Candidatures"))
         .cleanList()
+        .searchable(text: $model.query, prompt: tr("企業名・職種・メモで検索", "Search company, position, notes", "Chercher entreprise, poste, notes"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { editing = EditorTarget(app: nil) } label: { Label(tr("追加", "Add", "Ajouter"), systemImage: "plus") }

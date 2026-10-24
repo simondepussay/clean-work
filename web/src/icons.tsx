@@ -27,6 +27,7 @@ export const CheckIcon = (p: IconProps) => <Icon {...p}><path d="M5 12.5l4.5 4.5
 export const CloseIcon = (p: IconProps) => <Icon {...p}><path d="M6 6l12 12M18 6L6 18" /></Icon>;
 export const ChevronLeftIcon = (p: IconProps) => <Icon {...p}><path d="M14.5 6l-6 6 6 6" /></Icon>;
 export const ChevronRightIcon = (p: IconProps) => <Icon {...p}><path d="M9.5 6l6 6-6 6" /></Icon>;
+export const SearchIcon = (p: IconProps) => <Icon {...p}><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5 5" /></Icon>;
 export const ArrowRightIcon = (p: IconProps) => <Icon {...p}><path d="M5 12h14M13 6l6 6-6 6" /></Icon>;
 export const PenIcon = (p: IconProps) => <Icon {...p}><path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5 4 20z" /><path d="M13.5 7l3 3" /></Icon>;
 export const LightIcon = (p: IconProps) => <Icon {...p}><path d="M9 17.5h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" /></Icon>;

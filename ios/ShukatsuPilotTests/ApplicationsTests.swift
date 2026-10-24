@@ -3,7 +3,7 @@ import XCTest
 
 final class SelectionStageTests: XCTestCase {
     func testNeighbourNeverJumpsToClosed() {
-        XCTAssertEqual(SelectionStage.neighbour(of: "es", 1), "test")
+        XCTAssertEqual(SelectionStage.neighbour(of: "applied", 1), "test")
         XCTAssertNil(SelectionStage.neighbour(of: "interested", -1))
         XCTAssertNil(SelectionStage.neighbour(of: "offer", 1))
         XCTAssertNil(SelectionStage.neighbour(of: "rejected", 1))
@@ -69,5 +69,15 @@ final class ApplicationsModelTests: XCTestCase {
         XCTAssertEqual(StubURLProtocol.lastRequest?.url?.path, "/api/applications/a1")
         XCTAssertEqual(m.applications?.first { $0.id == "a1" }?.status, "test")
         XCTAssertFalse(m.failed)
+    }
+
+    func testAppliedFilterAndSearch() {
+        let apps = [("interested", "楽天", nil), ("applied", "ソニー", "ゲーム事業"), ("interview1", "任天堂", nil)].enumerated().map { i, t in
+            JobApplication(id: "a\(i)", company: t.1, status: t.0, steps: [], notes: t.2)
+        }
+        XCTAssertEqual(apps.filter { SelectionStage.isApplied($0.status) }.map(\.company), ["ソニー", "任天堂"])
+        XCTAssertEqual(apps.filter { SelectionStage.matches($0, "ゲーム") }.map(\.company), ["ソニー"])
+        XCTAssertEqual(apps.filter { SelectionStage.matches($0, " ") }.count, 3)
+        XCTAssertEqual(SelectionStage.neighbour(of: "es", 1), "applied")
     }
 }

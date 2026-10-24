@@ -67,6 +67,7 @@ enum SelectionStage {
 
     static let flow: [Stage] = [
         .init(id: "interested", ja: "気になる", en: "Interested", fr: "Intéressé"), .init(id: "es", ja: "ES", en: "Entry sheet", fr: "ES"),
+        .init(id: "applied", ja: "応募済み", en: "Applied", fr: "Postulé"),
         .init(id: "test", ja: "適性検査", en: "Aptitude test", fr: "Test d'aptitude"), .init(id: "interview1", ja: "一次面接", en: "1st interview", fr: "1er entretien"),
         .init(id: "interview2", ja: "二次面接", en: "2nd interview", fr: "2e entretien"), .init(id: "final", ja: "最終面接", en: "Final interview", fr: "Entretien final"),
         .init(id: "offer", ja: "内定", en: "Offer", fr: "Offre"),
@@ -75,6 +76,15 @@ enum SelectionStage {
     static let all = flow + closed
     /// Types d'étape datée (tout sauf « 気になる »).
     static let stepTypes = Array(flow.dropFirst())
+
+    /// Déjà postulé : tout ce qui vient après l'ES, y compris les candidatures terminées.
+    static func isApplied(_ status: String) -> Bool { !["interested", "es"].contains(status) }
+
+    /// Recherche dans le nom, le poste et les notes, sans tenir compte des majuscules.
+    static func matches(_ app: JobApplication, _ query: String) -> Bool {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        return q.isEmpty || [app.company, app.position, app.notes].contains { $0?.localizedCaseInsensitiveContains(q) ?? false }
+    }
 
     /// Nom d'une étape dans la langue choisie.
     static func name(_ id: String) -> String { all.first { $0.id == id }?.name ?? id }

@@ -36,6 +36,7 @@ export function verifyFeedToken(token: string, secret: string): string | null {
 
 const STEP_NAMES: Record<string, Record<FeedLang, string>> = {
   es: { ja: "ES", en: "Entry sheet", fr: "ES" },
+  applied: { ja: "応募済み", en: "Applied", fr: "Postulé" },
   test: { ja: "適性検査", en: "Aptitude test", fr: "Test d'aptitude" },
   interview1: { ja: "一次面接", en: "1st interview", fr: "1er entretien" },
   interview2: { ja: "二次面接", en: "2nd interview", fr: "2e entretien" },

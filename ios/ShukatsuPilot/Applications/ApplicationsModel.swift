@@ -8,6 +8,9 @@ final class ApplicationsModel {
     private(set) var applications: [JobApplication]?
     private(set) var failed = false
     let api: APIClient
+    /// Recherche (nom, poste, notes) et filtre « 応募済み ».
+    var query = ""
+    var appliedOnly = false
 
     init(api: APIClient) { self.api = api }
 
@@ -19,10 +22,14 @@ final class ApplicationsModel {
     /// Sections non vides, dans l'ordre du parcours ; refus et désistements à la fin.
     var sections: [(stage: SelectionStage.Stage, items: [JobApplication])] {
         SelectionStage.all.compactMap { stage in
-            let items = (applications ?? []).filter { $0.status == stage.id }
+            let items = (applications ?? []).filter {
+                $0.status == stage.id && SelectionStage.matches($0, query) && (!appliedOnly || SelectionStage.isApplied($0.status))
+            }
             return items.isEmpty ? nil : (stage, items)
         }
     }
+
+    var appliedCount: Int { (applications ?? []).filter { SelectionStage.isApplied($0.status) }.count }
 
     func move(_ app: JobApplication, to status: String) async {
         failed = false

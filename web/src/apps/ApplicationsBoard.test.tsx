@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Application } from "../api";
 import { AuthContext, type Auth } from "../auth/auth";
 import { ApplicationsBoard } from "./ApplicationsBoard";
-import { daysUntil, deadlineLabel, neighbour } from "./statuses";
+import { daysUntil, deadlineLabel, isApplied, matches, neighbour } from "./statuses";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -44,10 +44,19 @@ const column = (name: RegExp) => screen.getByRole("listitem", { name });
 
 describe("statuses", () => {
   it("étape suivante et précédente, sans passer automatiquement à « 終了 »", () => {
-    expect(neighbour("es", 1)).toBe("test");
+    expect(neighbour("es", 1)).toBe("applied");
+    expect(neighbour("applied", 1)).toBe("test");
     expect(neighbour("interested", -1)).toBeNull();
     expect(neighbour("offer", 1)).toBeNull();
     expect(neighbour("rejected", 1)).toBeNull();
+  });
+
+  it("« postulé » = tout ce qui vient après l'ES, et recherche dans nom, poste et notes", () => {
+    expect(["interested", "es"].map((s) => isApplied(s as never))).toEqual([false, false]);
+    expect(["applied", "interview1", "rejected"].map((s) => isApplied(s as never))).toEqual([true, true, true]);
+    expect(matches({ company: "Sony", notes: "PlayStation チーム" }, "playstation")).toBe(true);
+    expect(matches({ company: "Sony", position: null }, "楽天")).toBe(false);
+    expect(matches({ company: "Sony" }, "  ")).toBe(true);
   });
 
   it("jours restants et libellé", () => {
@@ -73,10 +82,10 @@ describe("ApplicationsBoard", () => {
     const fetchMock = server([app({ id: "a1", company: "楽天", status: "es" })]);
     renderBoard();
     await userEvent.click(await screen.findByRole("button", { name: /楽天：次のステップへ/ }));
-    expect(within(column(/適性検査/)).getByText("楽天")).toBeInTheDocument();
+    expect(within(column(/^応募済み/)).getByText("楽天")).toBeInTheDocument();
     const put = fetchMock.mock.calls.find(([, i]) => i?.method === "PUT") as unknown as [string, RequestInit];
     expect(put[0]).toBe("/api/applications/a1");
-    expect(JSON.parse(put[1].body as string)).toEqual({ status: "test" });
+    expect(JSON.parse(put[1].body as string)).toEqual({ status: "applied" });
   });
 
   it("affiche l'échéance, en rouge à 3 jours ou moins", async () => {
@@ -156,5 +165,25 @@ describe("ES et candidatures", () => {
     await userEvent.click(screen.getByRole("button", { name: "楽天" }));
     await userEvent.click(screen.getByRole("button", { name: /この企業のESを書く/ }));
     expect(onWriteEs).toHaveBeenCalledWith({ id: "a1", company: "楽天" });
+  });
+});
+
+describe("recherche et filtre « 応募済み »", () => {
+  it("filtre les cartes par texte, puis ne montre que les candidatures envoyées", async () => {
+    server([app({ id: "a1", company: "楽天", status: "interested" }), app({ id: "a2", company: "ソニー", status: "applied", notes: "ゲーム事業" }),
+      app({ id: "a3", company: "任天堂", status: "interview1" })]);
+    renderBoard();
+    await screen.findByText("楽天");
+
+    await userEvent.type(screen.getByRole("searchbox", { name: "応募を検索" }), "ゲーム");
+    expect(screen.queryByText("楽天")).toBeNull();
+    expect(screen.getByText("ソニー")).toBeTruthy();
+    await userEvent.clear(screen.getByRole("searchbox", { name: "応募を検索" }));
+
+    await userEvent.click(screen.getByRole("button", { name: /応募済み/ }));
+    expect(screen.queryByText("楽天")).toBeNull();
+    expect(screen.queryByRole("listitem", { name: "気になる" })).toBeNull();
+    expect(within(column(/応募済み/)).getByText("ソニー")).toBeTruthy();
+    expect(screen.getByText("任天堂")).toBeTruthy();
   });
 });

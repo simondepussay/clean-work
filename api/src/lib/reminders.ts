@@ -15,7 +15,7 @@ import type { DocStore } from "./store";
 
 const CLOSED = new Set(["rejected", "withdrawn"]);
 const STEP_NAMES: Record<string, string> = {
-  es: "ES", test: "適性検査", interview1: "一次面接", interview2: "二次面接", final: "最終面接", offer: "内定",
+  es: "ES", applied: "応募済み", test: "適性検査", interview1: "一次面接", interview2: "二次面接", final: "最終面接", offer: "内定",
 };
 /** Nombre d'échéances écrites en toutes lettres ; les suivantes deviennent « ほか N件 ». */
 const SHOWN = 3;
