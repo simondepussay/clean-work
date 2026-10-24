@@ -72,7 +72,7 @@ describe("App", () => {
     stubApi();
     renderWith({ state: { status: "signedOut" } });
     expect(screen.getAllByRole("button", { name: "Se connecter" })).toHaveLength(2);
-    expect(screen.getByText("Tout pour votre recherche d'emploi, au même endroit.")).toBeInTheDocument();
+    expect(screen.getByText("Vers des journées où l'on ne se perd plus.")).toBeInTheDocument();
     expect(screen.queryByText(/サインイン/)).not.toBeInTheDocument();
   });
 
