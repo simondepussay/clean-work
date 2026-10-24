@@ -22,3 +22,11 @@ extension HelpLanguage {
     /// Code affiché sur le globe.
     var code: String { rawValue.uppercased() }
 }
+
+/// Les messages de l'API arrivent en « 日本語 / English » : on n'en garde que la langue choisie
+/// (l'anglais pour le français, l'API n'ayant pas de version française).
+func apiMessage(_ text: String) -> String {
+    let parts = text.components(separatedBy: " / ")
+    guard parts.count == 2 else { return text }
+    return HelpLanguage.saved == .ja ? parts[0] : parts[1]
+}

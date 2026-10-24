@@ -7,14 +7,9 @@ struct EsListView: View {
 
     var body: some View {
         List {
-            Section {
-                Picker("解説の言語 / Help language", selection: $model.language) {
-                    ForEach(HelpLanguage.allCases) { Text($0.label).tag($0) }
-                }
-            }
             if let guide = model.guide {
                 Section {
-                    DisclosureGroup("ESとは？ / What is an ES?") {
+                    DisclosureGroup(tr("ESとは？", "What is an ES?", "Qu'est-ce qu'une ES ?")) {
                         Text(guide.intro(model.language))
                         ForEach(Array(guide.steps.enumerated()), id: \.offset) { i, step in
                             Text("\(i + 1). \(step(model.language))").font(.callout)
@@ -22,20 +17,20 @@ struct EsListView: View {
                     }
                 }
             }
-            Section("ES") {
-                Button("＋ 新しいES / New") { choosing = true }
+            Section(tr("あなたのES", "Your entry sheets", "Vos ES")) {
+                Button(tr("＋ 新しいES", "＋ New ES", "＋ Nouvelle ES")) { choosing = true }
                 switch model.drafts {
                 case nil:
                     ProgressView()
                 case let drafts? where drafts.isEmpty:
-                    Text("まだESがありません / No entry sheets yet").foregroundStyle(.secondary)
+                    Text(tr("まだESがありません", "No entry sheets yet", "Pas encore d'ES")).foregroundStyle(.secondary)
                 case let drafts?:
                     ForEach(drafts) { draft in
                         NavigationLink {
                             editor(for: draft, input: nil)
                         } label: {
                             VStack(alignment: .leading) {
-                                Text(draft.company ?? "共通 / General").font(.headline)
+                                Text(draft.company ?? tr("共通", "General", "Général")).font(.headline)
                                 Text(draft.question).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                             }
                         }
@@ -48,6 +43,7 @@ struct EsListView: View {
             }
         }
         .navigationTitle("ES")
+        .cleanList()
         .task { if model.drafts == nil { await model.load() } }
         .refreshable { await model.load() }
         .navigationDestination(isPresented: $choosing) { TypePicker(model: model, editor: { editor(for: $0, input: $1) }) }
@@ -65,14 +61,14 @@ private struct TypePicker: View {
 
     var body: some View {
         List {
-            Section("設問のタイプを選ぶ / Choose the type of question") {
+            Section(tr("設問のタイプを選ぶ", "Choose the type of question", "Choisir le type de question")) {
                 ForEach(model.guide?.types ?? []) { type in
                     NavigationLink {
                         editor(nil, DraftInput(kind: type.id, question: type.question, charLimit: type.charLimit))
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(type.label.ja).font(.headline)
-                            Text("\(type.label(model.language)) · \(type.charLimit)字").font(.subheadline)
+                            Text("\(type.label(model.language)) · \(type.charLimit)" + tr("字", " chars", " car.")).font(.subheadline)
                             Text(type.purpose(model.language)).font(.caption).foregroundStyle(.secondary)
                         }
                     }
@@ -81,12 +77,13 @@ private struct TypePicker: View {
                     editor(nil, DraftInput())
                 } label: {
                     VStack(alignment: .leading) {
-                        Text("自由 / Other").font(.headline)
-                        Text("設問を自分で入力 / Type the question yourself").font(.caption).foregroundStyle(.secondary)
+                        Text(tr("自由", "Other", "Libre")).font(.headline)
+                        Text(tr("設問を自分で入力", "Type the question yourself", "Saisir la question soi-même")).font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
         }
-        .navigationTitle("新しいES")
+        .navigationTitle(tr("新しいES", "New ES", "Nouvelle ES"))
+        .cleanList()
     }
 }

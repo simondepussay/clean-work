@@ -80,7 +80,7 @@ enum SelectionStage {
     static func name(_ id: String) -> String { all.first { $0.id == id }?.name ?? id }
 
     static func label(_ id: String) -> String {
-        all.first { $0.id == id }.map { "\($0.ja) / \($0.en)" } ?? id
+        name(id)
     }
 
     /// Étape suivante ou précédente ; jamais de passage automatique vers « 終了 ».
@@ -99,35 +99,38 @@ enum SelectionStage {
 
     static func deadlineLabel(_ days: Int) -> String {
         switch days {
-        case 0: "今日 / today"
-        case 1: "明日 / tomorrow"
-        default: "あと\(days)日 / \(days) days left"
+        case 0: tr("今日", "today", "aujourd'hui")
+        case 1: tr("明日", "tomorrow", "demain")
+        default: tr("あと\(days)日", "\(days) days left", "encore \(days) j")
         }
     }
 }
 
 /// 業界 et types d'entreprise (mêmes codes que l'API et le web).
 enum CompanyProfile {
-    struct Option: Identifiable { let id: String; let ja: String; let en: String }
+    struct Option: Identifiable {
+        let id: String; let ja: String; let en: String; let fr: String
+        var name: String { tr(ja, en, fr) }
+    }
 
     static let industries: [Option] = [
-        .init(id: "it", ja: "IT・通信", en: "IT & telecom"),
-        .init(id: "maker", ja: "メーカー", en: "Manufacturing"),
-        .init(id: "trading", ja: "商社", en: "Trading"),
-        .init(id: "finance", ja: "金融", en: "Finance"),
-        .init(id: "consulting", ja: "コンサル", en: "Consulting"),
-        .init(id: "retail", ja: "小売・流通", en: "Retail"),
-        .init(id: "service", ja: "サービス・人材", en: "Services & HR"),
-        .init(id: "media", ja: "広告・マスコミ", en: "Advertising & media"),
-        .init(id: "infrastructure", ja: "インフラ・交通", en: "Infrastructure & transport"),
-        .init(id: "public", ja: "官公庁・団体", en: "Public sector"),
-        .init(id: "other", ja: "その他", en: "Other"),
+        .init(id: "it", ja: "IT・通信", en: "IT & telecom", fr: "IT et télécoms"),
+        .init(id: "maker", ja: "メーカー", en: "Manufacturing", fr: "Industrie"),
+        .init(id: "trading", ja: "商社", en: "Trading", fr: "Maison de commerce"),
+        .init(id: "finance", ja: "金融", en: "Finance", fr: "Finance"),
+        .init(id: "consulting", ja: "コンサル", en: "Consulting", fr: "Conseil"),
+        .init(id: "retail", ja: "小売・流通", en: "Retail", fr: "Commerce et distribution"),
+        .init(id: "service", ja: "サービス・人材", en: "Services & HR", fr: "Services et RH"),
+        .init(id: "media", ja: "広告・マスコミ", en: "Advertising & media", fr: "Publicité et médias"),
+        .init(id: "infrastructure", ja: "インフラ・交通", en: "Infrastructure & transport", fr: "Infrastructures et transports"),
+        .init(id: "public", ja: "官公庁・団体", en: "Public sector", fr: "Secteur public"),
+        .init(id: "other", ja: "その他", en: "Other", fr: "Autre"),
     ]
 
     static let types: [Option] = [
-        .init(id: "large", ja: "大手", en: "Large company"),
-        .init(id: "sme", ja: "中小企業", en: "Small / medium"),
-        .init(id: "startup", ja: "ベンチャー", en: "Startup"),
-        .init(id: "foreign", ja: "外資系", en: "Foreign-owned"),
+        .init(id: "large", ja: "大手", en: "Large company", fr: "Grande entreprise"),
+        .init(id: "sme", ja: "中小企業", en: "Small / medium", fr: "PME"),
+        .init(id: "startup", ja: "ベンチャー", en: "Startup", fr: "Start-up"),
+        .init(id: "foreign", ja: "外資系", en: "Foreign-owned", fr: "Entreprise étrangère"),
     ]
 }

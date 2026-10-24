@@ -17,19 +17,19 @@ struct ResumeView: View {
     var body: some View {
         Form {
             Section {
-                Picker("書類 / Document", selection: $kind) {
-                    Text("履歴書").tag(Kind.resume)
-                    Text("職務経歴書").tag(Kind.workHistory)
+                Picker(tr("書類", "Document", "Document"), selection: $kind) {
+                    Text(tr("履歴書", "Résumé (履歴書)", "CV (履歴書)")).tag(Kind.resume)
+                    Text(tr("職務経歴書", "Career (職務経歴書)", "Parcours (職務経歴書)")).tag(Kind.workHistory)
                 }
                 .pickerStyle(.segmented)
-                Picker("年の書き方 / Years", selection: $options.era) {
-                    Text("西暦（2026年）").tag(APIClient.ResumeOptions.Era.western)
-                    Text("和暦（令和8年）").tag(APIClient.ResumeOptions.Era.japanese)
+                Picker(tr("年の書き方", "Years", "Format des années"), selection: $options.era) {
+                    Text(tr("西暦（2026年）", "Western (2026)", "Occidental (2026)")).tag(APIClient.ResumeOptions.Era.western)
+                    Text(tr("和暦（令和8年）", "Japanese era (Reiwa 8)", "Ère japonaise (Reiwa 8)")).tag(APIClient.ResumeOptions.Era.japanese)
                 }
             } footer: {
                 Text(kind == .resume
-                     ? "厚生労働省の様式で作成します。/ Ministry of Health, Labour and Welfare format."
-                     : "職歴（アルバイト・インターン含む）を時系列でまとめます。/ Your work experience, in chronological order.")
+                     ? tr("厚生労働省の様式で作成します。", "Ministry of Health, Labour and Welfare format.", "Format du ministère japonais de la Santé et du Travail.")
+                     : tr("職歴（アルバイト・インターン含む）を時系列でまとめます。", "Your work experience (part-time jobs and internships included), in chronological order.", "Votre expérience (petits boulots et stages compris), dans l'ordre chronologique."))
             }
 
             if kind == .resume {
@@ -37,27 +37,28 @@ struct ResumeView: View {
                     TextEditor(text: text($options.appeal)).frame(minHeight: 140)
                     fromEs { options.appeal = $0 }
                 } header: {
-                    Text("志望の動機・特技・アピールポイントなど")
+                    Text(tr("志望の動機・特技・アピールポイントなど", "Motivation, strengths, selling points", "Motivation, points forts, atouts"))
                 }
-                Section("本人希望記入欄 / Your requests") {
+                Section(tr("本人希望記入欄", "Your requests", "Vos souhaits")) {
                     TextEditor(text: text($options.wishes)).frame(minHeight: 60)
                 }
             } else {
-                Section("職務要約 / Summary") { TextEditor(text: text($work.summary)).frame(minHeight: 70) }
-                Section("活かせる経験・知識・スキル / Skills") { TextEditor(text: text($work.skills)).frame(minHeight: 90) }
-                Section("自己PR / Self-PR") {
+                Section(tr("職務要約", "Summary", "Résumé")) { TextEditor(text: text($work.summary)).frame(minHeight: 70) }
+                Section(tr("活かせる経験・知識・スキル", "Skills", "Compétences")) { TextEditor(text: text($work.skills)).frame(minHeight: 90) }
+                Section(tr("自己PR", "Self-PR", "Auto-présentation (自己PR)")) {
                     TextEditor(text: text($work.selfPr)).frame(minHeight: 140)
                     fromEs { work.selfPr = $0 }
                 }
             }
 
             Section {
-                Button(busy ? "作成中… / Creating…" : "PDFを作成 / Create PDF") { Task { await generate() } }
+                Button(busy ? tr("作成中…", "Creating…", "Création…") : tr("PDFを作成", "Create PDF", "Créer le PDF")) { Task { await generate() } }
                     .disabled(busy)
                 if let message { Text(message).foregroundStyle(.orange) }
             }
         }
-        .navigationTitle("応募書類PDF")
+        .navigationTitle(tr("応募書類PDF", "Documents (PDF)", "Documents (PDF)"))
+        .cleanList()
         .task { drafts = (try? await api.drafts()) ?? [] }
         .quickLookPreview($preview)
     }
@@ -76,22 +77,22 @@ struct ResumeView: View {
                 try pdf.data.write(to: url, options: .atomic)
                 preview = url
             case .failure(.profileMissing):
-                message = "先にプロフィールを保存してください / Save your profile first"
+                message = tr("先にプロフィールを保存してください", "Save your profile first", "Enregistrez d'abord votre profil")
             case .failure(.noWork):
-                message = "職歴がありません。プロフィールに職歴を追加してください / Add work experience to your profile first"
+                message = tr("職歴がありません。プロフィールに職歴を追加してください", "Add work experience to your profile first", "Ajoutez d'abord une expérience professionnelle à votre profil")
             case .failure:
-                message = "作成できませんでした / Could not create the PDF"
+                message = tr("作成できませんでした", "Could not create the PDF", "Impossible de créer le PDF")
             }
         } catch {
-            message = "作成できませんでした / Could not create the PDF"
+            message = tr("作成できませんでした", "Could not create the PDF", "Impossible de créer le PDF")
         }
     }
 
     @ViewBuilder private func fromEs(_ fill: @escaping (String) -> Void) -> some View {
         let filled = drafts.filter { !$0.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         if !filled.isEmpty {
-            Menu("ESから入れる / Fill from an ES") {
-                ForEach(filled) { d in Button("\(d.company ?? "共通")：\(d.question)") { fill(d.body) } }
+            Menu(tr("ESから入れる", "Fill from an ES", "Reprendre d'une ES")) {
+                ForEach(filled) { d in Button("\(d.company ?? tr("共通", "General", "Général"))：\(d.question)") { fill(d.body) } }
             }
         }
     }

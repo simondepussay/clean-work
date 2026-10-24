@@ -27,11 +27,11 @@ struct Profile: Codable, Equatable {
             case enrolled, expected, graduated, completed, left
             var label: String {
                 switch self {
-                case .enrolled: "在学中 / Enrolled"
-                case .expected: "卒業見込み / Expected"
-                case .graduated: "卒業 / Graduated"
-                case .completed: "修了（日本語学校・留学）/ Completed"
-                case .left: "中退 / Left"
+                case .enrolled: tr("在学中", "Enrolled", "En cours")
+                case .expected: tr("卒業見込み", "Expected", "Diplôme prévu")
+                case .graduated: tr("卒業", "Graduated", "Diplômé")
+                case .completed: tr("修了（日本語学校・留学）", "Completed", "Terminé")
+                case .left: tr("中退", "Left", "Abandon")
                 }
             }
         }

@@ -19,48 +19,48 @@ struct AuthView: View {
         Form {
             if let challenge {
                 Section {
-                    TextField("確認コード / Code", text: $code)
+                    TextField(tr("確認コード", "Code", "Code"), text: $code)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
                 } header: {
-                    Text("確認コード / Verification code")
+                    Text(tr("確認コード", "Verification code", "Code de vérification"))
                 } footer: {
-                    Text("\(challenge.sentTo) にコードを送りました。/ A code was sent to \(challenge.sentTo).")
+                    Text(tr("\(challenge.sentTo) にコードを送りました。", "A code was sent to \(challenge.sentTo).", "Un code a été envoyé à \(challenge.sentTo)."))
                 }
                 Section {
-                    Button("確認 / Verify") { run { try await model.finishSignUp(challenge, code: code) } }
+                    Button(tr("確認", "Verify", "Vérifier")) { run { try await model.finishSignUp(challenge, code: code) } }
                         .disabled(busy || code.count < challenge.codeLength)
-                    Button("コードを再送 / Resend code") { run { self.challenge = try await challenge.resend() } }
+                    Button(tr("コードを再送", "Resend code", "Renvoyer le code")) { run { self.challenge = try await challenge.resend() } }
                         .disabled(busy)
                 }
             } else {
                 Picker("", selection: $mode) {
-                    Text("サインイン / Sign in").tag(Mode.signIn)
-                    Text("新規登録 / Sign up").tag(Mode.signUp)
+                    Text(tr("サインイン", "Sign in", "Se connecter")).tag(Mode.signIn)
+                    Text(tr("新規登録", "Sign up", "Créer un compte")).tag(Mode.signUp)
                 }
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
 
                 Section {
                     if mode == .signUp {
-                        TextField("名前 / Name", text: $name)
+                        TextField(tr("名前", "Name", "Nom"), text: $name)
                             .textContentType(.name)
                     }
-                    TextField("メール / Email", text: $email)
+                    TextField(tr("メール", "Email", "E-mail"), text: $email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    SecureField("パスワード / Password", text: $password)
+                    SecureField(tr("パスワード", "Password", "Mot de passe"), text: $password)
                         .textContentType(mode == .signUp ? .newPassword : .password)
                 }
                 Section {
-                    Button(mode == .signIn ? "サインイン / Sign in" : "登録 / Create account") { submit() }
+                    Button(mode == .signIn ? tr("サインイン", "Sign in", "Se connecter") : tr("登録", "Create account", "Créer le compte")) { submit() }
                         .disabled(busy || !canSubmit)
                 } footer: {
                     VStack(alignment: .leading, spacing: 6) {
                         if mode == .signUp {
-                            Text("登録すると、利用規約とプライバシーポリシーに同意したことになります。/ By creating an account, you agree to the terms and the privacy policy.")
+                            Text(tr("登録すると、利用規約とプライバシーポリシーに同意したことになります。", "By creating an account, you agree to the terms and the privacy policy.", "En créant un compte, vous acceptez les conditions d'utilisation et la politique de confidentialité."))
                         }
                         LegalLinks()
                     }
@@ -71,7 +71,8 @@ struct AuthView: View {
             }
         }
         .overlay { if busy { ProgressView() } }
-        .navigationTitle("就活パイロット")
+        .navigationTitle("Clean Work")
+        .cleanList()
     }
 
     private var canSubmit: Bool {
@@ -99,15 +100,15 @@ struct AuthView: View {
 
     static func message(for error: Error) -> String {
         switch error as? AccountError {
-        case .emailAlreadyUsed: "このメールはすでに登録されています。/ This email is already registered."
-        case .passwordTooWeak: "パスワードが弱すぎます。/ The password is too weak."
-        case .invalidEmail: "メールアドレスが正しくありません。/ The email address is not valid."
-        case .invalidCode: "コードが正しくありません。/ The code is not correct."
-        case .wrongEmailOrPassword: "メールまたはパスワードが違います。/ Wrong email or password."
-        case .notConfigured: "サインインは準備中です。/ Sign-in is not available yet."
-        case .missingAttributes: "名前を入力してください。/ Please enter your name."
-        case .other(let detail): "エラー / Error: \(detail)"
-        case nil: "エラー / Error: \(error.localizedDescription)"
+        case .emailAlreadyUsed: tr("このメールはすでに登録されています。", "This email is already registered.", "Cet e-mail est déjà enregistré.")
+        case .passwordTooWeak: tr("パスワードが弱すぎます。", "The password is too weak.", "Le mot de passe est trop faible.")
+        case .invalidEmail: tr("メールアドレスが正しくありません。", "The email address is not valid.", "L'adresse e-mail n'est pas valide.")
+        case .invalidCode: tr("コードが正しくありません。", "The code is not correct.", "Le code n'est pas correct.")
+        case .wrongEmailOrPassword: tr("メールまたはパスワードが違います。", "Wrong email or password.", "E-mail ou mot de passe incorrect.")
+        case .notConfigured: tr("サインインは準備中です。", "Sign-in is not available yet.", "La connexion n'est pas encore disponible.")
+        case .missingAttributes: tr("名前を入力してください。", "Please enter your name.", "Veuillez saisir votre nom.")
+        case .other(let detail): tr("エラー", "Error: \(detail)", "Erreur : \(detail)")
+        case nil: tr("エラー", "Error: \(error.localizedDescription)", "Erreur : \(error.localizedDescription)")
         }
     }
 }

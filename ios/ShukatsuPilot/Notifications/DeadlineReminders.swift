@@ -29,7 +29,7 @@ enum Deadlines {
     }
 
     static func stepName(_ step: String) -> String {
-        SelectionStage.flow.first { $0.id == step }?.ja ?? step
+        SelectionStage.name(step)
     }
 }
 
@@ -55,8 +55,8 @@ enum DeadlineReminders {
             guard parts.count == 3, let day = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return [] }
             let what = "\(d.company)：\(Deadlines.stepName(d.step))"
             let candidates: [(String, Date?, String, String)] = [
-                ("eve", calendar.date(byAdding: DateComponents(day: -1, hour: 9), to: day), "明日締切 / Due tomorrow", what),
-                ("day", calendar.date(byAdding: DateComponents(hour: 8), to: day), "今日締切 / Due today", what),
+                ("eve", calendar.date(byAdding: DateComponents(day: -1, hour: 9), to: day), tr("明日締切", "Due tomorrow", "Échéance demain"), what),
+                ("day", calendar.date(byAdding: DateComponents(hour: 8), to: day), tr("今日締切", "Due today", "Échéance aujourd'hui"), what),
             ]
             return candidates.compactMap { kind, fire, title, body in
                 guard let fire, fire > now else { return nil }

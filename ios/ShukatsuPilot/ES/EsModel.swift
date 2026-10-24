@@ -9,9 +9,8 @@ final class EsModel {
     private(set) var guide: Guide?
     /// Candidatures, pour relier une ES à une entreprise.
     private(set) var applications: [JobApplication] = []
-    var language: HelpLanguage = HelpLanguage.saved {
-        didSet { UserDefaults.standard.set(language.rawValue, forKey: HelpLanguage.storageKey) }
-    }
+    /// Langue de l'aide : celle du globe de l'en-tête.
+    var language: HelpLanguage { HelpLanguage.saved }
 
     let api: APIClient
     private let guideURL: URL?
@@ -80,7 +79,7 @@ final class EsEditorModel {
     var review: Review? { history.indices.contains(shown) ? history[shown] : nil }
     var count: Int { charCount(input.body) }
     var isOver: Bool { input.charLimit.map { count > $0 } ?? false }
-    func error(_ path: String) -> String? { issues.first { $0.path == path }?.message }
+    func error(_ path: String) -> String? { issues.first { $0.path == path }.map { apiMessage($0.message) } }
 
     func load() async {
         usage = try? await api.usage()

@@ -18,9 +18,8 @@ final class InterviewModel {
         didSet { stage = .suggested(for: applications.first { $0.id == applicationId }) }
     }
     var stage: InterviewStage = .interview1
-    var language: HelpLanguage = HelpLanguage.saved {
-        didSet { UserDefaults.standard.set(language.rawValue, forKey: HelpLanguage.storageKey) }
-    }
+    /// Langue des explications : celle du globe de l'en-tête.
+    var language: HelpLanguage { HelpLanguage.saved }
 
     let api: APIClient
 

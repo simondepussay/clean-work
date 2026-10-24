@@ -96,13 +96,13 @@ enum InterviewRefusal: Error, Equatable {
         case .limit(let reason, let date):
             let day = date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? ""
             return reason == "budget"
-                ? "今月のAI機能は終了しました（\(day)から再開）/ AI features are paused until \(day)"
-                : "面接練習の回数の上限です（\(day)から）/ Practice limit reached, available again on \(day)"
-        case .invalid: return "回答を入力してください / Write or say your answer"
-        case .finished: return "この面接は終了しています / This interview is over"
-        case .notFound: return "見つかりません / Not found"
-        case .notConfigured: return "面接練習は準備中です / Interview practice is not available yet"
-        case .failed: return "AIが応答しませんでした。もう一度試してください（回数は使われていません）/ The AI did not respond; try again (not counted)"
+                ? tr("今月のAI機能は終了しました（\(day)から再開）", "AI features are paused until \(day)", "Les fonctions IA reprennent le \(day)")
+                : tr("面接練習の回数の上限です（\(day)から）", "Practice limit reached, available again on \(day)", "Limite atteinte, de nouveau disponible le \(day)")
+        case .invalid: return tr("回答を入力してください", "Write or say your answer", "Écrivez ou dites votre réponse")
+        case .finished: return tr("この面接は終了しています", "This interview is over", "Cet entretien est terminé")
+        case .notFound: return tr("見つかりません", "Not found", "Introuvable")
+        case .notConfigured: return tr("面接練習は準備中です", "Interview practice is not available yet", "L'entraînement aux entretiens n'est pas encore disponible")
+        case .failed: return tr("AIが応答しませんでした。もう一度試してください（回数は使われていません）", "The AI did not respond; try again (not counted)", "L'IA n'a pas répondu ; réessayez (non compté)")
         }
     }
 }

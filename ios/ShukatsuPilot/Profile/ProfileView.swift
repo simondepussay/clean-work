@@ -17,17 +17,18 @@ struct ProfileView: View {
                 certificationSection
                 languageSection
                 if !model.issues.isEmpty {
-                    Section { Text("入力を確認してください（\(model.issues.count)件）/ Please check \(model.issues.count) field(s)").foregroundStyle(.red) }
+                    Section { Text(tr("入力を確認してください（\(model.issues.count)件）", "Please check \(model.issues.count) field(s)", "Vérifiez \(model.issues.count) champ(s)")).foregroundStyle(.red) }
                 }
                 if model.status == .failed {
-                    Section { Text("保存できませんでした / Could not save").foregroundStyle(.red) }
+                    Section { Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).foregroundStyle(.red) }
                 }
             }
         }
-        .navigationTitle("プロフィール")
+        .navigationTitle(tr("プロフィール", "Profile", "Profil"))
+        .cleanList()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button(model.status == .saved ? "保存済み ✓" : "保存 / Save") {
+                Button(model.status == .saved ? tr("保存済み ✓", "Saved ✓", "Enregistré ✓") : tr("保存", "Save", "Enregistrer")) {
                     Task { if await model.save() { await onSaved() } }
                 }
                 .disabled(model.status == .saving || model.status == .loading)
@@ -39,89 +40,89 @@ struct ProfileView: View {
     // MARK: Sections
 
     private var basics: some View {
-        Section("基本情報 / Basic information") {
-            field("氏名 / Name *", text: $model.profile.nameKanji, path: "nameKanji")
-            field("ふりがな（ひらがな・カタカナ）/ Reading in kana *", text: $model.profile.nameKana, path: "nameKana")
-            field("ローマ字 / Name (Latin)", text: optional($model.profile.nameLatin), path: "nameLatin")
-            field("生年月日 / Date of birth (YYYY-MM-DD)", text: optional($model.profile.birthDate), path: "birthDate", keyboard: .numbersAndPunctuation)
-            field("メール / Email", text: optional($model.profile.email), path: "email", keyboard: .emailAddress)
-            field("電話 / Phone", text: optional($model.profile.phone), path: "phone", keyboard: .phonePad)
-            field("住所 / Address", text: optional($model.profile.address), path: "address")
+        Section(tr("基本情報", "Basic information", "Informations de base")) {
+            field(tr("氏名", "Name *", "Nom *"), text: $model.profile.nameKanji, path: "nameKanji")
+            field(tr("ふりがな（ひらがな・カタカナ）", "Reading in kana *", "Lecture en kana *"), text: $model.profile.nameKana, path: "nameKana")
+            field(tr("ローマ字", "Name (Latin)", "Nom (alphabet latin)"), text: optional($model.profile.nameLatin), path: "nameLatin")
+            field(tr("生年月日", "Date of birth (YYYY-MM-DD)", "Date de naissance (AAAA-MM-JJ)"), text: optional($model.profile.birthDate), path: "birthDate", keyboard: .numbersAndPunctuation)
+            field(tr("メール", "Email", "E-mail"), text: optional($model.profile.email), path: "email", keyboard: .emailAddress)
+            field(tr("電話", "Phone", "Téléphone"), text: optional($model.profile.phone), path: "phone", keyboard: .phonePad)
+            field(tr("住所", "Address", "Adresse"), text: optional($model.profile.address), path: "address")
         }
     }
 
     private var educationSection: some View {
-        Section("学歴 / Education") {
+        Section(tr("学歴", "Education", "Formation")) {
             ForEach(Array($model.profile.education.enumerated()), id: \.element.id) { index, $item in
                 VStack(alignment: .leading) {
-                    field("学校名 / School *", text: $item.school, path: "education.\(index).school")
-                    field("学部・学科 / Faculty", text: optional($item.faculty), path: "education.\(index).faculty")
-                    month("入学 / Start *", text: $item.start, path: "education.\(index).start")
-                    month("卒業・卒業予定 / End (or expected)", text: optional($item.end), path: "education.\(index).end")
-                    Picker("状態 / Status", selection: $item.status) {
+                    field(tr("学校名", "School *", "Établissement *"), text: $item.school, path: "education.\(index).school")
+                    field(tr("学部・学科", "Faculty", "Faculté / filière"), text: optional($item.faculty), path: "education.\(index).faculty")
+                    month(tr("入学", "Start *", "Début *"), text: $item.start, path: "education.\(index).start")
+                    month(tr("卒業・卒業予定", "End (or expected)", "Fin (ou prévue)"), text: optional($item.end), path: "education.\(index).end")
+                    Picker(tr("状態", "Status", "Statut"), selection: $item.status) {
                         ForEach(Profile.Education.Status.allCases, id: \.self) { Text($0.label).tag($0) }
                     }
                 }
             }
             .onDelete { model.profile.education.remove(atOffsets: $0) }
-            Button("＋ 追加 / Add") { model.profile.education.append(.init()) }
+            Button(tr("＋ 追加", "Add", "＋ Ajouter")) { model.profile.education.append(.init()) }
         }
     }
 
     private var workSection: some View {
-        Section("職歴 / Work experience") {
+        Section(tr("職歴", "Work experience", "Expérience professionnelle")) {
             ForEach(Array($model.profile.work.enumerated()), id: \.element.id) { index, $item in
                 VStack(alignment: .leading) {
-                    field("会社名 / Company *", text: $item.company, path: "work.\(index).company")
-                    field("職種 / Role", text: optional($item.role), path: "work.\(index).role")
-                    month("入社 / Start *", text: $item.start, path: "work.\(index).start")
-                    month("退社 / End", text: optional($item.end), path: "work.\(index).end")
-                    field("内容 / Description", text: optional($item.description), path: "work.\(index).description")
+                    field(tr("会社名", "Company *", "Entreprise *"), text: $item.company, path: "work.\(index).company")
+                    field(tr("職種", "Role", "Poste"), text: optional($item.role), path: "work.\(index).role")
+                    month(tr("入社", "Start *", "Début *"), text: $item.start, path: "work.\(index).start")
+                    month(tr("退社", "End", "Fin"), text: optional($item.end), path: "work.\(index).end")
+                    field(tr("内容", "Description", "Description"), text: optional($item.description), path: "work.\(index).description")
                 }
             }
             .onDelete { model.profile.work.remove(atOffsets: $0) }
-            Button("＋ 追加 / Add") { model.profile.work.append(.init()) }
+            Button(tr("＋ 追加", "Add", "＋ Ajouter")) { model.profile.work.append(.init()) }
         }
     }
 
     private var certificationSection: some View {
-        Section("資格 / Certifications") {
+        Section(tr("資格", "Certifications", "Certifications")) {
             ForEach(Array($model.profile.certifications.enumerated()), id: \.element.id) { index, $item in
                 VStack(alignment: .leading) {
-                    choice("分類 / Category *", selection: $item.category, options: ProfileChoices.certificationCategories,
+                    choice(tr("分類", "Category *", "Catégorie *"), selection: $item.category, options: ProfileChoices.certificationCategories,
                            path: "certifications.\(index).category")
                     HStack {
-                        field("資格名 / Name *", text: $item.name, path: "certifications.\(index).name")
+                        field(tr("資格名", "Name *", "Intitulé *"), text: $item.name, path: "certifications.\(index).name")
                         let suggestions = ProfileChoices.certificationSuggestions[item.category] ?? []
                         if !suggestions.isEmpty {
                             Menu {
                                 ForEach(suggestions, id: \.self) { name in Button(name) { item.name = name } }
-                            } label: { Image(systemName: "list.bullet").accessibilityLabel("候補 / Suggestions") }
+                            } label: { Image(systemName: "list.bullet").accessibilityLabel(tr("候補", "Suggestions", "Suggestions")) }
                         }
                     }
-                    month("取得 / Date *", text: $item.date, path: "certifications.\(index).date")
+                    month(tr("取得", "Date *", "Date *"), text: $item.date, path: "certifications.\(index).date")
                 }
             }
             .onDelete { model.profile.certifications.remove(atOffsets: $0) }
-            Button("＋ 追加 / Add") { model.profile.certifications.append(.init()) }
+            Button(tr("＋ 追加", "Add", "＋ Ajouter")) { model.profile.certifications.append(.init()) }
         }
     }
 
     private var languageSection: some View {
-        Section("語学 / Languages") {
+        Section(tr("語学", "Languages", "Langues")) {
             ForEach(Array($model.profile.languages.enumerated()), id: \.element.id) { index, $item in
                 VStack(alignment: .leading) {
-                    choice("言語 / Language *", selection: $item.language, options: ProfileChoices.languages,
+                    choice(tr("言語", "Language *", "Langue *"), selection: $item.language, options: ProfileChoices.languages,
                            path: "languages.\(index).language")
                     if item.language == "other" {
-                        field("どの言語？ / Which language? *", text: optional($item.languageOther), path: "languages.\(index).languageOther")
+                        field(tr("どの言語？", "Which language? *", "Quelle langue ? *"), text: optional($item.languageOther), path: "languages.\(index).languageOther")
                     }
-                    choice("レベル / Level *", selection: $item.level, options: ProfileChoices.levels,
+                    choice(tr("レベル", "Level *", "Niveau *"), selection: $item.level, options: ProfileChoices.levels,
                            path: "languages.\(index).level")
                 }
             }
             .onDelete { model.profile.languages.remove(atOffsets: $0) }
-            Button("＋ 追加 / Add") { model.profile.languages.append(.init()) }
+            Button(tr("＋ 追加", "Add", "＋ Ajouter")) { model.profile.languages.append(.init()) }
         }
     }
 
@@ -142,7 +143,7 @@ struct ProfileView: View {
     private func choice(_ label: String, selection: Binding<String>, options: [ProfileChoices.Choice], path: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Picker(label, selection: selection) {
-                Text("選択 / Choose").tag("")
+                Text(tr("選択", "Choose", "Choisir")).tag("")
                 ForEach(options, id: \.value) { Text($0.label).tag($0.value) }
             }
             if let error = model.error(path) {

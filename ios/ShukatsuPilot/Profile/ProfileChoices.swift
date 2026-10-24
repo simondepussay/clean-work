@@ -5,22 +5,22 @@ import Foundation
 enum ProfileChoices {
     typealias Choice = (value: String, label: String)
 
-    static let languages: [Choice] = [
-        ("ja", "日本語 / Japanese"), ("en", "英語 / English"), ("zh", "中国語 / Chinese"), ("ko", "韓国語 / Korean"),
-        ("vi", "ベトナム語 / Vietnamese"), ("ne", "ネパール語 / Nepali"), ("id", "インドネシア語 / Indonesian"),
-        ("th", "タイ語 / Thai"), ("fr", "フランス語 / French"), ("es", "スペイン語 / Spanish"),
-        ("de", "ドイツ語 / German"), ("pt", "ポルトガル語 / Portuguese"), ("other", "その他 / Other"),
-    ]
+    static var languages: [Choice] { [
+        ("ja", tr("日本語", "Japanese", "Japonais")), ("en", tr("英語", "English", "Anglais")), ("zh", tr("中国語", "Chinese", "Chinois")), ("ko", tr("韓国語", "Korean", "Coréen")),
+        ("vi", tr("ベトナム語", "Vietnamese", "Vietnamien")), ("ne", tr("ネパール語", "Nepali", "Népalais")), ("id", tr("インドネシア語", "Indonesian", "Indonésien")),
+        ("th", tr("タイ語", "Thai", "Thaï")), ("fr", tr("フランス語", "French", "Français")), ("es", tr("スペイン語", "Spanish", "Espagnol")),
+        ("de", tr("ドイツ語", "German", "Allemand")), ("pt", tr("ポルトガル語", "Portuguese", "Portugais")), ("other", tr("その他", "Other", "Autre")),
+    ] }
 
-    static let levels: [Choice] = [
-        ("native", "ネイティブ / Native"), ("business", "ビジネス / Business"),
-        ("conversational", "日常会話 / Conversational"), ("basic", "基礎 / Basic"),
-    ]
+    static var levels: [Choice] { [
+        ("native", tr("ネイティブ", "Native", "Langue maternelle")), ("business", tr("ビジネス", "Business", "Professionnel")),
+        ("conversational", tr("日常会話", "Conversational", "Courant")), ("basic", tr("基礎", "Basic", "Notions")),
+    ] }
 
-    static let certificationCategories: [Choice] = [
-        ("language", "語学 / Language"), ("it", "IT"), ("business", "ビジネス / Business"),
-        ("degree", "学位・学校 / Degree"), ("driving", "運転免許 / Driving licence"), ("other", "その他 / Other"),
-    ]
+    static var certificationCategories: [Choice] { [
+        ("language", tr("語学", "Language", "Langues")), ("it", "IT"), ("business", tr("ビジネス", "Business", "Professionnel")),
+        ("degree", tr("学位・学校", "Degree", "Diplôme")), ("driving", tr("運転免許", "Driving licence", "Permis de conduire")), ("other", tr("その他", "Other", "Autre")),
+    ] }
 
     /// Suggestions de noms selon la catégorie ; on peut toujours écrire autre chose.
     static let certificationSuggestions: [String: [String]] = [

@@ -37,7 +37,8 @@ final class InterviewTests: XCTestCase {
         StubURLProtocol.handler = { _ in (201, self.session(turns: self.twoQuestions)) }
         let model = InterviewModel(api: api(), applicationId: "a1")
         model.stage = .interview2
-        model.language = .fr
+        UserDefaults.standard.set("fr", forKey: HelpLanguage.storageKey)
+        defer { UserDefaults.standard.removeObject(forKey: HelpLanguage.storageKey) }
         await model.start()
 
         let request = try XCTUnwrap(StubURLProtocol.lastRequest)
@@ -71,6 +72,8 @@ final class InterviewTests: XCTestCase {
 
     func testLimitIsExplained() async {
         StubURLProtocol.handler = { _ in (429, Data(#"{"error":"limit","reason":"day","retryAfter":"2026-10-24T00:00:00.000Z"}"#.utf8)) }
+        UserDefaults.standard.set("ja", forKey: HelpLanguage.storageKey)
+        defer { UserDefaults.standard.removeObject(forKey: HelpLanguage.storageKey) }
         let model = InterviewModel(api: api())
         await model.start()
         XCTAssertNil(model.session)

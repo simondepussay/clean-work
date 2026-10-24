@@ -112,3 +112,18 @@ struct ArcLoader: View {
         .accessibilityLabel(tr("読み込み中", "Loading", "Chargement"))
     }
 }
+
+/// Listes et formulaires dans le style Clean Work : fond bleu très pâle, cellules blanches, titre compact.
+struct CleanListStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .scrollContentBackground(.hidden)
+            .background(Color.cwBlue50)
+            .tint(Color.cwBlue700)
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+extension View {
+    func cleanList() -> some View { modifier(CleanListStyle()) }
+}

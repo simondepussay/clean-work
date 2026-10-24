@@ -14,8 +14,10 @@ final class SelectionStageTests: XCTestCase {
         let today = calendar.date(from: DateComponents(year: 2026, month: 10, day: 29))!
         XCTAssertEqual(SelectionStage.daysUntil("2026-11-01", from: today, calendar: calendar), 3)
         XCTAssertEqual(SelectionStage.daysUntil("2026-10-29", from: today, calendar: calendar), 0)
-        XCTAssertEqual(SelectionStage.deadlineLabel(1), "明日 / tomorrow")
-        XCTAssertEqual(SelectionStage.deadlineLabel(4), "あと4日 / 4 days left")
+        UserDefaults.standard.set("ja", forKey: HelpLanguage.storageKey)
+        defer { UserDefaults.standard.removeObject(forKey: HelpLanguage.storageKey) }
+        XCTAssertEqual(SelectionStage.deadlineLabel(1), "明日")
+        XCTAssertEqual(SelectionStage.deadlineLabel(4), "あと4日")
     }
 }
 

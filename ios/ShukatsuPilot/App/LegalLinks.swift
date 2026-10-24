@@ -6,8 +6,8 @@ struct LegalLinks: View {
     var body: some View {
         if let base = AppConfig.apiBaseURL {
             HStack(spacing: 16) {
-                Link("プライバシーポリシー / Privacy", destination: Self.url(base, "privacy.html"))
-                Link("利用規約 / Terms", destination: Self.url(base, "terms.html"))
+                Link(tr("プライバシーポリシー", "Privacy", "Confidentialité"), destination: Self.url(base, "privacy.html"))
+                Link(tr("利用規約", "Terms", "Conditions"), destination: Self.url(base, "terms.html"))
             }
             .font(.footnote)
         }

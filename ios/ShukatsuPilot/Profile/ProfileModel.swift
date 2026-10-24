@@ -43,5 +43,5 @@ final class ProfileModel {
     }
 
     /// Message d'erreur pour un champ, par son chemin (« nameKanji », « education.0.start »…).
-    func error(_ path: String) -> String? { issues.first { $0.path == path }?.message }
+    func error(_ path: String) -> String? { issues.first { $0.path == path }.map { apiMessage($0.message) } }
 }

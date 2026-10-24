@@ -13,25 +13,26 @@ struct ApplicationsView: View {
     var body: some View {
         List {
             if model.failed {
-                Text("保存できませんでした / Could not save").foregroundStyle(.red)
+                Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).foregroundStyle(.red)
             }
             switch model.applications {
             case nil:
                 ProgressView()
             case let apps? where apps.isEmpty:
-                ContentUnavailableView("まだ応募がありません", systemImage: "tray", description: Text("No applications yet — tap + to add one."))
+                ContentUnavailableView(tr("まだ応募がありません", "No applications yet", "Pas encore de candidature"), systemImage: "tray", description: Text(tr("＋ で追加できます", "Tap + to add one", "Touchez + pour en ajouter une")))
             default:
                 ForEach(model.sections, id: \.stage.id) { section in
-                    Section("\(section.stage.ja) / \(section.stage.en) · \(section.items.count)") {
+                    Section("\(section.stage.name) · \(section.items.count)") {
                         ForEach(section.items) { app in row(app) }
                     }
                 }
             }
         }
-        .navigationTitle("応募")
+        .navigationTitle(tr("応募", "Applications", "Candidatures"))
+        .cleanList()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button { editing = EditorTarget(app: nil) } label: { Label("追加 / Add", systemImage: "plus") }
+                Button { editing = EditorTarget(app: nil) } label: { Label(tr("追加", "Add", "Ajouter"), systemImage: "plus") }
             }
         }
         .task { if model.applications == nil { await model.load() } }
@@ -66,7 +67,7 @@ struct ApplicationsView: View {
         }
         .contextMenu {
             ForEach(SelectionStage.all) { stage in
-                Button("\(stage.ja) / \(stage.en)") { Task { await model.move(app, to: stage.id) } }
+                Button(stage.name) { Task { await model.move(app, to: stage.id) } }
                     .disabled(stage.id == app.status)
             }
         }
@@ -88,66 +89,66 @@ struct ApplicationEditor: View {
     var body: some View {
         Form {
             Section {
-                TextField("企業名 / Company *", text: $input.company)
+                TextField(tr("企業名", "Company *", "Entreprise *"), text: $input.company)
                 if let e = error("company") { Text(e).font(.caption).foregroundStyle(.red) }
-                TextField("職種 / Position", text: optional($input.position))
-                TextField("採用ページ / Careers page URL", text: optional($input.url))
+                TextField(tr("職種", "Position", "Poste"), text: optional($input.position))
+                TextField(tr("採用ページ", "Careers page URL", "Page recrutement (URL)"), text: optional($input.url))
                     .keyboardType(.URL).textInputAutocapitalization(.never)
                 if let e = error("url") { Text(e).font(.caption).foregroundStyle(.red) }
-                Picker("状況 / Status", selection: $input.status) {
-                    ForEach(SelectionStage.all) { Text("\($0.ja) / \($0.en)").tag($0.id) }
+                Picker(tr("状況", "Status", "Statut"), selection: $input.status) {
+                    ForEach(SelectionStage.all) { Text($0.name).tag($0.id) }
                 }
             }
             Section {
-                Picker("業界 / Industry", selection: $input.industry) {
+                Picker(tr("業界", "Industry", "Secteur"), selection: $input.industry) {
                     Text("—").tag(String?.none)
-                    ForEach(CompanyProfile.industries) { Text("\($0.ja) / \($0.en)").tag(Optional($0.id)) }
+                    ForEach(CompanyProfile.industries) { Text($0.name).tag(Optional($0.id)) }
                 }
-                Picker("企業の種類 / Company type", selection: $input.companyType) {
+                Picker(tr("企業の種類", "Company type", "Type d'entreprise"), selection: $input.companyType) {
                     Text("—").tag(String?.none)
-                    ForEach(CompanyProfile.types) { Text("\($0.ja) / \($0.en)").tag(Optional($0.id)) }
+                    ForEach(CompanyProfile.types) { Text($0.name).tag(Optional($0.id)) }
                 }
-                TextField("企業メモ / Notes on the company", text: optional($input.notes), axis: .vertical)
+                TextField(tr("企業メモ", "Notes on the company", "Notes sur l'entreprise"), text: optional($input.notes), axis: .vertical)
                     .lineLimit(3...8)
                 if let e = error("notes") { Text(e).font(.caption).foregroundStyle(.red) }
             } header: {
-                Text("企業について / About the company")
+                Text(tr("企業について", "About the company", "À propos de l'entreprise"))
             } footer: {
-                Text("面接練習の質問に使います / Used to tailor interview practice")
+                Text(tr("面接練習の質問に使います", "Used to tailor interview practice", "Sert à adapter l'entraînement aux entretiens"))
             }
-            Section("選考ステップ・締切 / Steps and deadlines") {
+            Section(tr("選考ステップ・締切", "Steps and deadlines", "Étapes et échéances")) {
                 ForEach($input.steps) { $step in
                     VStack(alignment: .leading) {
-                        Picker("選考 / Step", selection: $step.type) {
-                            ForEach(SelectionStage.stepTypes) { Text("\($0.ja) / \($0.en)").tag($0.id) }
+                        Picker(tr("選考", "Step", "Étape"), selection: $step.type) {
+                            ForEach(SelectionStage.stepTypes) { Text($0.name).tag($0.id) }
                         }
-                        DatePicker("締切・日程 / Date", selection: date($step.dueDate), displayedComponents: .date)
-                        Toggle("完了 / Done", isOn: $step.done)
-                        TextField("メモ / Note", text: optional($step.note))
+                        DatePicker(tr("締切・日程", "Date", "Date"), selection: date($step.dueDate), displayedComponents: .date)
+                        Toggle(tr("完了", "Done", "Fait"), isOn: $step.done)
+                        TextField(tr("メモ", "Note", "Note"), text: optional($step.note))
                     }
                 }
                 .onDelete { input.steps.remove(atOffsets: $0) }
-                Button("＋ 追加 / Add") { input.steps.append(.init()) }
+                Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.steps.append(.init()) }
             }
-            if failed { Section { Text("保存できませんでした / Could not save").foregroundStyle(.red) } }
+            if failed { Section { Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).foregroundStyle(.red) } }
             if let app {
                 Section {
                     NavigationLink {
                         InterviewView(model: InterviewModel(api: api, applicationId: app.id))
                     } label: {
-                        Label("面接を練習する / Practise the interview", systemImage: "mic")
+                        Label(tr("面接を練習する", "Practise the interview", "S'entraîner pour l'entretien"), systemImage: "mic")
                     }
                 }
                 Section {
-                    Button("削除 / Delete", role: .destructive) { Task { await onDelete(app); dismiss() } }
+                    Button(tr("削除", "Delete", "Supprimer"), role: .destructive) { Task { await onDelete(app); dismiss() } }
                 }
             }
         }
-        .navigationTitle(app?.company ?? "新しい応募")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(app?.company ?? tr("新しい応募", "New application", "Nouvelle candidature"))
+        .cleanList()
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("閉じる / Close") { dismiss() } }
-            ToolbarItem(placement: .confirmationAction) { Button("保存 / Save") { Task { await save() } } }
+            ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
+            ToolbarItem(placement: .confirmationAction) { Button(tr("保存", "Save", "Enregistrer")) { Task { await save() } } }
         }
         .onAppear { if let app { input = JobApplicationInput(app) } }
     }
@@ -170,7 +171,7 @@ struct ApplicationEditor: View {
         }
     }
 
-    private func error(_ path: String) -> String? { issues.first { $0.path == path }?.message }
+    private func error(_ path: String) -> String? { issues.first { $0.path == path }.map { apiMessage($0.message) } }
 
     private func optional(_ value: Binding<String?>) -> Binding<String> {
         Binding(get: { value.wrappedValue ?? "" },

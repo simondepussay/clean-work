@@ -104,7 +104,9 @@ final class EsEditorModelTests: XCTestCase {
         let model = EsEditorModel(api: api(), draft: nil)
         let id = await model.save()
         XCTAssertNil(id)
-        XCTAssertEqual(model.error("question"), "入力してください / Required")
+        UserDefaults.standard.set("en", forKey: HelpLanguage.storageKey)
+        defer { UserDefaults.standard.removeObject(forKey: HelpLanguage.storageKey) }
+        XCTAssertEqual(model.error("question"), "Required")
     }
 }
 
