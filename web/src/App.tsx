@@ -97,7 +97,7 @@ function SignedOut() {
   const tr = useTr();
   return (
     <section className="hero welcome">
-      <p className="eyebrow">{tr({ ja: "留学生のための就活アプリ", en: "For international students in Japan", fr: "Pour les étudiants étrangers au Japon" })}</p>
+      <p className="eyebrow">{tr({ ja: "日本人も外国人も使える就活アプリ", en: "Job hunting in Japan, for Japanese and international students", fr: "La recherche d'emploi au Japon, pour Japonais et étrangers" })}</p>
       <h1>Clean Work</h1>
       <p className="lead">{tr({ ja: "就活に必要なものを、ひとつの場所に。", en: "Everything for your job hunt, in one place.", fr: "Tout pour votre recherche d'emploi, au même endroit." })}</p>
       {auth.state.status === "signedOut" && (
