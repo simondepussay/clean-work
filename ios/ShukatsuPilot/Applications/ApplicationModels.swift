@@ -77,8 +77,8 @@ enum SelectionStage {
     /// Types d'étape datée (tout sauf « 気になる »).
     static let stepTypes = Array(flow.dropFirst())
 
-    /// Déjà postulé : tout ce qui vient après l'ES, y compris les candidatures terminées.
-    static func isApplied(_ status: String) -> Bool { !["interested", "es"].contains(status) }
+    /// « Postulée » : candidature envoyée, sans réponse pour l'instant (étape 応募済み).
+    static func isWaiting(_ status: String) -> Bool { status == "applied" }
 
     /// Recherche dans le nom, le poste et les notes, sans tenir compte des majuscules.
     static func matches(_ app: JobApplication, _ query: String) -> Bool {

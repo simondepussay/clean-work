@@ -29,8 +29,8 @@ export const CLOSED: (Named & { status: AppStatus })[] = [
 export const stepTypes = (lang: Lang): { value: StepType; label: string }[] => COLUMNS.filter((c) => c.status !== "interested")
   .map((c) => ({ value: c.status as StepType, label: c[lang] }));
 
-/** Statuts « déjà postulé » : tout ce qui vient après l'ES, y compris les candidatures terminées. */
-export const isApplied = (s: AppStatus) => !["interested", "es"].includes(s);
+/** « Postulée » : candidature envoyée, sans réponse pour l'instant (étape 応募済み). */
+export const isWaiting = (s: AppStatus) => s === "applied";
 
 /** Recherche dans le nom, le poste et les notes, sans tenir compte des majuscules. */
 export const matches = (a: { company: string; position?: string | null; notes?: string | null }, query: string) => {

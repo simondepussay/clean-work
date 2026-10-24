@@ -4,6 +4,7 @@ import SwiftUI
 struct ApplicationsView: View {
     @State var model: ApplicationsModel
     @State private var editing: EditorTarget?
+    @State private var showingWaiting = false
 
     struct EditorTarget: Identifiable {
         let id = UUID()
@@ -21,8 +22,12 @@ struct ApplicationsView: View {
             case let apps? where apps.isEmpty:
                 ContentUnavailableView(tr("まだ応募がありません", "No applications yet", "Pas encore de candidature"), systemImage: "tray", description: Text(tr("＋ で追加できます", "Tap + to add one", "Touchez + pour en ajouter une")))
             default:
-                Toggle(isOn: $model.appliedOnly) {
-                    Text(tr("応募済みのみ", "Applied only", "Postulées seulement")) + Text("  \(model.appliedCount)").foregroundStyle(.secondary)
+                Button { showingWaiting = true } label: {
+                    HStack {
+                        Label(tr("応募済み・返事待ち", "Applied, awaiting a reply", "Postulées, en attente de réponse"), systemImage: "paperplane")
+                        Spacer()
+                        Text("\(model.waiting.count)").foregroundStyle(.secondary)
+                    }
                 }
                 ForEach(model.sections, id: \.stage.id) { section in
                     Section("\(section.stage.name) · \(section.items.count)") {
@@ -41,6 +46,9 @@ struct ApplicationsView: View {
         }
         .task { if model.applications == nil { await model.load() } }
         .refreshable { await model.load() }
+        .sheet(isPresented: $showingWaiting) {
+            NavigationStack { WaitingList(apps: model.waiting) { app in showingWaiting = false; editing = EditorTarget(app: app) } }
+        }
         .sheet(item: $editing) { target in
             NavigationStack { ApplicationEditor(api: model.api, app: target.app, onSaved: model.saved, onDelete: { await model.delete($0) }) }
         }
@@ -190,5 +198,36 @@ struct ApplicationEditor: View {
         f.dateFormat = "yyyy-MM-dd"
         return Binding(get: { value.wrappedValue.flatMap(f.date(from:)) ?? .now },
                        set: { value.wrappedValue = f.string(from: $0) })
+    }
+}
+
+/// Fenêtre « 応募済み » : toutes les candidatures envoyées sans réponse, avec sa propre recherche.
+private struct WaitingList: View {
+    let apps: [JobApplication]
+    let onOpen: (JobApplication) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+
+    var body: some View {
+        let shown = apps.filter { SelectionStage.matches($0, query) }
+        List {
+            if shown.isEmpty {
+                Text(tr("該当する応募はありません", "No matching applications", "Aucune candidature correspondante")).foregroundStyle(.secondary)
+            }
+            ForEach(shown) { app in
+                Button { onOpen(app) } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(app.company).font(.headline).foregroundStyle(Color.cwBlue800)
+                        if let position = app.position { Text(position).font(.subheadline).foregroundStyle(.secondary) }
+                    }
+                }
+            }
+        }
+        .navigationTitle(tr("応募済み・返事待ち", "Awaiting a reply", "En attente de réponse") + " · \(apps.count)")
+        .cleanList()
+        .searchable(text: $query, prompt: tr("企業名・職種・メモで検索", "Search company, position, notes", "Chercher entreprise, poste, notes"))
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
+        }
     }
 }

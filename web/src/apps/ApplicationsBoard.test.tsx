@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Application } from "../api";
 import { AuthContext, type Auth } from "../auth/auth";
 import { ApplicationsBoard } from "./ApplicationsBoard";
-import { daysUntil, deadlineLabel, isApplied, matches, neighbour } from "./statuses";
+import { daysUntil, deadlineLabel, isWaiting, matches, neighbour } from "./statuses";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -51,9 +51,8 @@ describe("statuses", () => {
     expect(neighbour("rejected", 1)).toBeNull();
   });
 
-  it("« postulé » = tout ce qui vient après l'ES, et recherche dans nom, poste et notes", () => {
-    expect(["interested", "es"].map((s) => isApplied(s as never))).toEqual([false, false]);
-    expect(["applied", "interview1", "rejected"].map((s) => isApplied(s as never))).toEqual([true, true, true]);
+  it("« postulée » = envoyée sans réponse, et recherche dans nom, poste et notes", () => {
+    expect(["es", "applied", "interview1"].map((s) => isWaiting(s as never))).toEqual([false, true, false]);
     expect(matches({ company: "Sony", notes: "PlayStation チーム" }, "playstation")).toBe(true);
     expect(matches({ company: "Sony", position: null }, "楽天")).toBe(false);
     expect(matches({ company: "Sony" }, "  ")).toBe(true);
@@ -168,8 +167,8 @@ describe("ES et candidatures", () => {
   });
 });
 
-describe("recherche et filtre « 応募済み »", () => {
-  it("filtre les cartes par texte, puis ne montre que les candidatures envoyées", async () => {
+describe("recherche et fenêtre « 応募済み »", () => {
+  it("filtre les cartes par texte, puis ouvre et ferme la liste des candidatures sans réponse", async () => {
     server([app({ id: "a1", company: "楽天", status: "interested" }), app({ id: "a2", company: "ソニー", status: "applied", notes: "ゲーム事業" }),
       app({ id: "a3", company: "任天堂", status: "interview1" })]);
     renderBoard();
@@ -180,10 +179,13 @@ describe("recherche et filtre « 応募済み »", () => {
     expect(screen.getByText("ソニー")).toBeTruthy();
     await userEvent.clear(screen.getByRole("searchbox", { name: "応募を検索" }));
 
-    await userEvent.click(screen.getByRole("button", { name: /応募済み/ }));
-    expect(screen.queryByText("楽天")).toBeNull();
-    expect(screen.queryByRole("listitem", { name: "気になる" })).toBeNull();
-    expect(within(column(/応募済み/)).getByText("ソニー")).toBeTruthy();
-    expect(screen.getByText("任天堂")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /応募済み 1/ }));
+    const list = screen.getByRole("region", { name: "応募済み・返事待ち" });
+    expect(within(list).getByText("ソニー")).toBeTruthy();
+    expect(within(list).queryByText("任天堂")).toBeNull();
+    expect(screen.queryByRole("list", { name: "選考状況" })).toBeNull();
+
+    await userEvent.click(within(list).getByRole("button", { name: "閉じる" }));
+    expect(screen.getByRole("list", { name: "選考状況" })).toBeTruthy();
   });
 });

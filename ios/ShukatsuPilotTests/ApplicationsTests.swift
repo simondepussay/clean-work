@@ -75,7 +75,7 @@ final class ApplicationsModelTests: XCTestCase {
         let apps = [("interested", "楽天", nil), ("applied", "ソニー", "ゲーム事業"), ("interview1", "任天堂", nil)].enumerated().map { i, t in
             JobApplication(id: "a\(i)", company: t.1, status: t.0, steps: [], notes: t.2)
         }
-        XCTAssertEqual(apps.filter { SelectionStage.isApplied($0.status) }.map(\.company), ["ソニー", "任天堂"])
+        XCTAssertEqual(apps.filter { SelectionStage.isWaiting($0.status) }.map(\.company), ["ソニー"])
         XCTAssertEqual(apps.filter { SelectionStage.matches($0, "ゲーム") }.map(\.company), ["ソニー"])
         XCTAssertEqual(apps.filter { SelectionStage.matches($0, " ") }.count, 3)
         XCTAssertEqual(SelectionStage.neighbour(of: "es", 1), "applied")

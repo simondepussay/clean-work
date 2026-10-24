@@ -78,6 +78,8 @@ private final class DemoURLProtocol: URLProtocol {
         ["id": "a3", "company": "楽天グループ", "status": "interested", "steps": [] as [Any]],
         ["id": "a4", "company": "LINEヤフー", "status": "test",
          "steps": [["id": "s4", "type": "test", "dueDate": day(12), "done": false]], "nextDeadline": day(12)],
+        ["id": "a5", "company": "メルカリ", "position": "バックエンドエンジニア", "status": "applied", "steps": [] as [Any]],
+        ["id": "a6", "company": "トヨタ自動車", "position": "ソフトウェア開発", "status": "applied", "steps": [] as [Any]],
     ]}
 
     static var plans: [[String: Any]] {[

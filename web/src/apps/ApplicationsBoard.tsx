@@ -7,10 +7,10 @@ import {
 import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
 import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
-import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, isApplied, matches, neighbour, statusLabel, stepTypes } from "./statuses";
+import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, isWaiting, matches, neighbour, statusLabel, stepTypes } from "./statuses";
 import { apiMessage, useTr } from "../i18n";
 import { CalendarMenu } from "./CalendarMenu";
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
@@ -37,7 +37,8 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
   const [error, setError] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [query, setQuery] = useState("");
-  const [appliedOnly, setAppliedOnly] = useState(false);
+  /** Liste compacte de toutes les candidatures envoyées (à la place du tableau). */
+  const [appliedList, setAppliedList] = useState(false);
 
   async function token() {
     const t = await auth.getToken();
@@ -120,11 +121,12 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
   const esCount = (id: string) => drafts.filter((d) => d.applicationId === id).length;
   const set = (patch: Partial<ApplicationInput>) => setEditing((ed) => (ed ? { ...ed, form: { ...ed.form, ...patch } } : ed));
   const closedHint = { ja: "不合格・辞退", en: "Rejected or withdrawn", fr: "Refusé ou désisté" };
-  const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", fr: "Terminé", hint: closedHint, statuses: CLOSED.map((c) => c.status) }]
-    // « Postulées » : on cache les colonnes d'avant la candidature.
-    .filter((c) => !appliedOnly || c.statuses.every(isApplied));
-  const visible = apps.filter((a) => matches(a, query) && (!appliedOnly || isApplied(a.status)));
-  const appliedCount = apps.filter((a) => isApplied(a.status)).length;
+  const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", fr: "Terminé", hint: closedHint, statuses: CLOSED.map((c) => c.status) }];
+  const visible = apps.filter((a) => matches(a, query));
+  // Les plus récemment modifiées d'abord : c'est là qu'on attend une réponse.
+  const applied = visible.filter((a) => isWaiting(a.status)).sort((x, y) => y.updatedAt.localeCompare(x.updatedAt));
+  const open = (a: Application) => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes } }); };
+  const appliedCount = apps.filter((a) => isWaiting(a.status)).length;
 
   return (
     <section className="apps">
@@ -136,7 +138,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
             placeholder={tr({ ja: "企業名・職種・メモで検索", en: "Search company, position, notes", fr: "Chercher entreprise, poste, notes" })}
             aria-label={tr({ ja: "応募を検索", en: "Search applications", fr: "Chercher une candidature" })} />
         </label>
-        <button type="button" className="filter-toggle" aria-pressed={appliedOnly} onClick={() => setAppliedOnly((v) => !v)}>
+        <button type="button" className="filter-toggle" aria-pressed={appliedList} onClick={() => setAppliedList((v) => !v)}>
           {tr({ ja: "応募済み", en: "Applied", fr: "Postulées" })} <span>{appliedCount}</span>
         </button>
         <span className="muted">{tr({ ja: `${apps.length}社`, en: `${apps.length} companies`, fr: `${apps.length} entreprises` })}</span>
@@ -162,6 +164,32 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
         )}
       </section>
 
+      {appliedList ? (
+        <section className="applied-list" aria-label={tr({ ja: "応募済み・返事待ち", en: "Applied, awaiting a reply", fr: "Postulées, en attente de réponse" })}>
+          <div className="applied-head">
+            <h3>{tr({ ja: "応募済み・返事待ち", en: "Applied, awaiting a reply", fr: "Postulées, en attente de réponse" })} <span>{applied.length}</span></h3>
+            <button type="button" className="icon-button" onClick={() => setAppliedList(false)} aria-label={tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}><CloseIcon size={16} /></button>
+          </div>
+          {applied.length === 0 ? (
+            <p className="muted">{tr({ ja: "該当する応募はありません", en: "No matching applications", fr: "Aucune candidature correspondante" })}</p>
+          ) : (
+            <ul>
+              {applied.map((a) => {
+                const days = a.nextDeadline ? daysUntil(a.nextDeadline) : null;
+                return (
+                  <li key={a.id}>
+                    <button type="button" onClick={() => open(a)}>
+                      <strong>{a.company}</strong>
+                      <span className="muted">{a.position ?? ""}</span>
+                      <span className={days !== null && days <= 3 ? "due soon" : "due"}>{days !== null && days >= 0 ? deadlineLabel(days, lang) : ""}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      ) : (
       <div className="board" role="list" aria-label={tr({ ja: "選考状況", en: "Selection board", fr: "Suivi des candidatures" })}>
         {columns.map((col) => {
           const cards = visible.filter((a) => col.statuses.includes(a.status));
@@ -169,14 +197,18 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
           return (
             <div key={col.ja} className="column" role="listitem" aria-label={col[lang]}
               onDragOver={closed ? undefined : (e) => e.preventDefault()} onDrop={closed ? undefined : onDrop(col.status)}>
-              <h3 title={col.hint[lang]}>{col[lang]}<span>{cards.length}</span></h3>
+              {col.status === "applied" ? (
+                <h3 title={col.hint[lang]}><button type="button" className="column-link" onClick={() => setAppliedList(true)}>{col[lang]}</button><span>{cards.length}</span></h3>
+              ) : (
+                <h3 title={col.hint[lang]}>{col[lang]}<span>{cards.length}</span></h3>
+              )}
               {cards.map((a) => {
                 const days = a.nextDeadline ? daysUntil(a.nextDeadline) : null;
                 const prev = neighbour(a.status, -1);
                 const next = neighbour(a.status, 1);
                 return (
                   <article key={a.id} className="app-card" draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", a.id)}>
-                    <button className="app-open" onClick={() => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes } }); }}>
+                    <button className="app-open" onClick={() => open(a)}>
                       <strong>{a.company}</strong>
                       {a.position && <span>{a.position}</span>}
                       {closed && <span className="muted">{statusLabel(a.status, lang)}</span>}
@@ -197,6 +229,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
         })}
       </div>
 
+      )}
       {editing && (
         <form className="app-editor" onSubmit={save} noValidate aria-label={tr({ ja: "応募", en: "Application", fr: "Candidature" })}>
           <h3>{editing.id ? editing.form.company : tr({ ja: "新しい応募", en: "New application", fr: "Nouvelle candidature" })}</h3>
