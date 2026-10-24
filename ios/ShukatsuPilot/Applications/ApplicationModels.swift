@@ -18,6 +18,8 @@ struct JobApplication: Codable, Equatable, Identifiable {
         var id = UUID().uuidString
         var type = "es"
         var dueDate: String?
+        /// Heure (HH:MM, heure du Japon), surtout pour les entretiens : rappel d'encouragement 1 h avant.
+        var time: String?
         var done = false
         var note: String?
     }

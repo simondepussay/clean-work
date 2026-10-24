@@ -203,7 +203,7 @@ async function downloadPdf(token: string, path: string, options: object, fetcher
 
 export type StepType = "es" | "applied" | "test" | "interview1" | "interview2" | "final" | "offer";
 export type AppStatus = "interested" | StepType | "rejected" | "withdrawn";
-export type Step = { id: string; type: StepType; dueDate?: string; done: boolean; note?: string };
+export type Step = { id: string; type: StepType; dueDate?: string; time?: string; done: boolean; note?: string };
 export type Industry = "it" | "maker" | "trading" | "finance" | "consulting" | "retail" | "service" | "media" | "infrastructure" | "public" | "other";
 export type CompanyType = "large" | "sme" | "startup" | "foreign";
 export type ApplicationInput = {

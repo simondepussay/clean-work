@@ -1,16 +1,16 @@
 import { HttpRequest, InvocationContext } from "@azure/functions";
 import { describe, expect, it } from "vitest";
 import { pushRunHandler } from "../src/functions/pushRun";
-import { containers, type Application, type Device } from "../src/lib/models";
+import { containers, type Application, type Device, type Profile } from "../src/lib/models";
 import type { PushMessage, PushResult, PushSender } from "../src/lib/push";
-import { dueSoon, reminderMessage, runReminders, tokyoDate } from "../src/lib/reminders";
+import { dueSoon, idleMessage, jlptMessage, needsJlpt, reminderMessage, runReminders, tokyoDate, type JlptSchedule } from "../src/lib/reminders";
 import { MemoryStore } from "../src/lib/store";
 
 // 23 h UTC le 22 = 8 h le 23 à Tokyo : c'est l'heure du workflow.
 const NOW = new Date("2026-10-22T23:00:00Z");
 
 const application = (userId: string, company: string, steps: { type: string; dueDate: string; done?: boolean }[], status = "es") =>
-  ({ id: `${userId}-${company}`, userId, company, status, nextDeadline: null, createdAt: "", updatedAt: "",
+  ({ id: `${userId}-${company}`, userId, company, status, nextDeadline: null, createdAt: "2026-10-20T00:00:00Z", updatedAt: "2026-10-20T00:00:00Z",
     steps: steps.map((s, i) => ({ id: `s${i}`, done: false, ...s })) }) as Application;
 
 const device = (userId: string, token: string, updatedAt = "2026-10-01"): Device =>
@@ -100,6 +100,51 @@ describe("rappels du jour (S26)", () => {
     await store.markDeleted(containers.devices, "u1", { deletedAt: "2026-10-22", ttl: 100 });
     const sender = new FakeSender();
     expect(await runReminders(store, sender, NOW)).toMatchObject({ users: 0 });
+  });
+});
+
+describe("notifications personnalisées", () => {
+  const JLPT: JlptSchedule = { url: "https://info.jees-jlpt.jp/", sessions: [{ exam: "2027-07-04", open: "2026-10-23", close: "2026-11-13" }] };
+  const profile = (languages: { language: string; level: string }[]) => ({ id: "u1", userId: "u1", languages }) as unknown as Profile;
+
+  it("dans la langue de l'iPhone ; japonais + anglais pour une ancienne version sans langue", () => {
+    const due = { today: [{ company: "楽天", step: "interview1" }], tomorrow: [] };
+    expect(reminderMessage(due, "fr")).toEqual({ title: "Échéance aujourd'hui", body: "Aujourd'hui : 楽天 1er entretien" });
+    expect(reminderMessage(due, "ja")).toEqual({ title: "今日締切があります", body: "今日：楽天 一次面接" });
+    expect(reminderMessage(due)?.title).toBe("今日締切があります / Due today");
+  });
+
+  it("JLPT : seulement pour un japonais non natif renseigné dans le profil", () => {
+    expect(needsJlpt(profile([{ language: "fr", level: "native" }, { language: "ja", level: "business" }]))).toBe(true);
+    expect(needsJlpt(profile([{ language: "vi", level: "native" }]))).toBe(true);
+    expect(needsJlpt(profile([{ language: "ja", level: "native" }, { language: "en", level: "business" }]))).toBe(false);
+    expect(needsJlpt(profile([]))).toBe(false);
+    expect(needsJlpt(null)).toBe(false);
+  });
+
+  it("JLPT : le jour de l'ouverture, puis 3 jours avant la clôture", () => {
+    expect(jlptMessage(JLPT, "2026-10-23", "fr")).toMatchObject({ id: "jlpt-2027-07-04-open", message: { title: "Inscriptions au JLPT ouvertes" } });
+    expect(jlptMessage(JLPT, "2026-11-10", "ja")?.message.title).toBe("JLPTの申込み締切まであと3日");
+    expect(jlptMessage(JLPT, "2026-11-01", "ja")).toBeNull();
+  });
+
+  it("relance après 7 jours sans activité, pas avant, et jamais avec un 内定", () => {
+    const now = new Date("2026-10-28T00:00:00Z");
+    const old = application("u1", "楽天", [], "es");
+    expect(idleMessage([old], "2026-10-01", now, "ja")?.title).toBe("最近どうですか？");
+    expect(idleMessage([old], "2026-10-01", new Date("2026-10-25T00:00:00Z"), "ja")).toBeNull();
+    expect(idleMessage([old, application("u1", "ソニー", [], "offer")], "2026-10-01", now, "ja")).toBeNull();
+    expect(idleMessage([], "2026-10-01", now, "en")?.title).toBe("Add your first company?");
+  });
+
+  it("chaque sorte part une fois : échéances + JLPT + relance le même jour, puis plus rien en relançant la tâche", async () => {
+    const store = await seed([application("u1", "楽天", [{ type: "es", dueDate: "2026-10-23" }])], [{ ...device("u1", "aa"), language: "ja" }]);
+    await store.put(containers.applications, { ...application("u1", "楽天", [{ type: "es", dueDate: "2026-10-23" }]), updatedAt: "2026-10-01T00:00:00Z", createdAt: "2026-10-01T00:00:00Z" });
+    await store.put(containers.profiles, profile([{ language: "vi", level: "native" }]));
+    const sender = new FakeSender();
+    expect(await runReminders(store, sender, NOW, JLPT)).toMatchObject({ notified: 1, sent: 3 });
+    expect(sender.sent.map((s) => s.message.title)).toEqual(["今日締切があります", "JLPTの申込みが始まりました", "最近どうですか？"]);
+    expect(await runReminders(store, sender, NOW, JLPT)).toMatchObject({ sent: 0, skipped: 3 });
   });
 });
 

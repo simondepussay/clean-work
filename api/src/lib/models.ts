@@ -111,6 +111,9 @@ export const stepSchema = z.object({
   id: z.string().min(1),
   type: choice(stepTypes),
   dueDate: isoDate.optional(),
+  /** Heure (HH:MM, heure du Japon), surtout pour les entretiens : rappel d'encouragement 1 h avant. */
+  // Champ vidé dans le formulaire web (« ») = pas d'heure.
+  time: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "HH:MM").optional()),
   done: z.boolean().default(false),
   note: text(500).optional(),
 });
@@ -228,6 +231,8 @@ export const deviceInputSchema = z.object({
   /** Jeton d'appareil APNs, en hexadécimal (64 caractères aujourd'hui, Apple se réserve de l'allonger). */
   token: z.string().trim().toLowerCase().regex(/^[0-9a-f]{64,200}$/, "invalid device token"),
   environment: z.enum(pushEnvironments),
+  /** Langue choisie dans l'app (globe) : les notifications du serveur sont écrites dans cette langue. */
+  language: z.enum(["ja", "en", "fr"]).optional(),
 });
 
 export type DeviceInput = z.infer<typeof deviceInputSchema>;

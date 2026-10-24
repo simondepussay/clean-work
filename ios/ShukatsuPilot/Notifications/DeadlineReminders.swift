@@ -67,6 +67,41 @@ enum DeadlineReminders {
     }
 }
 
+/// Encouragement 1 h avant un entretien dont l'heure est connue. Programmé par l'iPhone (à la minute près),
+/// même quand le serveur envoie les autres rappels : le serveur, lui, ne tourne qu'une fois par jour.
+enum InterviewReminders {
+    static let prefix = "interview."
+    /// Les plus proches seulement : iOS garde au plus 64 rappels par app (60 pour les échéances).
+    static let max = 4
+    private static let interviews: Set<String> = ["interview1", "interview2", "final"]
+    private static let closed: Set<String> = ["rejected", "withdrawn"]
+
+    static func reminders(for apps: [JobApplication], now: Date = .now, calendar: Calendar = .current) -> [Reminder] {
+        // Dates et heures saisies sont celles du Japon.
+        var tokyo = Calendar(identifier: .gregorian)
+        tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        let items = apps.filter { !closed.contains($0.status) }.flatMap { app in
+            app.steps.compactMap { step -> (Date, Reminder)? in
+                guard interviews.contains(step.type), !step.done, let date = step.dueDate, let time = step.time else { return nil }
+                let d = date.split(separator: "-").compactMap { Int($0) }, t = time.split(separator: ":").compactMap { Int($0) }
+                guard d.count == 3, t.count == 2,
+                      let start = tokyo.date(from: DateComponents(year: d[0], month: d[1], day: d[2], hour: t[0], minute: t[1])) else { return nil }
+                let fire = start.addingTimeInterval(-3600)
+                guard fire > now else { return nil }
+                let stage = SelectionStage.name(step.type)
+                return (fire, Reminder(
+                    id: "\(prefix)\(step.id)",
+                    title: tr("まもなく面接です", "Interview in one hour", "Entretien dans une heure"),
+                    body: tr("\(app.company)の\(stage)まであと1時間。ここまでの準備を信じて、いってらっしゃい！",
+                             "\(stage) at \(app.company) in one hour. Trust the preparation you've done — you've got this!",
+                             "\(stage) chez \(app.company) dans une heure. Faites confiance à votre préparation : vous êtes prêt·e !"),
+                    fireAt: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire)))
+            }
+        }
+        return items.sorted { $0.0 < $1.0 }.prefix(max).map(\.1)
+    }
+}
+
 /// Ce dont on a besoin du centre de notifications (simulable dans les tests).
 protocol NotificationScheduling: AnyObject {
     func authorizationAllowed() async -> Bool
@@ -94,20 +129,30 @@ final class DeadlineReminderScheduler {
     @discardableResult
     func reschedule(_ apps: [JobApplication], now: Date = .now) async -> Int {
         await removeLocal()
-        let reminders = DeadlineReminders.reminders(for: apps, now: now)
-        // L'autorisation n'est demandée qu'au moment où il y a quelque chose à rappeler.
-        guard !reminders.isEmpty, await center.authorizationAllowed() else { return 0 }
-        // S26 : on (re)demande le jeton APNs. Si le serveur envoie déjà les rappels, pas de doublon local.
+        let interviews = InterviewReminders.reminders(for: apps, now: now)
+        let deadlines = DeadlineReminders.reminders(for: apps, now: now)
+        // L'autorisation n'est demandée ici qu'au moment où il y a quelque chose à rappeler (sinon : prepare()).
+        guard !(interviews + deadlines).isEmpty, await center.authorizationAllowed() else { return 0 }
+        // S26 : on (re)demande le jeton APNs.
         center.registerForRemoteNotifications()
-        guard !serverPushActive() else { return 0 }
+        // L'encouragement 1 h avant un entretien est toujours local ; les échéances seulement si le serveur ne s'en charge pas.
+        let reminders = serverPushActive() ? interviews : interviews + deadlines
         var added = 0
         for r in reminders where (try? await center.add(r)) != nil { added += 1 }
         return added
     }
 
+    /// À l'arrivée sur l'accueil : autorisation et jeton APNs, même sans échéance, car le serveur envoie
+    /// aussi les rappels JLPT et les relances. Appelé par l'app seulement (jamais dans les tests unitaires,
+    /// où la vraie question d'iOS attendrait une réponse indéfiniment).
+    func prepare() async {
+        guard await center.authorizationAllowed() else { return }
+        center.registerForRemoteNotifications()
+    }
+
     /// Retire nos rappels locaux (et seulement les nôtres).
     func removeLocal() async {
-        center.remove(await center.pendingIdentifiers().filter { $0.hasPrefix(DeadlineReminders.prefix) })
+        center.remove(await center.pendingIdentifiers().filter { $0.hasPrefix(DeadlineReminders.prefix) || $0.hasPrefix(InterviewReminders.prefix) })
     }
 }
 

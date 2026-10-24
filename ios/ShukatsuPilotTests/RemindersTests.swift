@@ -73,6 +73,43 @@ final class DeadlineRemindersTests: XCTestCase {
     }
 
     @MainActor
+    func testPrepareAsksPermissionAndAPNsEvenWithoutDeadlines() async {
+        // Le serveur envoie aussi les rappels JLPT et les relances : il faut le jeton APNs dès l'accueil.
+        let center = FakeCenter()
+        await DeadlineReminderScheduler(center: center).prepare()
+        XCTAssertEqual(center.authorizationAsked, 1)
+        XCTAssertEqual(center.apnsRequested, 1)
+    }
+
+    // MARK: encouragement 1 h avant un entretien
+
+    private func interview(_ id: String, _ date: String, _ time: String?, type: String = "interview1") -> JobApplication.Step {
+        .init(id: id, type: type, dueDate: date, time: time, done: false, note: nil)
+    }
+
+    func testInterviewReminderOneHourBeforeWithCompany() {
+        let r = InterviewReminders.reminders(for: [app("a", steps: [interview("i1", "2026-10-30", "14:00")])], now: now, calendar: calendar)
+        XCTAssertEqual(r.map(\.id), ["interview.i1"])
+        XCTAssertEqual(r[0].fireAt.day, 30); XCTAssertEqual(r[0].fireAt.hour, 13); XCTAssertEqual(r[0].fireAt.minute, 0)
+        XCTAssertTrue(r[0].body.contains("楽天"))
+    }
+
+    func testNoInterviewReminderWithoutTimeOrForOtherSteps() {
+        let steps = [interview("i1", "2026-10-30", nil), interview("e1", "2026-10-30", "14:00", type: "es"), interview("i2", "2026-10-22", "12:30")]
+        XCTAssertTrue(InterviewReminders.reminders(for: [app("a", steps: steps)], now: now, calendar: calendar).isEmpty,
+                      "sans heure, autre étape, ou déjà passé (12:30 - 1 h < midi)")
+    }
+
+    @MainActor
+    func testInterviewReminderKeptEvenWhenServerSendsDeadlines() async {
+        let center = FakeCenter()
+        let count = await DeadlineReminderScheduler(center: center, serverPushActive: { true })
+            .reschedule([app("a", steps: [interview("i1", "2026-10-30", "14:00")])], now: now)
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(center.added.map(\.id), ["interview.i1"])
+    }
+
+    @MainActor
     func testRefusedPermissionSchedulesNothing() async {
         let center = FakeCenter()
         center.allowed = false

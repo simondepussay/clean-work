@@ -5,7 +5,7 @@ import { useTr } from "../i18n";
 export type Field<T> = {
   key: keyof T & string;
   label: string;
-  type?: "text" | "month" | "date" | "select" | "textarea" | "checkbox";
+  type?: "text" | "month" | "date" | "time" | "select" | "textarea" | "checkbox";
   options?: { value: string; label: string }[];
   /** Pour une liste : texte de l'option vide (« choisir »), qui oblige à faire un choix. */
   placeholder?: string;

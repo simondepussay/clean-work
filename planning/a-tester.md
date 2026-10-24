@@ -70,6 +70,13 @@ Site : https://blue-rock-008b52800.2.azurestaticapps.net
 - [ ] Même chose en collant le texte du CV au lieu du PDF.
 - [ ] iPad : parcourir les 5 onglets en portrait et en paysage.
 
+## Notifications personnalisées (oct. 2026)
+
+- [ ] iPhone : mettre une heure à un 一次面接 dans 1 h 10 → l'encouragement « あと1時間 » arrive 1 h avant, avec le nom de l'entreprise.
+- [ ] Changer la langue avec le globe, rouvrir l'app → les notifications du serveur du lendemain matin arrivent dans cette langue.
+- [ ] Ne rien toucher dans 応募 pendant 7 jours → relance « 最近どうですか？ » (une fois par semaine au plus).
+- [ ] Quand JEES publie les dates 2027 : les ajouter dans api/content/jlpt.json (ou me le demander).
+
 ## Surveillance (S21, jour 9)
 
 - [ ] Vérifier que l'email d'Azure « ajouté au groupe d'actions » est bien arrivé sur depussay.simon@icloud.com (sinon les alertes n'arriveront pas).

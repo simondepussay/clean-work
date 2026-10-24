@@ -82,3 +82,12 @@ describe("/api/applications", () => {
       .toMatchObject({ issues: [{ path: "steps.0.dueDate" }] });
   });
 });
+
+describe("heure d'une étape (rappel 1 h avant l'entretien)", () => {
+  it("HH:MM accepté, champ vidé = pas d'heure, heure impossible refusée", async () => {
+    const { stepSchema } = await import("../src/lib/models");
+    expect(stepSchema.parse({ id: "s1", type: "interview1", dueDate: "2026-10-30", time: "14:30" }).time).toBe("14:30");
+    expect(stepSchema.parse({ id: "s1", type: "interview1", time: "" }).time).toBeUndefined();
+    expect(stepSchema.safeParse({ id: "s1", type: "interview1", time: "25:00" }).success).toBe(false);
+  });
+});

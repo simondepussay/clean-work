@@ -220,7 +220,8 @@ struct APIClient {
 
     /// Enregistre le jeton APNs de l'iPhone ; renvoie true si le serveur enverra les rappels.
     func registerDevice(token: String, environment: String) async throws -> Bool {
-        struct Body: Encodable { let token: String; let environment: String }
+        // La langue du globe : le serveur écrit ses notifications dans cette langue.
+        struct Body: Encodable { let token: String; let environment: String; var language = HelpLanguage.saved.rawValue }
         struct Reply: Decodable { let push: String }
         let data = try await send("POST", "api/devices", body: try JSONEncoder().encode(Body(token: token, environment: environment)))
         return try decode(Reply.self, from: data).push == "on"

@@ -1,0 +1,7 @@
+{
+  "_comment": "Périodes d'inscription au JLPT au Japon (JEES, https://info.jees-jlpt.jp/). À compléter dès que JEES publie les dates : le serveur envoie un rappel le jour de l'ouverture et 3 jours avant la clôture aux utilisateurs dont le japonais n'est pas la langue maternelle.",
+  "url": "https://info.jees-jlpt.jp/",
+  "sessions": [
+    { "exam": "2026-07-05", "open": "2026-03-17", "close": "2026-04-07" }
+  ]
+}

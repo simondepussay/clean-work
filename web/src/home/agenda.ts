@@ -32,6 +32,7 @@ export function buildAgenda(apps: Application[], plans: Plan[], lang: Lang = "ja
     .flatMap((a) => a.steps.filter((s) => s.dueDate).map((s): AgendaItem => ({
       key: `step-${a.id}-${s.id}`,
       date: s.dueDate!,
+      ...(s.time ? { time: s.time } : {}),
       kind: INTERVIEWS.has(s.type) ? "interview" : "step",
       title: a.company,
       detail: stepName(s.type, lang),

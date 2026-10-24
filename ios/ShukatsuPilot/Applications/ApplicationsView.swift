@@ -135,6 +135,16 @@ struct ApplicationEditor: View {
                             ForEach(SelectionStage.stepTypes) { Text($0.name).tag($0.id) }
                         }
                         DatePicker(tr("締切・日程", "Date", "Date"), selection: date($step.dueDate), displayedComponents: .date)
+                        if step.time == nil {
+                            Button(tr("＋ 時間", "＋ Time", "＋ Heure")) { step.time = "10:00" }
+                        } else {
+                            HStack {
+                                DatePicker(tr("時間", "Time", "Heure"), selection: time($step.time), displayedComponents: .hourAndMinute)
+                                Button { step.time = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(tr("時間を消す", "Remove the time", "Retirer l'heure"))
+                            }
+                        }
                         Toggle(tr("完了", "Done", "Fait"), isOn: $step.done)
                         TextField(tr("メモ", "Note", "Note"), text: optional($step.note))
                     }
@@ -188,6 +198,16 @@ struct ApplicationEditor: View {
     private func optional(_ value: Binding<String?>) -> Binding<String> {
         Binding(get: { value.wrappedValue ?? "" },
                 set: { value.wrappedValue = $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 })
+    }
+
+    /// Heure de l'étape au format de l'API (HH:MM, heure du Japon).
+    private func time(_ value: Binding<String?>) -> Binding<Date> {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "Asia/Tokyo")
+        f.dateFormat = "HH:mm"
+        return Binding(get: { value.wrappedValue.flatMap(f.date(from:)) ?? .now },
+                       set: { value.wrappedValue = f.string(from: $0) })
     }
 
     /// Date de l'étape au format de l'API (AAAA-MM-JJ) ; aujourd'hui tant qu'elle n'est pas choisie.

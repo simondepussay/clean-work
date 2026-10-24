@@ -36,7 +36,7 @@ enum Agenda {
         let steps = apps.filter { !closed.contains($0.status) }.flatMap { app in
             app.steps.compactMap { step -> AgendaItem? in
                 guard let date = step.dueDate else { return nil }
-                return AgendaItem(id: "step-\(app.id)-\(step.id)", date: date, time: nil,
+                return AgendaItem(id: "step-\(app.id)-\(step.id)", date: date, time: step.time,
                                   kind: interviews.contains(step.type) ? .interview : .step,
                                   title: app.company, detail: SelectionStage.name(step.type), done: step.done,
                                   applicationId: app.id, stepId: step.id)
@@ -109,6 +109,7 @@ final class HomeModel {
         // d'ouverture (SplashView) soit parti, pour que la question ne s'affiche pas par-dessus.
         // Si la vue est recréée entre-temps (tâche annulée), c'est le nouveau chargement qui s'en chargera.
         guard (try? await Task.sleep(for: .seconds(SplashView.duration + 0.5))) != nil else { return }
+        await DeadlineReminderScheduler.shared.prepare()
         await DeadlineReminderScheduler.shared.reschedule(applications)
     }
 
