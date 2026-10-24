@@ -5,6 +5,7 @@ import {
 } from "@azure/msal-browser";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthContext, type Auth, type AuthState } from "./auth";
+import { clearApiCache } from "../api";
 
 export type IdentityConfig = {
   configured: true;
@@ -56,8 +57,18 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
 
   const auth: Auth = {
     state,
-    signIn: () => pca.loginRedirect({ scopes }),
-    signOut: () => pca.logoutRedirect({ account: account ?? undefined }),
+    // prompt « login » : la page demande toujours l'e-mail et le mot de passe, même si la session
+    // de l'annuaire est encore ouverte (ordinateur partagé, changement de compte).
+    signIn: () => pca.loginRedirect({ scopes, prompt: "login" }),
+    // Déconnexion dans l'app seulement : on efface les jetons de ce navigateur et on revient tout de suite
+    // à la page d'accueil (connexion / création de compte), sans passer par la page « Choisir un compte »
+    // de l'annuaire.
+    signOut: async () => {
+      await pca.logoutRedirect({ account: account ?? undefined, onRedirectNavigate: () => false });
+      clearApiCache();
+      window.history.replaceState(null, "", "/");
+      setAccount(null);
+    },
     getToken: async () => {
       if (!account) return null;
       try {
