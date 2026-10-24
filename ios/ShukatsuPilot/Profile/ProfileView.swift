@@ -4,6 +4,7 @@ import SwiftUI
 struct ProfileView: View {
     @State var model: ProfileModel
     var onSaved: () async -> Void = {}
+    @State private var importing = false
 
     var body: some View {
         Form {
@@ -11,6 +12,15 @@ struct ProfileView: View {
             case .loading:
                 ProgressView()
             default:
+                Section {
+                    Button(tr("CVから入力", "Fill in from a CV", "Remplir depuis un CV"), systemImage: "doc.text.viewfinder") { importing = true }
+                    if model.imported {
+                        Text(tr("CVの内容を入力しました。確認してから「保存」を押してください。",
+                                "Your CV has been filled in. Check it, then press Save.",
+                                "Le contenu du CV a été rempli. Vérifiez-le, puis enregistrez."))
+                            .font(.callout).foregroundStyle(Color.cwBlue700)
+                    }
+                }
                 basics
                 educationSection
                 workSection
@@ -35,6 +45,9 @@ struct ProfileView: View {
             }
         }
         .task { if model.status == .loading { await model.load() } }
+        .sheet(isPresented: $importing) {
+            NavigationStack { CvImportView(api: model.api) { model.apply($0) } }
+        }
     }
 
     // MARK: Sections

@@ -63,6 +63,13 @@ Site : https://blue-rock-008b52800.2.azurestaticapps.net
 - [ ] 履歴書 : 西暦 puis 和暦, vérifier la mise en page et les formulations (statut 修了, 卒業見込み).
 - [ ] 職務経歴書 : avec une expérience décrite et un 職務要約 de 2 ou 3 phrases.
 
+## App iOS redessinée (Clean Work, oct. 2026)
+
+- [ ] Globe en haut : passer en 日本語 / English / Français, vérifier que tous les écrans changent (sauf les intercalaires).
+- [ ] Profil → « Remplir depuis un CV » : choisir un vrai CV en PDF, vérifier formations, diplômes, certifications et les dates signalées.
+- [ ] Même chose en collant le texte du CV au lieu du PDF.
+- [ ] iPad : parcourir les 5 onglets en portrait et en paysage.
+
 ## Surveillance (S21, jour 9)
 
 - [ ] Vérifier que l'email d'Azure « ajouté au groupe d'actions » est bien arrivé sur depussay.simon@icloud.com (sinon les alertes n'arriveront pas).
@@ -70,4 +77,4 @@ Site : https://blue-rock-008b52800.2.azurestaticapps.net
 
 ## Avant l'App Store (activité L)
 
-- [ ] Ajouter l'icône de l'app : l'archive a été refusée le 23/10 faute d'icône 120×120 (`CFBundleIconName`).
+- [x] Ajouter l'icône de l'app : l'archive a été refusée le 23/10 faute d'icône 120×120 (`CFBundleIconName`). → icône ajoutée (refaire une archive pour confirmer).

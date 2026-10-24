@@ -44,7 +44,7 @@ struct AccountView: View {
             }
         }
         .navigationTitle(tr("アカウント", "Account", "Compte"))
-        .navigationBarTitleDisplayMode(.inline)
+        .cleanList()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
         }
