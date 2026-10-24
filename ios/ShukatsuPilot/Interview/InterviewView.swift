@@ -32,17 +32,23 @@ struct InterviewView: View {
     private var setup: some View {
         Form {
             Section {
-                Picker("企業 / Company", selection: $model.applicationId) {
-                    Text("一般的な面接 / General").tag(String?.none)
-                    ForEach(model.applications) { app in
-                        Text(app.position.map { "\(app.company)（\($0)）" } ?? app.company).tag(Optional(app.id))
+                Picker(tr("どの面接の練習？", "Which interview?", "Pour quel entretien ?"), selection: $model.stepId) {
+                    ForEach(model.scheduled, id: \.step.id) { item in
+                        Text("\(item.step.dueDate ?? "") · \(item.app.company) · \(InterviewStage(rawValue: item.step.type)?.name ?? item.step.type)")
+                            .tag(Optional(item.step.id))
                     }
+                    Text(tr("企業と選考段階を選ぶ", "Choose a company and stage", "Choisir une entreprise et une étape")).tag(String?.none)
                 }
-                Picker("選考段階 / Stage", selection: $model.stage) {
-                    ForEach(InterviewStage.allCases) { Text("\($0.ja) / \($0.en)").tag($0) }
-                }
-                Picker("解説の言語 / Help language", selection: $model.language) {
-                    ForEach(HelpLanguage.allCases) { Text($0.label).tag($0) }
+                if model.stepId == nil {
+                    Picker(tr("企業", "Company", "Entreprise"), selection: $model.applicationId) {
+                        Text(tr("一般的な面接", "General interview", "Entretien général")).tag(String?.none)
+                        ForEach(model.applications) { app in
+                            Text(app.position.map { "\(app.company)（\($0)）" } ?? app.company).tag(Optional(app.id))
+                        }
+                    }
+                    Picker(tr("選考段階", "Stage", "Étape"), selection: $model.stage) {
+                        ForEach(InterviewStage.allCases) { Text($0.name).tag($0) }
+                    }
                 }
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {

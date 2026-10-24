@@ -24,9 +24,22 @@ final class InterviewModel {
 
     let api: APIClient
 
-    init(api: APIClient, applicationId: String? = nil) {
+    /// Entretien prévu de la candidature (« 一次面接 du 29/10 ») : la séance y est rattachée.
+    var stepId: String?
+
+    init(api: APIClient, applicationId: String? = nil, stepId: String? = nil) {
         self.api = api
         self.applicationId = applicationId
+        self.stepId = stepId
+    }
+
+    /// Les entretiens prévus dans les candidatures, le plus proche d'abord (pour « どの面接？ »).
+    var scheduled: [(app: JobApplication, step: JobApplication.Step)] {
+        let today = ISO8601DateFormatter.dayOnly.string(from: .now)
+        return applications
+            .filter { !["rejected", "withdrawn"].contains($0.status) }
+            .flatMap { app in app.steps.filter { ["interview1", "interview2", "final"].contains($0.type) && !$0.done && ($0.dueDate ?? "") >= today }.map { (app, $0) } }
+            .sorted { ($0.step.dueDate ?? "") < ($1.step.dueDate ?? "") }
     }
 
     var selectedApplication: JobApplication? { applications.first { $0.id == applicationId } }
@@ -43,7 +56,14 @@ final class InterviewModel {
         usage = await left
         // Présélection venue d'une candidature : l'étape suit son statut, une fois la liste chargée.
         if applicationId != nil { stage = .suggested(for: selectedApplication) }
+        // Par défaut (une seule fois) : l'entretien prévu le plus proche.
+        if !defaulted {
+            defaulted = true
+            if stepId == nil, applicationId == nil { stepId = scheduled.first?.step.id }
+        }
     }
+
+    private var defaulted = false
 
     private func run(_ call: () async throws -> Result<Interview, InterviewRefusal>) async -> Bool {
         busy = true
@@ -65,7 +85,10 @@ final class InterviewModel {
 
     func start() async {
         reviewing = nil
-        await run { try await api.startInterview(applicationId: applicationId, stage: stage, language: language) }
+        // Un entretien prévu fixe l'étape ; sinon, l'entreprise et l'étape choisies à la main.
+        let step = scheduled.first { $0.step.id == stepId }
+        let stage = step.flatMap { InterviewStage(rawValue: $0.step.type) } ?? self.stage
+        await run { try await api.startInterview(applicationId: step?.app.id ?? applicationId, stepId: step?.step.id, stage: stage, language: language) }
     }
 
     @discardableResult

@@ -35,9 +35,11 @@ targets:
     info:
       path: ShukatsuPilot/Info.plist
       properties:
-        CFBundleDisplayName: 就活パイロット
+        CFBundleDisplayName: Clean Work
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # iPad : toutes les orientations (exigé par l'App Store pour une app iPad en plein écran).
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         # Identifiants publics de l'annuaire (copiés de infra/identity.json) et adresse de l'API.
         EntraClientID: a4837883-e8be-4db5-b6d9-63a5204707cc
         EntraTenantSubdomain: shukatsupilot
@@ -51,7 +53,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.simondepussay.ShukatsuPilot
-        TARGETED_DEVICE_FAMILY: "1"
+        # iPhone et iPad.
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # Icône de l'app (catalogue Assets.xcassets) : exigée par l'App Store.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   ShukatsuPilotTests:
     type: bundle.unit-test
     platform: iOS

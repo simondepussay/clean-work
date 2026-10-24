@@ -59,18 +59,25 @@ struct JobApplicationInput: Encodable, Equatable {
 
 /// Étapes du 就活 (mêmes codes et même ordre que l'API et le web).
 enum SelectionStage {
-    struct Stage: Identifiable { let id: String; let ja: String; let en: String }
+    struct Stage: Identifiable {
+        let id: String; let ja: String; let en: String; var fr = ""
+        /// Dans la langue choisie (globe).
+        var name: String { tr(ja, en, fr.isEmpty ? en : fr) }
+    }
 
     static let flow: [Stage] = [
-        .init(id: "interested", ja: "気になる", en: "Interested"), .init(id: "es", ja: "ES", en: "Entry sheet"),
-        .init(id: "test", ja: "適性検査", en: "Aptitude test"), .init(id: "interview1", ja: "一次面接", en: "1st interview"),
-        .init(id: "interview2", ja: "二次面接", en: "2nd interview"), .init(id: "final", ja: "最終面接", en: "Final interview"),
-        .init(id: "offer", ja: "内定", en: "Offer"),
+        .init(id: "interested", ja: "気になる", en: "Interested", fr: "Intéressé"), .init(id: "es", ja: "ES", en: "Entry sheet", fr: "ES"),
+        .init(id: "test", ja: "適性検査", en: "Aptitude test", fr: "Test d'aptitude"), .init(id: "interview1", ja: "一次面接", en: "1st interview", fr: "1er entretien"),
+        .init(id: "interview2", ja: "二次面接", en: "2nd interview", fr: "2e entretien"), .init(id: "final", ja: "最終面接", en: "Final interview", fr: "Entretien final"),
+        .init(id: "offer", ja: "内定", en: "Offer", fr: "Offre"),
     ]
-    static let closed: [Stage] = [.init(id: "rejected", ja: "不合格", en: "Rejected"), .init(id: "withdrawn", ja: "辞退", en: "Withdrawn")]
+    static let closed: [Stage] = [.init(id: "rejected", ja: "不合格", en: "Rejected", fr: "Refusé"), .init(id: "withdrawn", ja: "辞退", en: "Withdrawn", fr: "Désisté")]
     static let all = flow + closed
     /// Types d'étape datée (tout sauf « 気になる »).
     static let stepTypes = Array(flow.dropFirst())
+
+    /// Nom d'une étape dans la langue choisie.
+    static func name(_ id: String) -> String { all.first { $0.id == id }?.name ?? id }
 
     static func label(_ id: String) -> String {
         all.first { $0.id == id }.map { "\($0.ja) / \($0.en)" } ?? id

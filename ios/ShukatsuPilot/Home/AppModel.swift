@@ -40,6 +40,9 @@ final class AppModel {
 
     /// Modèle de production : MSAL et l'API définie dans Info.plist.
     static func live() -> AppModel {
+        #if DEBUG
+        if DemoMode.isOn { return DemoMode.model() }
+        #endif
         guard AppConfig.isConfigured, let baseURL = AppConfig.apiBaseURL else {
             return AppModel(account: nil, api: nil)
         }

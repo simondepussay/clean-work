@@ -39,6 +39,6 @@ enum HelpLanguage: String, CaseIterable, Identifiable {
 
     static let storageKey = "help-language"
     static var saved: HelpLanguage {
-        HelpLanguage(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .en
+        HelpLanguage(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? deviceDefault
     }
 }

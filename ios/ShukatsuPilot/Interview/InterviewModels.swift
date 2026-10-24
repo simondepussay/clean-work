@@ -10,6 +10,14 @@ enum InterviewStage: String, Codable, CaseIterable, Identifiable {
     var en: String {
         switch self { case .interview1: "1st interview"; case .interview2: "2nd interview"; case .final: "Final interview" }
     }
+    /// Dans la langue choisie.
+    var name: String {
+        switch self {
+        case .interview1: tr("一次面接", "1st interview", "1er entretien")
+        case .interview2: tr("二次面接", "2nd interview", "2e entretien")
+        case .final: tr("最終面接", "Final interview", "Entretien final")
+        }
+    }
 
     /// L'étape qui suit le statut actuel de la candidature (même règle que le web).
     static func suggested(for app: JobApplication?) -> InterviewStage {

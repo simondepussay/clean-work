@@ -185,9 +185,9 @@ struct APIClient {
         try await send("DELETE", "api/interviews/\(id)")
     }
 
-    func startInterview(applicationId: String?, stage: InterviewStage, language: HelpLanguage) async throws -> Result<Interview, InterviewRefusal> {
-        struct Body: Encodable { let applicationId: String?; let stage: InterviewStage; let language: String }
-        return try await interviewCall("api/interviews", Body(applicationId: applicationId, stage: stage, language: language.rawValue))
+    func startInterview(applicationId: String?, stepId: String? = nil, stage: InterviewStage, language: HelpLanguage) async throws -> Result<Interview, InterviewRefusal> {
+        struct Body: Encodable { let applicationId: String?; let stepId: String?; let stage: InterviewStage; let language: String }
+        return try await interviewCall("api/interviews", Body(applicationId: applicationId, stepId: stepId, stage: stage, language: language.rawValue))
     }
 
     func answerInterview(_ id: String, answer: String, durationSec: Int?, spoken: Bool) async throws -> Result<Interview, InterviewRefusal> {
@@ -233,7 +233,14 @@ struct APIClient {
 
     /// Requête brute : données et code HTTP, sans interprétation.
     private func raw(_ method: String, _ path: String, body: Data? = nil) async throws -> (Data, Int) {
-        var request = URLRequest(url: baseURL.appending(path: path))
+        // Un « ?… » éventuel est une requête, pas une partie du chemin (sinon il serait encodé).
+        let parts = path.split(separator: "?", maxSplits: 1).map(String.init)
+        var url = baseURL.appending(path: parts[0])
+        if parts.count == 2, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            components.percentEncodedQuery = parts[1]
+            url = components.url ?? url
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(try await token(), forHTTPHeaderField: Self.tokenHeader)
         if let body {
@@ -245,6 +252,12 @@ struct APIClient {
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         return (data, http.statusCode)
+    }
+
+    /// Pour les extensions (NewFeatures.swift) : même gestion des erreurs que les autres appels.
+    @discardableResult
+    func sendRaw(_ method: String, _ path: String, body: Data? = nil) async throws -> Data {
+        try await send(method, path, body: body)
     }
 
     @discardableResult

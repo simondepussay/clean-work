@@ -17,16 +17,13 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        NavigationStack {
-            switch model.phase {
-            case .disabled:
-                ContentUnavailableView("サインインは準備中です", systemImage: "clock",
-                                       description: Text("Sign-in coming soon"))
-            case .signedOut:
-                AuthView()
-            case .signedIn:
-                HomeView()
-            }
+        switch model.phase {
+        case .disabled:
+            ContentUnavailableView(tr("サインインは準備中です", "Sign-in coming soon", "Connexion bientôt disponible"), systemImage: "clock")
+        case .signedOut:
+            NavigationStack { AuthView() }
+        case .signedIn:
+            MainView()
         }
     }
 }
