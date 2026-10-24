@@ -15,8 +15,23 @@ struct ShukatsuPilotApp: App {
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    /// L'écran d'ouverture reste un court instant, le temps que l'accueil charge ses données dessous.
+    @State private var splash = true
 
     var body: some View {
+        ZStack {
+            content
+            if splash {
+                SplashView().transition(.opacity).zIndex(1)
+            }
+        }
+        .task {
+            try? await Task.sleep(for: .seconds(SplashView.duration))
+            withAnimation(.easeInOut(duration: 0.4)) { splash = false }
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         switch model.phase {
         case .disabled:
             ContentUnavailableView(tr("サインインは準備中です", "Sign-in coming soon", "Connexion bientôt disponible"), systemImage: "clock")

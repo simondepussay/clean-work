@@ -105,6 +105,10 @@ final class HomeModel {
         applications = await apps ?? applications
         plans = await own ?? plans
         loaded = true
+        // Au premier lancement, iOS demande l'autorisation des notifications : on attend que l'écran
+        // d'ouverture (SplashView) soit parti, pour que la question ne s'affiche pas par-dessus.
+        // Si la vue est recréée entre-temps (tâche annulée), c'est le nouveau chargement qui s'en chargera.
+        guard (try? await Task.sleep(for: .seconds(SplashView.duration + 0.5))) != nil else { return }
         await DeadlineReminderScheduler.shared.reschedule(applications)
     }
 

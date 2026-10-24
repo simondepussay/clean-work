@@ -36,7 +36,11 @@ targets:
       path: ShukatsuPilot/Info.plist
       properties:
         CFBundleDisplayName: Clean Work
-        UILaunchScreen: {}
+        # Écran de lancement d'iOS : le logo au centre sur fond blanc, à la même place que dans SplashView.
+        UILaunchScreen:
+          UIImageName: LaunchLogo
+          UIColorName: LaunchBackground
+          UIImageRespectsSafeAreaInsets: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         # iPad : toutes les orientations (exigé par l'App Store pour une app iPad en plein écran).
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
