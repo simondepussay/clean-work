@@ -86,6 +86,13 @@ describe("App", () => {
     expect(auth.signIn).toHaveBeenCalled();
   });
 
+  it("propose de créer un compte sous la connexion", async () => {
+    stubApi();
+    const auth = renderWith({ state: { status: "signedOut" }, signUp: vi.fn() });
+    await userEvent.click(screen.getByRole("button", { name: "アカウントを作成" }));
+    expect(auth.signUp).toHaveBeenCalled();
+  });
+
   it("une fois connecté, appelle /api/me avec le jeton et affiche le compte", async () => {
     const fetchMock = stubApi();
     renderWith({ state: { status: "signedIn", email: "simon@example.com", name: "Simon" }, getToken: async () => "jeton" });

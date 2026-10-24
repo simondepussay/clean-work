@@ -101,7 +101,12 @@ function SignedOut() {
       <h1>Clean Work</h1>
       <p className="lead">{tr({ ja: "迷わない毎日へ。", en: "Toward days without feeling lost.", fr: "Vers des journées où l'on ne se perd plus." })}</p>
       {auth.state.status === "signedOut" && (
-        <button className="primary large" onClick={() => auth.signIn()}>{tr({ ja: "サインイン", en: "Sign in", fr: "Se connecter" })}</button>
+        <div className="welcome-actions">
+          <button className="primary large" onClick={() => auth.signIn()}>{tr({ ja: "サインイン", en: "Sign in", fr: "Se connecter" })}</button>
+          {auth.signUp && (
+            <button className="large" onClick={() => auth.signUp?.()}>{tr({ ja: "アカウントを作成", en: "Create an account", fr: "Créer un compte" })}</button>
+          )}
+        </div>
       )}
       {auth.state.status === "disabled" && <p className="muted">{tr({ ja: "サインインは準備中です", en: "Sign-in coming soon", fr: "Connexion bientôt disponible" })}</p>}
       {auth.state.status === "loading" && <Loader />}

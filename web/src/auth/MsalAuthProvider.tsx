@@ -60,6 +60,8 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
     // prompt « login » : la page demande toujours l'e-mail et le mot de passe, même si la session
     // de l'annuaire est encore ouverte (ordinateur partagé, changement de compte).
     signIn: () => pca.loginRedirect({ scopes, prompt: "login" }),
+    // prompt « create » : External ID ouvre directement l'inscription au lieu de la connexion.
+    signUp: () => pca.loginRedirect({ scopes, prompt: "create" }),
     // Déconnexion dans l'app seulement : on efface les jetons de ce navigateur et on revient tout de suite
     // à la page d'accueil (connexion / création de compte), sans passer par la page « Choisir un compte »
     // de l'annuaire.

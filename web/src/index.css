@@ -73,7 +73,9 @@ button { font: inherit; padding: 8px 16px; border-radius: 999px; border: 1px sol
 button:hover { border-color: var(--blue-500); background: var(--blue-50); }
 button.primary { background: var(--bordeaux); border-color: var(--bordeaux); color: #fff; font-weight: 600; }
 button.primary:hover { background: var(--bordeaux-600); border-color: var(--bordeaux-600); }
-button.primary.large { padding: 12px 28px; font-size: 17px; }
+button.large { padding: 12px 28px; font-size: 17px; }
+.welcome-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.welcome-actions button { min-width: 220px; }
 button.danger { border-color: var(--bordeaux); color: var(--bordeaux); }
 button.danger:hover { background: var(--bordeaux-50); }
 button:disabled { opacity: .5; cursor: default; }

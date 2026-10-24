@@ -10,6 +10,8 @@ export type AuthState =
 export interface Auth {
   state: AuthState;
   signIn(): Promise<void>;
+  /** Ouvre directement le formulaire de création de compte (facultatif : absent dans les tests et la démo). */
+  signUp?(): Promise<void>;
   signOut(): Promise<void>;
   /** Jeton d'accès pour l'API, ou null si l'utilisateur n'est pas connecté. */
   getToken(): Promise<string | null>;
