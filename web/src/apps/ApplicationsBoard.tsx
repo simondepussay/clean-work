@@ -10,6 +10,7 @@ import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
 import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, isWaiting, matches, neighbour, statusLabel, stepTypes } from "./statuses";
 import { apiMessage, useTr } from "../i18n";
 import { CalendarMenu } from "./CalendarMenu";
+import { CompanyFacts } from "./CompanyFacts";
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
@@ -126,7 +127,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
   const visible = apps.filter((a) => matches(a, query));
   // Les plus récemment modifiées d'abord : c'est là qu'on attend une réponse.
   const applied = visible.filter((a) => isWaiting(a.status)).sort((x, y) => y.updatedAt.localeCompare(x.updatedAt));
-  const open = (a: Application) => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes } }); };
+  const open = (a: Application) => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes, corporateNumber: a.corporateNumber, location: a.location } }); };
   const appliedCount = apps.filter((a) => isWaiting(a.status)).length;
 
   return (
@@ -270,6 +271,8 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
               </select>
             </label>
           </div>
+          <CompanyFacts company={editing.form.company} corporateNumber={editing.form.corporateNumber}
+            onLink={(m) => set({ corporateNumber: m?.corporateNumber ?? null, location: m?.location ?? null })} />
           <label className={errors.has("notes") ? "invalid" : undefined}>
             <span>{tr({ ja: "企業メモ・求人票", en: "Notes and job offer", fr: "Notes et offre d'emploi" })}</span>
             <textarea rows={6} maxLength={5000} value={editing.form.notes ?? ""} onChange={(e) => set({ notes: e.target.value })}

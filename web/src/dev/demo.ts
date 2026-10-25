@@ -20,8 +20,8 @@ const inDays = (n: number) => new Date(today.getTime() + n * 86400_000).toISOStr
 const applications = [
   { id: "a1", company: "株式会社サイバーエージェント", position: "ゲームプランナー", industry: "it", companyType: "large", notes: "Cygames。若手に裁量を与える文化。",
     status: "es", steps: [{ id: "s1", type: "es", dueDate: inDays(2), done: false }], nextDeadline: inDays(2), createdAt: "", updatedAt: "" },
-  { id: "a2", company: "ソニーグループ", position: "エンジニア", industry: "maker", companyType: "large",
-    status: "interview1", steps: [{ id: "s2", type: "interview1", dueDate: inDays(6), done: false }], nextDeadline: inDays(6), createdAt: "", updatedAt: "" },
+  { id: "a2", company: "ソニーグループ", position: "エンジニア", industry: "maker", companyType: "large", corporateNumber: "5010401067252", location: "東京都港区港南１丁目７番１号",
+    status: "interview1", steps: [{ id: "s2", type: "interview1", dueDate: inDays(6), time: "14:00", done: false }], nextDeadline: inDays(6), createdAt: "", updatedAt: "" },
   { id: "a3", company: "楽天グループ", status: "interested", steps: [], nextDeadline: null, createdAt: "", updatedAt: "" },
   { id: "a4", company: "LINEヤフー", status: "test", steps: [{ id: "s4", type: "test", dueDate: inDays(12), done: false }], nextDeadline: inDays(12), createdAt: "", updatedAt: "" },
   { id: "a5", company: "メルカリ", position: "バックエンドエンジニア", status: "applied", steps: [], nextDeadline: null, createdAt: "", updatedAt: "2026-10-22" },
@@ -96,6 +96,25 @@ const routes: Record<string, unknown> = {
   "GET /api/interviews": [{ id: "i0", company: "ソニーグループ", applicationId: "a2", stage: "interview1", status: "finished", score: 68, questions: 6, createdAt: today.toISOString() }],
   "GET /api/interview-usage": { today: 3, month: 19 },
   "POST /api/interviews": interview,
+  // Données ouvertes (exemples ; « * » = préfixe).
+  "GET /api/holidays": { "2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日", "2027-01-01": "元日", "2027-01-11": "成人の日", "2027-02-11": "建国記念の日" },
+  "GET /api/weather*": { date: "", prefecture: "東京都", kind: "rain", rainChance: 70, tMax: 18, tMin: 12 },
+  "GET /api/postal/*": { postalCode: "160-0023", address: "東京都新宿区西新宿", prefecture: "東京都" },
+  "GET /api/company/search*": [
+    { corporateNumber: "5010401067252", name: "ソニーグループ株式会社", location: "東京都港区港南１丁目７番１号" },
+    { corporateNumber: "1010401000001", name: "ソニー生命保険株式会社", location: "東京都千代田区大手町１丁目９番２号" },
+  ],
+  "GET /api/company/*": {
+    corporateNumber: "5010401067252", name: "ソニーグループ株式会社", location: "東京都港区港南１丁目７番１号", url: "https://www.sony.com/ja/",
+    employees: 1800, capital: 880000000000, founded: 1946, summary: "エレクトロニクス、ゲーム、音楽、映画、金融などの事業を行うグループの本社機能。",
+    labels: [
+      { id: "kurumin", title: "プラチナくるみん認定", date: "2022-06-01" },
+      { id: "eruboshi", title: "えるぼし認定（3段階目）", date: "2021-04-01" },
+      { id: "kenkou", title: "健康経営優良法人（大規模法人部門）", date: "2025-03-10" },
+      { id: null, title: "ISO 14001", date: null },
+    ],
+    workplace: { averageAge: 43.1, averageYears: 18.2, overtimeHours: 17.5, femaleWorkersPct: 26, femaleManagersPct: 13, paternityLeavePct: 82 },
+  },
 };
 
 /** Remplace `fetch` pour les appels à /api par les données d'exemple ci-dessus. */
@@ -109,7 +128,8 @@ export function installDemoApi() {
     // Ajout ou modification : on renvoie ce qui a été envoyé, avec un identifiant.
     const sent = typeof init?.body === "string" ? JSON.parse(init.body) : {};
     const echo = { id: crypto.randomUUID(), done: false, createdAt: "", updatedAt: "", ...plans.find((p) => url.endsWith(p.id)), ...sent };
-    const body = key in routes ? routes[key] : method === "GET" ? [] : echo;
+    const prefix = Object.keys(routes).find((k) => k.endsWith("*") && key.startsWith(k.slice(0, -1)));
+    const body = key in routes ? routes[key] : prefix ? routes[prefix] : method === "GET" ? [] : echo;
     await new Promise((r) => setTimeout(r, 150));
     return new Response(JSON.stringify(body), { status: method === "POST" ? 201 : method === "DELETE" ? 200 : 200, headers: { "content-type": "application/json" } });
   };

@@ -37,3 +37,14 @@ export const ChatIcon = (p: IconProps) => <Icon {...p}><path d="M20 12a7.5 7.5 0
 export const TrashIcon = (p: IconProps) => <Icon {...p}><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5l1-12.5M9.5 7V4.5h5V7" /></Icon>;
 export const HomeIcon = (p: IconProps) => <Icon {...p}><path d="M4 11l8-6.5 8 6.5M6 9.5V20h12V9.5" /></Icon>;
 export const GlobeIcon = (p: IconProps) => <Icon {...p}><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.3 2.4 3.5 5.2 3.5 8.5s-1.2 6.1-3.5 8.5c-2.3-2.4-3.5-5.2-3.5-8.5S9.7 5.9 12 3.5z" /></Icon>;
+
+// Météo du jour de l'entretien (Open-Meteo) et fiche entreprise (gBizINFO).
+export const SunIcon = (p: IconProps) => <Icon {...p}><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" /></Icon>;
+export const CloudIcon = (p: IconProps) => <Icon {...p}><path d="M7 18.5h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.6 1.3A3.4 3.4 0 0 0 7 18.5z" /></Icon>;
+export const RainIcon = (p: IconProps) => <Icon {...p}><path d="M7 14.5h10a3.6 3.6 0 0 0 .4-7.2 5 5 0 0 0-9.7 1.2A3 3 0 0 0 7 14.5z" /><path d="M8.5 17.5l-1 2.5M12.5 17.5l-1 2.5M16.5 17.5l-1 2.5" /></Icon>;
+export const SnowIcon = (p: IconProps) => <Icon {...p}><path d="M7 14.5h10a3.6 3.6 0 0 0 .4-7.2 5 5 0 0 0-9.7 1.2A3 3 0 0 0 7 14.5z" /><path d="M8.5 18.5h.01M12 20h.01M15.5 18.5h.01" strokeWidth={2.6} /></Icon>;
+export const StormIcon = (p: IconProps) => <Icon {...p}><path d="M7 14.5h10a3.6 3.6 0 0 0 .4-7.2 5 5 0 0 0-9.7 1.2A3 3 0 0 0 7 14.5z" /><path d="M12.5 15.5l-2 3.5h3l-2 3.5" /></Icon>;
+export const FogIcon = (p: IconProps) => <Icon {...p}><path d="M7 12.5h10a3.4 3.4 0 0 0 .4-6.8 4.8 4.8 0 0 0-9.3 1.1A2.9 2.9 0 0 0 7 12.5z" /><path d="M4.5 16h15M6.5 19.5h11" /></Icon>;
+export const ShieldIcon = (p: IconProps) => <Icon {...p}><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z" /><path d="M8.8 12l2.3 2.3 4.2-4.6" /></Icon>;
+export const BuildingIcon = (p: IconProps) => <Icon {...p}><path d="M4.5 20.5h15M6.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h8A1.5 1.5 0 0 1 17.5 5v15.5" /><path d="M9.5 7.5h1.5M13 7.5h1.5M9.5 11h1.5M13 11h1.5M9.5 14.5h1.5M13 14.5h1.5M11 20.5v-3h2v3" /></Icon>;
+

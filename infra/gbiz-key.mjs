@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Pose la clé de l'API Jooble (JOOBLE_API_KEY) sur la Static Web App, pour le robot d'offres.
+// Pose le jeton de l'API gBizINFO (GBIZ_API_TOKEN) sur la Static Web App : fiche officielle des entreprises.
 // La clé est demandée dans le Terminal, sans s'afficher, et n'est jamais écrite ailleurs.
 //
-//   node infra/jooble-key.mjs
+//   node infra/gbiz-key.mjs
 
 import { execFileSync } from "node:child_process";
 import { createInterface } from "node:readline";
@@ -24,11 +24,11 @@ function askHidden(question) {
   });
 }
 
-const key = await askHidden("Clé API Jooble (elle ne s'affiche pas) : ");
-if (!/^[0-9a-f-]{20,}$/i.test(key)) {
-  console.error("Ça ne ressemble pas à une clé Jooble (lettres a-f, chiffres et tirets). Rien n'a été changé.");
+const key = await askHidden("Jeton API gBizINFO (il ne s'affiche pas) : ");
+if (!/^[A-Za-z0-9._~+/=-]{16,}$/.test(key)) {
+  console.error("Ça ne ressemble pas à un jeton (au moins 16 caractères, sans espace). Rien n'a été changé.");
   process.exit(1);
 }
 const web = az(["staticwebapp", "list", "-g", RG, "--query", "[0].name", "-o", "tsv"]);
-az(["staticwebapp", "appsettings", "set", "-g", RG, "-n", web, "--setting-names", `JOOBLE_API_KEY=${key}`, "-o", "none"]);
-console.log(`✅ JOOBLE_API_KEY posée sur ${web}`);
+az(["staticwebapp", "appsettings", "set", "-g", RG, "-n", web, "--setting-names", `GBIZ_API_TOKEN=${key}`, "-o", "none"]);
+console.log(`✅ GBIZ_API_TOKEN posée sur ${web}`);

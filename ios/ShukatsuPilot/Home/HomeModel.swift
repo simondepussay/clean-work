@@ -81,6 +81,10 @@ final class HomeModel {
     private(set) var applications: [JobApplication] = []
     private(set) var plans: [Plan] = []
     private(set) var loaded = false
+    /// Jours fériés japonais (holidays-jp) : « 2026-11-03 » → « 文化の日 ».
+    private(set) var holidays: [String: String] = [:]
+    /// Météo des entretiens des 15 prochains jours (Open-Meteo), par étape.
+    private(set) var interviewWeather: [String: DayWeather] = [:]
     var month: DateComponents
     var selected: String
     var message: String?
@@ -97,20 +101,41 @@ final class HomeModel {
     var today: String { Agenda.key(.now) }
     func items(on day: String) -> [AgendaItem] { agenda.filter { $0.date == day } }
     var nextInterview: AgendaItem? { agenda.first { $0.kind == .interview && !$0.done && $0.date >= today } }
+    /// Météo du prochain entretien (préfecture du siège si l'entreprise est reliée à gBizINFO, sinon Tokyo).
+    var nextInterviewWeather: DayWeather? { nextInterview?.stepId.flatMap { interviewWeather[$0] } }
     var goals: [Plan] { plans.filter { $0.kind == "goal" && !$0.done && $0.date >= today }.sorted { $0.date < $1.date } }
 
     func load() async {
         async let apps = try? api.applications()
         async let own = try? api.plans()
+        async let days = api.holidays()
         applications = await apps ?? applications
         plans = await own ?? plans
         loaded = true
+        holidays = await days
+        interviewWeather = await weatherForUpcomingInterviews()
         // Au premier lancement, iOS demande l'autorisation des notifications : on attend que l'écran
         // d'ouverture (SplashView) soit parti, pour que la question ne s'affiche pas par-dessus.
         // Si la vue est recréée entre-temps (tâche annulée), c'est le nouveau chargement qui s'en chargera.
         guard (try? await Task.sleep(for: .seconds(SplashView.duration + 0.5))) != nil else { return }
         await DeadlineReminderScheduler.shared.prepare()
-        await DeadlineReminderScheduler.shared.reschedule(applications)
+        await DeadlineReminderScheduler.shared.reschedule(applications, weather: interviewWeather)
+    }
+
+    /// Les entretiens des 15 prochains jours (au plus 4) : la prévision n'existe pas au-delà.
+    private func weatherForUpcomingInterviews() async -> [String: DayWeather] {
+        let limit = Agenda.key(Calendar.current.date(byAdding: .day, value: 15, to: .now) ?? .now)
+        let upcoming = agenda.filter { $0.kind == .interview && !$0.done && $0.date >= today && $0.date <= limit }.prefix(4)
+        var result: [String: DayWeather] = [:]
+        await withTaskGroup(of: (String, DayWeather?).self) { group in
+            for item in upcoming {
+                guard let stepId = item.stepId else { continue }
+                let location = applications.first { $0.id == item.applicationId }?.location
+                group.addTask { [api] in (stepId, await api.weather(date: item.date, location: location)) }
+            }
+            for await (stepId, weather) in group { if let weather { result[stepId] = weather } }
+        }
+        return result
     }
 
     func shift(_ delta: Int) {

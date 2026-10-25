@@ -60,7 +60,18 @@ struct ProfileView: View {
             field(tr("生年月日", "Date of birth (YYYY-MM-DD)", "Date de naissance (AAAA-MM-JJ)"), text: optional($model.profile.birthDate), path: "birthDate", keyboard: .numbersAndPunctuation)
             field(tr("メール", "Email", "E-mail"), text: optional($model.profile.email), path: "email", keyboard: .emailAddress)
             field(tr("電話", "Phone", "Téléphone"), text: optional($model.profile.phone), path: "phone", keyboard: .phonePad)
+            field(tr("郵便番号", "Postal code", "Code postal"), text: optional($model.profile.postalCode), path: "postalCode", keyboard: .numbersAndPunctuation)
+                .onChange(of: model.profile.postalCode) { _, new in
+                    if (new ?? "").filter(\.isNumber).count == 7 { Task { await model.postalChanged() } }
+                }
             field(tr("住所", "Address", "Adresse"), text: optional($model.profile.address), path: "address")
+            if let hint = model.postalHint {
+                Button(tr("住所に入れる", "Use this address", "Utiliser cette adresse") + " : " + hint) {
+                    model.profile.address = hint
+                    model.postalHint = nil
+                }
+                .font(.footnote)
+            }
         }
     }
 

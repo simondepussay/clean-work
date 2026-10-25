@@ -77,6 +77,13 @@ Site : https://blue-rock-008b52800.2.azurestaticapps.net
 - [ ] Ne rien toucher dans 応募 pendant 7 jours → relance « 最近どうですか？ » (une fois par semaine au plus).
 - [ ] Quand JEES publie les dates 2027 : les ajouter dans api/content/jlpt.json (ou me le demander).
 
+## Données ouvertes (oct. 2026)
+
+- [ ] gBizINFO : demander le jeton (https://content.info.gbiz.go.jp/api/index.html → 利用申請), puis `node infra/gbiz-key.mjs` ; /api/health doit afficher gbiz: ok.
+- [ ] Candidature → « 公式データで企業を探す » avec une vraie entreprise : vérifier les labels (くるみん…) et les chiffres.
+- [ ] Profil : taper un vrai 〒 → l'adresse se remplit ; le 履歴書 PDF affiche le 〒.
+- [ ] Accueil : météo du prochain entretien (moins de 15 jours) ; jours fériés en bordeaux.
+
 ## Surveillance (S21, jour 9)
 
 - [ ] Vérifier que l'email d'Azure « ajouté au groupe d'actions » est bien arrivé sur depussay.simon@icloud.com (sinon les alertes n'arriveront pas).

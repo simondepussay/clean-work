@@ -10,6 +10,21 @@ final class ProfileModel {
     var profile = Profile()
     private(set) var status: Status = .loading
     private(set) var issues: [Issue] = []
+    /// Adresse trouvée pour le 〒, quand l'adresse est déjà remplie (on ne l'écrase pas sans demander).
+    var postalHint: String?
+
+    /// 〒 : à 7 chiffres, l'adresse est cherchée (zipcloud) et remplit le champ s'il est vide.
+    func postalChanged() async {
+        postalHint = nil
+        guard let code = profile.postalCode, let found = await api.postal(code) else { return }
+        profile.postalCode = found.postalCode
+        if (profile.address ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
+            profile.address = found.address
+        } else if !(profile.address ?? "").hasPrefix(found.address) {
+            postalHint = found.address
+        }
+    }
+
     /// Vrai juste après un import de CV : le formulaire est rempli mais pas encore enregistré.
     private(set) var imported = false
 

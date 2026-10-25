@@ -90,6 +90,8 @@ export const profileInputSchema = z.object({
   birthDate: isoDate.optional(),
   email: z.string().email(messages.email).optional(),
   phone: text(30).optional(),
+  /** 〒 du 履歴書 ; il remplit aussi l'adresse (zipcloud). */
+  postalCode: z.string().trim().regex(/^\d{3}-?\d{4}$/, "郵便番号は7桁です / 7-digit postal code").optional(),
   address: text(200).optional(),
   education: z.array(educationSchema).max(20).default([]),
   work: z.array(workSchema).max(30).default([]),
@@ -135,6 +137,10 @@ export const applicationInputSchema = z.object({
    * d'emploi collée telle quelle (募集要項) : S20, notes entreprise. Assez long pour une offre entière.
    */
   notes: text(5000).optional(),
+  /** 法人番号 : la candidature est reliée à la fiche officielle de l'entreprise (gBizINFO). */
+  corporateNumber: z.string().regex(/^\d{13}$/).optional(),
+  /** Adresse du siège (gBizINFO) : la météo du jour de l'entretien est celle de cette préfecture. */
+  location: text(200).optional(),
   url: z.string().url().optional(),
   status: choice(applicationStatuses).default("interested"),
   steps: z.array(stepSchema).max(20).default([]),

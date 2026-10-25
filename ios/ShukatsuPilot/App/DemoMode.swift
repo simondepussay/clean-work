@@ -45,6 +45,13 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/interviews"): body = [] as [Any]
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
         case ("GET", "/api/info"): body = Self.info
+        // Données ouvertes (exemples).
+        case ("GET", "/api/holidays"): body = ["2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日", "2027-01-01": "元日"]
+        case ("GET", "/api/weather"): body = ["date": Self.day(6), "prefecture": "東京都", "kind": "rain", "rainChance": 70, "tMax": 18, "tMin": 12] as [String: Any]
+        case ("GET", _) where path.hasPrefix("/api/postal/"): body = ["postalCode": "160-0023", "address": "東京都新宿区西新宿", "prefecture": "東京都"]
+        case ("GET", "/api/company/search"):
+            body = [["corporateNumber": "5010401067252", "name": "ソニーグループ株式会社", "location": "東京都港区港南１丁目７番１号"]]
+        case ("GET", _) where path.hasPrefix("/api/company/"): body = Self.companyFacts
         case ("POST", "/api/plans"):
             let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
             body = sent.merging(["id": UUID().uuidString, "done": false]) { a, _ in a }
@@ -56,6 +63,15 @@ private final class DemoURLProtocol: URLProtocol {
         client?.urlProtocol(self, didLoad: data)
         client?.urlProtocolDidFinishLoading(self)
     }
+
+    static var companyFacts: [String: Any] {[
+        "corporateNumber": "5010401067252", "name": "ソニーグループ株式会社", "location": "東京都港区港南１丁目７番１号",
+        "url": "https://www.sony.com/ja/", "employees": 1800, "founded": 1946,
+        "labels": [["id": "kurumin", "title": "プラチナくるみん認定", "date": "2022-06-01"],
+                   ["id": "eruboshi", "title": "えるぼし認定（3段階目）", "date": "2021-04-01"],
+                   ["id": "kenkou", "title": "健康経営優良法人（大規模法人部門）", "date": "2025-03-10"]],
+        "workplace": ["averageAge": 43.1, "averageYears": 18.2, "overtimeHours": 17.5, "femaleManagersPct": 13, "paternityLeavePct": 82],
+    ]}
 
     private static func bodyData(of request: URLRequest) -> Data? {
         if let data = request.httpBody { return data }
@@ -74,7 +90,8 @@ private final class DemoURLProtocol: URLProtocol {
         ["id": "a1", "company": "株式会社サイバーエージェント", "position": "ゲームプランナー", "status": "es",
          "steps": [["id": "s1", "type": "es", "dueDate": day(2), "done": false]], "nextDeadline": day(2)],
         ["id": "a2", "company": "ソニーグループ", "position": "エンジニア", "status": "interview1",
-         "steps": [["id": "s2", "type": "interview1", "dueDate": day(6), "done": false]], "nextDeadline": day(6)],
+         "steps": [["id": "s2", "type": "interview1", "dueDate": day(6), "time": "14:00", "done": false]], "nextDeadline": day(6),
+         "corporateNumber": "5010401067252", "location": "東京都港区港南１丁目７番１号"],
         ["id": "a3", "company": "楽天グループ", "status": "interested", "steps": [] as [Any]],
         ["id": "a4", "company": "LINEヤフー", "status": "test",
          "steps": [["id": "s4", "type": "test", "dueDate": day(12), "done": false]], "nextDeadline": day(12)],

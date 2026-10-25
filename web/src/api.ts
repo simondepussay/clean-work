@@ -41,6 +41,8 @@ export type ProfileInput = {
   birthDate?: string;
   email?: string;
   phone?: string;
+  /** 〒 du 履歴書 (« 160-0023 ») : il remplit aussi l'adresse. */
+  postalCode?: string;
   address?: string;
   education: Education[];
   work: Work[];
@@ -210,6 +212,8 @@ export type ApplicationInput = {
   company: string; position?: string; url?: string; status: AppStatus; steps: Step[];
   /** null : effacer le champ (l'API garde sinon l'ancienne valeur). */
   industry?: Industry | null; companyType?: CompanyType | null; notes?: string;
+  /** 法人番号 et adresse du siège : la candidature est reliée à la fiche officielle (gBizINFO). */
+  corporateNumber?: string | null; location?: string | null;
 };
 export type Application = ApplicationInput & { id: string; nextDeadline: string | null; createdAt: string; updatedAt: string };
 
@@ -330,3 +334,53 @@ export async function importCv(token: string, text: string, fetcher: typeof fetc
   if (res.status === 400) return { ok: false, error: "too_short" };
   return { ok: false, error: "failed" };
 }
+
+// ------------------------------------------------------------------ données ouvertes
+
+export type WeatherKind = "sun" | "cloud" | "rain" | "snow" | "storm" | "fog";
+export type DayWeather = { date: string; prefecture: string; kind: WeatherKind; rainChance: number | null; tMax: number | null; tMin: number | null };
+export type PostalAddress = { postalCode: string; address: string; prefecture: string };
+export type CompanyMatch = { corporateNumber: string; name: string; location: string | null };
+export type LabelId = "kurumin" | "eruboshi" | "youthyell" | "kenkou" | "monisu" | "anzen";
+export type CompanyFacts = {
+  corporateNumber: string; name: string; location: string | null; url: string | null;
+  employees: number | null; capital: number | null; founded: number | null; summary: string | null;
+  labels: { id: LabelId | null; title: string; date: string | null }[];
+  workplace: { averageAge: number | null; averageYears: number | null; overtimeHours: number | null;
+    femaleWorkersPct: number | null; femaleManagersPct: number | null; paternityLeavePct: number | null } | null;
+};
+
+/** Données ouvertes : null si le service ne répond pas, n'a rien, ou (gBizINFO) n'est pas configuré. L'app fait sans. */
+async function optional<T>(token: string, path: string, f?: typeof fetch): Promise<T | null> {
+  try {
+    const r = await call<T>(token, "GET", path, undefined, f);
+    return r.ok ? r.value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Réponses vérifiées : un service extérieur qui renvoie autre chose ne casse pas la page. */
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const WEATHER_KINDS = ["sun", "cloud", "rain", "snow", "storm", "fog"];
+
+export const getHolidays = async (token: string, f?: typeof fetch) => {
+  const h = await optional<Record<string, string>>(token, "/api/holidays", f);
+  return isObject(h) ? h : null;
+};
+export const lookupPostal = async (token: string, code: string, f?: typeof fetch) => {
+  const found = await optional<PostalAddress>(token, `/api/postal/${encodeURIComponent(code.replace(/[^0-9]/g, ""))}`, f);
+  return isObject(found) && typeof found.address === "string" ? found : null;
+};
+export const getWeather = async (token: string, date: string, location?: string | null, f?: typeof fetch) => {
+  const w = await optional<DayWeather>(token, `/api/weather?date=${date}${location ? `&location=${encodeURIComponent(location)}` : ""}`, f);
+  return isObject(w) && WEATHER_KINDS.includes(w.kind) ? w : null;
+};
+export const searchCompanies = async (token: string, name: string, f?: typeof fetch) => {
+  const found = await optional<CompanyMatch[]>(token, `/api/company/search?name=${encodeURIComponent(name)}`, f);
+  return Array.isArray(found) ? found : null;
+};
+export const getCompanyFacts = async (token: string, corporateNumber: string, f?: typeof fetch) => {
+  const facts = await optional<CompanyFacts>(token, `/api/company/${corporateNumber}`, f);
+  return isObject(facts) && Array.isArray(facts.labels) ? facts : null;
+};

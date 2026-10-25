@@ -76,7 +76,7 @@ enum InterviewReminders {
     private static let interviews: Set<String> = ["interview1", "interview2", "final"]
     private static let closed: Set<String> = ["rejected", "withdrawn"]
 
-    static func reminders(for apps: [JobApplication], now: Date = .now, calendar: Calendar = .current) -> [Reminder] {
+    static func reminders(for apps: [JobApplication], weather: [String: DayWeather] = [:], now: Date = .now, calendar: Calendar = .current) -> [Reminder] {
         // Dates et heures saisies sont celles du Japon.
         var tokyo = Calendar(identifier: .gregorian)
         tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
@@ -89,12 +89,14 @@ enum InterviewReminders {
                 let fire = start.addingTimeInterval(-3600)
                 guard fire > now else { return nil }
                 let stage = SelectionStage.name(step.type)
+                // La météo du jour (Open-Meteo), quand elle appelle un conseil : parapluie, neige, chaleur.
+                let advice = weather[step.id]?.advice.map { "\n" + $0 } ?? ""
                 return (fire, Reminder(
                     id: "\(prefix)\(step.id)",
                     title: tr("まもなく面接です", "Interview in one hour", "Entretien dans une heure"),
                     body: tr("\(app.company)の\(stage)まであと1時間。ここまでの準備を信じて、いってらっしゃい！",
                              "\(stage) at \(app.company) in one hour. Trust the preparation you've done — you've got this!",
-                             "\(stage) chez \(app.company) dans une heure. Faites confiance à votre préparation : vous êtes prêt·e !"),
+                             "\(stage) chez \(app.company) dans une heure. Faites confiance à votre préparation : vous êtes prêt·e !") + advice,
                     fireAt: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire)))
             }
         }
@@ -127,9 +129,10 @@ final class DeadlineReminderScheduler {
 
     /// Renvoie le nombre de rappels locaux programmés (0 si l'utilisateur a refusé, ou si le serveur s'en charge).
     @discardableResult
-    func reschedule(_ apps: [JobApplication], now: Date = .now) async -> Int {
+    func reschedule(_ apps: [JobApplication], weather: [String: DayWeather] = [:], now: Date = .now) async -> Int {
+        if Self.demo { return 0 }
         await removeLocal()
-        let interviews = InterviewReminders.reminders(for: apps, now: now)
+        let interviews = InterviewReminders.reminders(for: apps, weather: weather, now: now)
         let deadlines = DeadlineReminders.reminders(for: apps, now: now)
         // L'autorisation n'est demandée ici qu'au moment où il y a quelque chose à rappeler (sinon : prepare()).
         guard !(interviews + deadlines).isEmpty, await center.authorizationAllowed() else { return 0 }
@@ -146,8 +149,17 @@ final class DeadlineReminderScheduler {
     /// aussi les rappels JLPT et les relances. Appelé par l'app seulement (jamais dans les tests unitaires,
     /// où la vraie question d'iOS attendrait une réponse indéfiniment).
     func prepare() async {
-        guard await center.authorizationAllowed() else { return }
+        guard !Self.demo, await center.authorizationAllowed() else { return }
         center.registerForRemoteNotifications()
+    }
+
+    /// Mode démo (-demo, builds de développement) : ni vraie question d'autorisation ni vrais rappels.
+    private static var demo: Bool {
+        #if DEBUG
+        DemoMode.isOn
+        #else
+        false
+        #endif
     }
 
     /// Retire nos rappels locaux (et seulement les nôtres).

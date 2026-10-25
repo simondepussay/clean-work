@@ -128,6 +128,7 @@ struct ApplicationEditor: View {
             } footer: {
                 Text(tr("面接練習の質問に使います", "Used to tailor interview practice", "Sert à adapter l'entraînement aux entretiens"))
             }
+            CompanyFactsSection(api: api, company: input.company, corporateNumber: $input.corporateNumber, location: $input.location)
             Section(tr("選考ステップ・締切", "Steps and deadlines", "Étapes et échéances")) {
                 ForEach($input.steps) { $step in
                     VStack(alignment: .leading) {

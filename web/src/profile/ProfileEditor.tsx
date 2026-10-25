@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Loader } from "../Loader";
-import { getProfile, saveProfile, type CvImport, type Certification, type Education, type Issue, type Language, type ProfileInput, type Work } from "../api";
+import { getProfile, lookupPostal, saveProfile, type CvImport, type Certification, type Education, type Issue, type Language, type ProfileInput, type Work } from "../api";
 import { useAuth } from "../auth/auth";
 import { apiMessage, useTr } from "../i18n";
 import { certificationCategories, certificationSuggestions, languages, levels, options } from "./choices";
@@ -64,6 +64,26 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
     // Chargé une fois, à l'ouverture.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Adresse trouvée pour le 〒 saisi, quand le champ adresse est déjà rempli (on ne l'écrase pas sans demander). */
+  const [postalHint, setPostalHint] = useState<string | null>(null);
+
+  /** 〒 : à 7 chiffres, l'adresse est cherchée (zipcloud) et remplit le champ s'il est vide. */
+  async function postalChanged(value: string) {
+    set("postalCode", value);
+    setPostalHint(null);
+    if (value.replace(/[^0-9]/g, "").length !== 7) return;
+    const token = await auth.getToken();
+    const found = token ? await lookupPostal(token, value) : null;
+    if (!found) return;
+    setProfile((p) => {
+      if (p.address?.trim()) {
+        if (!p.address.startsWith(found.address)) setPostalHint(found.address);
+        return { ...p, postalCode: found.postalCode };
+      }
+      return { ...p, postalCode: found.postalCode, address: found.address };
+    });
+  }
 
   const errors = new Map(issues.map((i) => [i.path, apiMessage(i.message, lang)]));
   const set = <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => {
@@ -161,7 +181,20 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
           {text("email", tr({ ja: "メール", en: "Email", fr: "E-mail" }), "email")}
           {text("phone", tr({ ja: "電話", en: "Phone", fr: "Téléphone" }), "tel")}
         </div>
-        {text("address", tr({ ja: "住所", en: "Address", fr: "Adresse" }))}
+        <div className="address-row">
+          <label className={errors.has("postalCode") ? "invalid postal" : "postal"}>
+            <span>{tr({ ja: "郵便番号", en: "Postal code", fr: "Code postal" })}</span>
+            <input inputMode="numeric" autoComplete="postal-code" placeholder="160-0023" maxLength={8}
+              value={profile.postalCode ?? ""} onChange={(e) => postalChanged(e.target.value)} />
+            {errors.has("postalCode") && <small role="alert">{errors.get("postalCode")}</small>}
+          </label>
+          {text("address", tr({ ja: "住所", en: "Address", fr: "Adresse" }))}
+        </div>
+        {postalHint && (
+          <button type="button" className="postal-hint" onClick={() => { set("address", postalHint); setPostalHint(null); }}>
+            {tr({ ja: "住所に入れる", en: "Use this address", fr: "Utiliser cette adresse" })} : {postalHint}
+          </button>
+        )}
       </fieldset>
       <ListEditor title={tr({ ja: "学歴", en: "Education", fr: "Formation" })} name="education" items={profile.education} fields={educationFields}
         empty={{ school: "", start: "", status: "enrolled" }} errors={errors} onChange={(v) => set("education", v)} />

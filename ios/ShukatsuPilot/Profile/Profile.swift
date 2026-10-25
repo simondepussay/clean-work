@@ -9,6 +9,8 @@ struct Profile: Codable, Equatable {
     var birthDate: String?
     var email: String?
     var phone: String?
+    /// 〒 du 履歴書 ; il remplit aussi l'adresse.
+    var postalCode: String?
     var address: String?
     var education: [Education] = []
     var work: [Work] = []
@@ -90,7 +92,7 @@ struct Profile: Codable, Equatable {
 
     // L'API renvoie aussi id, userId et updatedAt : on les ignore à la lecture.
     enum CodingKeys: String, CodingKey {
-        case nameKanji, nameKana, nameLatin, birthDate, email, phone, address, education, work, certifications, languages
+        case nameKanji, nameKana, nameLatin, birthDate, email, phone, postalCode, address, education, work, certifications, languages
     }
 
     init() {}
@@ -103,6 +105,7 @@ struct Profile: Codable, Equatable {
         birthDate = try c.decodeIfPresent(String.self, forKey: .birthDate)
         email = try c.decodeIfPresent(String.self, forKey: .email)
         phone = try c.decodeIfPresent(String.self, forKey: .phone)
+        postalCode = try c.decodeIfPresent(String.self, forKey: .postalCode)
         address = try c.decodeIfPresent(String.self, forKey: .address)
         education = try c.decodeIfPresent([Education].self, forKey: .education) ?? []
         work = try c.decodeIfPresent([Work].self, forKey: .work) ?? []

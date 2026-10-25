@@ -13,6 +13,9 @@ struct JobApplication: Codable, Equatable, Identifiable {
     var industry: String?
     var companyType: String?
     var notes: String?
+    /// 法人番号 et adresse du siège : la candidature est reliée à la fiche officielle (gBizINFO).
+    var corporateNumber: String?
+    var location: String?
 
     struct Step: Codable, Equatable, Identifiable {
         var id = UUID().uuidString
@@ -35,14 +38,17 @@ struct JobApplicationInput: Encodable, Equatable {
     var industry: String?
     var companyType: String?
     var notes: String?
+    var corporateNumber: String?
+    var location: String?
 
     init() {}
     init(_ app: JobApplication) {
         company = app.company; position = app.position; url = app.url; status = app.status; steps = app.steps
         industry = app.industry; companyType = app.companyType; notes = app.notes
+        corporateNumber = app.corporateNumber; location = app.location
     }
 
-    private enum CodingKeys: String, CodingKey { case company, position, url, status, steps, industry, companyType, notes }
+    private enum CodingKeys: String, CodingKey { case company, position, url, status, steps, industry, companyType, notes, corporateNumber, location }
 
     /// 業界 et type sont toujours envoyés, null compris : null efface le choix côté API
     /// (Swift omet les nil, et l'ancienne valeur resterait).
@@ -56,6 +62,9 @@ struct JobApplicationInput: Encodable, Equatable {
         try c.encode(industry, forKey: .industry)
         try c.encode(companyType, forKey: .companyType)
         try c.encodeIfPresent(notes, forKey: .notes)
+        // Comme 業界 : null défait le lien avec la fiche officielle.
+        try c.encode(corporateNumber, forKey: .corporateNumber)
+        try c.encode(location, forKey: .location)
     }
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader } from "../Loader";
-import { createPlan, deletePlan, listApplications, listPlans, updatePlan, type Application, type Issue, type Plan, type PlanKind } from "../api";
+import { createPlan, deletePlan, getHolidays, getWeather, listApplications, listPlans, updatePlan, type Application, type DayWeather, type Issue, type Plan, type PlanKind } from "../api";
+import { WeatherChip } from "./WeatherChip";
 import { useAuth } from "../auth/auth";
 import { CalendarIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, TrashIcon } from "../icons";
 import { apiMessage, formatDay, useTr, type Lang, type T3, type Tr } from "../i18n";
@@ -58,6 +59,9 @@ export function HomePage({ name, onOpenApps, onPractice }: {
   const today = ymd(new Date());
   const [apps, setApps] = useState<Application[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  /** Jours fériés japonais (holidays-jp) et météo du prochain entretien (Open-Meteo). */
+  const [holidays, setHolidays] = useState<Record<string, string>>({});
+  const [weather, setWeather] = useState<DayWeather | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [month, setMonth] = useState(() => ({ y: new Date().getFullYear(), m: new Date().getMonth() }));
   const [selected, setSelected] = useState(today);
@@ -76,6 +80,8 @@ export function HomePage({ name, onOpenApps, onPractice }: {
 
   useEffect(() => {
     withToken(async (t) => {
+      // Jours fériés : à part, pour ne pas retarder le calendrier si le service est lent.
+      getHolidays(t).then((h) => h && setHolidays(h));
       const [a, p] = await Promise.all([listApplications(t), listPlans(t)]);
       if (a.ok && Array.isArray(a.value)) setApps(a.value);
       if (p.ok && Array.isArray(p.value)) setPlans(p.value);
@@ -93,6 +99,15 @@ export function HomePage({ name, onOpenApps, onPractice }: {
   const dayItems = byDate.get(selected) ?? [];
   const goals = plans.filter((p) => p.kind === "goal" && !p.done && p.date >= today).slice(0, 4);
   const nextInterview = agenda.find((i) => i.kind === "interview" && !i.done && i.date >= today);
+  const interviewLocation = apps.find((a) => a.id === nextInterview?.applicationId)?.location;
+
+  // Météo du prochain entretien (dans la préfecture du siège si l'entreprise est reliée à gBizINFO, sinon Tokyo).
+  useEffect(() => {
+    setWeather(null);
+    if (!nextInterview) return;
+    withToken((t) => getWeather(t, nextInterview.date, interviewLocation)).then(setWeather).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextInterview?.date, interviewLocation]);
 
   const shift = (delta: number) => setMonth(({ y, m }) => {
     const d = new Date(y, m + delta, 1);
@@ -183,7 +198,11 @@ export function HomePage({ name, onOpenApps, onPractice }: {
         <div className="highlights">
           {!loaded && <Loader size={32} />}
           {nextInterview && (
-            <p className="highlight interview"><span>{tr({ ja: "次の面接", en: "Next interview", fr: "Prochain entretien" })}</span>{longDate(nextInterview.date)} {nextInterview.title}</p>
+            <p className="highlight interview">
+              <span>{tr({ ja: "次の面接", en: "Next interview", fr: "Prochain entretien" })}</span>
+              {longDate(nextInterview.date)}{nextInterview.time ? ` ${nextInterview.time}` : ""} {nextInterview.title}
+              {weather && <WeatherChip weather={weather} />}
+            </p>
           )}
           {goals[0] && (
             <p className="highlight goal"><span>{tr(KIND_LABEL.goal)}</span><span><FlagIcon size={14} /> {goals[0].title} {tr({ ja: `（${longDate(goals[0].date)}まで）`, en: `(by ${longDate(goals[0].date)})`, fr: `(avant le ${longDate(goals[0].date)})` })}</span></p>
@@ -210,11 +229,12 @@ export function HomePage({ name, onOpenApps, onPractice }: {
             const key = ymd(date);
             const items = byDate.get(key) ?? [];
             const classes = ["day", date.getMonth() !== month.m && "other", key === today && "today", key === selected && "selected",
-              date.getDay() === 0 && "sun", date.getDay() === 6 && "sat"].filter(Boolean).join(" ");
+              date.getDay() === 0 && "sun", date.getDay() === 6 && "sat", holidays[key] && "holiday"].filter(Boolean).join(" ");
             return (
               <button key={key} className={classes} role="gridcell" aria-selected={key === selected}
-                aria-label={`${longDate(key)}${items.length ? ` · ${tr({ ja: `${items.length}件`, en: `${items.length} item(s)`, fr: `${items.length} élément(s)` })}` : ""}`} onClick={(e) => pick(key, e.currentTarget)}>
+                aria-label={`${longDate(key)}${holidays[key] ? ` · ${holidays[key]}` : ""}${items.length ? ` · ${tr({ ja: `${items.length}件`, en: `${items.length} item(s)`, fr: `${items.length} élément(s)` })}` : ""}`} onClick={(e) => pick(key, e.currentTarget)}>
                 <span className="num">{date.getDate()}</span>
+                {holidays[key] && <span className="holiday-name">{holidays[key]}</span>}
                 <span className="chips">
                   {items.slice(0, PER_CELL).map((item) => <Chip key={item.key} item={item} tr={tr} />)}
                   {items.length > PER_CELL && <span className="more">+{items.length - PER_CELL}</span>}
@@ -255,7 +275,10 @@ export function HomePage({ name, onOpenApps, onPractice }: {
 
       <div className="home-grid">
         <section className="card day-detail" aria-label={longDate(selected)}>
-          <h2>{longDate(selected)}{selected === today && <span>{tr({ ja: "今日", en: "today", fr: "aujourd'hui" })}</span>}</h2>
+          <h2>
+            {longDate(selected)}{selected === today && <span>{tr({ ja: "今日", en: "today", fr: "aujourd'hui" })}</span>}
+            {holidays[selected] && <span className="holiday-tag">{tr({ ja: "祝日", en: "Public holiday", fr: "Jour férié" })} · {holidays[selected]}</span>}
+          </h2>
           {loaded && dayItems.length === 0 && <p className="muted">{tr({ ja: "予定はありません", en: "Nothing planned", fr: "Rien de prévu" })}</p>}
           <ul className="agenda">
             {dayItems.map((item) => (

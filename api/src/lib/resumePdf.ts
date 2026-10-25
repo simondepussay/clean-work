@@ -74,7 +74,7 @@ function drawPage1(c: Canvas, p: Profile, o: ResumeOptions, history: Row[]): num
     c.label("ふりがな", M, block, 16);
     c.hline(M, block + 16, leftW, { dash: true });
     if (i === 0) {
-      c.text(`${title}　〒`, M + 4, block + 28, 8);
+      c.text(`${title}　〒${p.postalCode ?? ""}`, M + 4, block + 28, 8);
       c.wrap(p.address ?? "", M + 8, block + 30, leftW - 14, 10, 2);
       c.label("電話", M + leftW, block, 14);
       c.fit(p.phone ?? "", M + leftW + 6, block + 12, 138, 18, 9);

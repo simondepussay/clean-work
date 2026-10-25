@@ -75,7 +75,8 @@ private struct HomeContent: View {
             Text("CLEAN WORK").font(.caption.weight(.bold)).kerning(1.5).foregroundStyle(Color.cwBordeaux)
             Text(greeting).font(.title2.bold()).foregroundStyle(Color.cwBlue800)
             if let next = home.nextInterview {
-                highlight(tr("次の面接", "Next interview", "Prochain entretien"), "\(longDate(next.date))  \(next.title)", bordeaux: true)
+                highlight(tr("次の面接", "Next interview", "Prochain entretien"), "\(longDate(next.date))\(next.time.map { " \($0)" } ?? "")  \(next.title)",
+                          bordeaux: true, weather: home.nextInterviewWeather)
             }
             if let goal = home.goals.first {
                 highlight(tr("目標", "Goal", "Objectif"), "⚑ \(goal.title)  " + tr("（\(longDate(goal.date))まで）", "(by \(longDate(goal.date)))", "(avant le \(longDate(goal.date)))"), bordeaux: false)
@@ -89,10 +90,11 @@ private struct HomeContent: View {
         return tr("\(name.map { "\($0)さん、" } ?? "")おかえりなさい", "Welcome back\(name.map { ", \($0)" } ?? "")", "Bon retour\(name.map { ", \($0)" } ?? "")")
     }
 
-    private func highlight(_ label: String, _ text: String, bordeaux: Bool) -> some View {
+    private func highlight(_ label: String, _ text: String, bordeaux: Bool, weather: DayWeather? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption2).foregroundStyle(Color.cwMuted)
             Text(text).font(.subheadline.weight(.semibold)).foregroundStyle(bordeaux ? Color.cwBordeaux : Color.cwBlue700)
+            if let weather { WeatherBadge(weather: weather).padding(.top, 4) }
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -139,15 +141,20 @@ private struct HomeContent: View {
         let inMonth = Calendar.current.component(.month, from: day) == home.month.month
         let weekday = Calendar.current.component(.weekday, from: day)
         let isToday = key == home.today
+        let holiday = home.holidays[key]
         return Button {
             home.selected = key
         } label: {
             VStack(spacing: 3) {
                 Text("\(Calendar.current.component(.day, from: day))")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(isToday ? .white : weekday == 1 ? Color.cwBordeaux : weekday == 7 ? Color.cwBlue500 : Color.cwBlue950)
+                    .foregroundStyle(isToday ? .white : (weekday == 1 || holiday != nil) ? Color.cwBordeaux : weekday == 7 ? Color.cwBlue500 : Color.cwBlue950)
                     .frame(width: 26, height: 26)
                     .background(isToday ? Color.cwBlue700 : .clear, in: Circle())
+                // Jour férié : son nom sous le numéro (iPad), en bordeaux comme le dimanche.
+                if wide, let holiday {
+                    Text(holiday).font(.system(size: 9)).foregroundStyle(Color.cwBordeaux.opacity(0.85)).lineLimit(1)
+                }
                 if wide {
                     VStack(spacing: 2) {
                         ForEach(items.prefix(3)) { chip($0) }
@@ -170,7 +177,7 @@ private struct HomeContent: View {
             noteText = ""
             noteDay = key
         })
-        .accessibilityLabel("\(longDate(key))\(items.isEmpty ? "" : " · \(items.count)")")
+        .accessibilityLabel("\(longDate(key))\(holiday.map { " · \($0)" } ?? "")\(items.isEmpty ? "" : " · \(items.count)")")
     }
 
     private func chip(_ item: AgendaItem) -> some View {
@@ -230,6 +237,12 @@ private struct HomeContent: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(longDate(home.selected)).font(.headline).foregroundStyle(Color.cwBlue800)
                 if home.selected == home.today { Text(tr("今日", "today", "aujourd'hui")).font(.caption.weight(.semibold)).foregroundStyle(Color.cwBordeaux) }
+                if let holiday = home.holidays[home.selected] {
+                    Text(tr("祝日", "Public holiday", "Jour férié") + " · " + holiday)
+                        .font(.caption.weight(.semibold)).foregroundStyle(Color.cwBordeaux)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(Color.cwBordeaux50, in: Capsule())
+                }
             }
             let items = home.items(on: home.selected)
             if home.loaded && items.isEmpty {
