@@ -289,10 +289,22 @@ button.link:hover { color: var(--bordeaux); background: none; }
 .home-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .home-head h1 { font-size: 26px; }
 .highlights { display: flex; gap: 10px; flex-wrap: wrap; }
-.highlight { margin: 0; padding: 8px 14px; border-radius: 12px; font-weight: 600; display: flex; flex-direction: column; font-size: 15px; }
-.highlight span:first-child { font-size: 11px; font-weight: 400; color: var(--muted); }
-.highlight.interview { background: var(--bordeaux-50); color: var(--bordeaux); }
-.highlight.goal { background: var(--blue-100); color: var(--blue-700); }
+/* Encadrés « ticket » : talon de date coloré, ligne perforée, coins droits et un coin coupé (comme un intercalaire). */
+.highlight { --cut: 14px; display: grid; grid-template-columns: 62px minmax(0, 1fr); min-width: 260px; max-width: 460px; flex: 1 1 260px;
+  border-radius: 4px; clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+.highlight.interview { background: var(--bordeaux-50); color: var(--bordeaux); --stub: var(--bordeaux); --perf: rgba(123, 30, 46, .28); flex: 3 1 340px; max-width: 600px; }
+.highlight.goal { background: var(--blue-100); color: var(--blue-700); --stub: var(--blue-700); --perf: rgba(29, 79, 145, .28); }
+.hl-date { background: var(--stub); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 10px 4px; }
+.hl-date b { font-size: 28px; line-height: 1; font-weight: 800; letter-spacing: -.02em; }
+.hl-date span { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; opacity: .9; }
+.hl-body { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 18px 12px 14px; border-left: 2px dashed var(--perf); }
+.hl-label { display: flex; align-items: baseline; gap: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.hl-label b { font-size: 13px; letter-spacing: 0; text-transform: none; color: inherit; font-weight: 700; }
+.highlight.interview .hl-label b { color: var(--bordeaux); }
+.highlight.goal .hl-label b { color: var(--blue-700); }
+.hl-title { font-size: 18px; line-height: 1.3; }
+@media (max-width: 520px) { .highlight { min-width: 0; flex-basis: 100%; max-width: none; } }
+.hl-title small { font-size: 13px; font-weight: 500; opacity: .85; }
 .highlight .icon { display: inline; vertical-align: -2px; }
 
 .calendar { padding: 18px 20px 20px; }
@@ -347,15 +359,16 @@ button.link:hover { color: var(--bordeaux); background: none; }
 .day-detail h2 span { color: var(--bordeaux); font-weight: 600; }
 .day-detail h2 .holiday-tag { margin-left: 8px; padding: 2px 10px; border-radius: 999px; background: var(--bordeaux-50); font-size: 13px; font-weight: 600; vertical-align: 3px; }
 /* Météo du prochain entretien (Open-Meteo), dans l'encadré bordeaux. */
-.highlight .weather { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 3px 10px; border-radius: 999px; background: var(--white); color: var(--blue-800); font-size: 13px; font-weight: 500; flex-wrap: wrap; }
+.highlight .weather { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 3px 10px; border-radius: 3px; border-left: 3px solid var(--blue-300); background: var(--white); color: var(--blue-800); font-size: 13px; font-weight: 500; flex-wrap: wrap; }
 .highlight .weather .icon { flex: none; }
 .highlight .weather.sun .icon { color: #c98a1c; }
 .highlight .weather.rain .icon, .highlight .weather.storm .icon { color: var(--blue-500); }
 .highlight .weather em { font-style: normal; color: var(--bordeaux); font-weight: 600; }
-.highlight .weather em::before { content: "·"; margin-right: 6px; color: var(--muted); font-weight: 400; }
+.highlight .weather em { flex-basis: 100%; }
+.highlight .hl-date { min-height: 78px; }
 .highlight .weather b { font-size: 11px; font-weight: 600; color: var(--muted); }
 .highlight .venue { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 500; color: var(--blue-800); }
-.highlight .join { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 4px 12px; border-radius: 999px; background: var(--bordeaux); color: #fff; font-size: 13px; text-decoration: none; width: fit-content; }
+.highlight .join { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 4px 12px; border-radius: 3px; background: var(--bordeaux); color: #fff; font-size: 13px; text-decoration: none; width: fit-content; }
 .highlight .join:hover { background: var(--bordeaux-600); }
 .agenda { list-style: none; padding: 0; margin: 8px 0 12px; display: flex; flex-direction: column; gap: 6px; }
 .agenda li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--blue-50); }

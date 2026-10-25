@@ -143,18 +143,23 @@ struct WeatherBadge: View {
     var label: String?
 
     var body: some View {
-        HStack(spacing: 6) {
-            if let label { Text(label).font(.caption2.weight(.semibold)).foregroundStyle(Color.cwMuted) }
-            Image(systemName: weather.symbol)
-                .foregroundStyle(weather.kind == "sun" ? Color(red: 0.79, green: 0.54, blue: 0.11) : Color.cwBlue500)
-            Text(weather.summary).foregroundStyle(Color.cwBlue800)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                if let label { Text(label).font(.caption2.weight(.semibold)).foregroundStyle(Color.cwMuted) }
+                Image(systemName: weather.symbol)
+                    .foregroundStyle(weather.kind == "sun" ? Color(red: 0.79, green: 0.54, blue: 0.11) : Color.cwBlue500)
+                Text(weather.summary).foregroundStyle(Color.cwBlue800).lineLimit(1).minimumScaleFactor(0.85)
+            }
+            // Le conseil sur sa propre ligne : lisible même sur un écran étroit.
             if weather.wet {
-                Text("· " + tr("傘を忘れずに", "Take an umbrella", "Pensez au parapluie")).fontWeight(.semibold).foregroundStyle(Color.cwBordeaux)
+                Text(tr("傘を忘れずに", "Take an umbrella", "Pensez au parapluie")).fontWeight(.semibold).foregroundStyle(Color.cwBordeaux)
             }
         }
         .font(.caption)
         .padding(.horizontal, 10).padding(.vertical, 4)
-        .background(.white, in: Capsule())
+        .background(.white, in: RoundedRectangle(cornerRadius: 3))
+        .overlay(alignment: .leading) { Rectangle().fill(Color.cwBlue300).frame(width: 3) }
+        .clipShape(RoundedRectangle(cornerRadius: 3))
         .accessibilityElement(children: .combine)
     }
 }

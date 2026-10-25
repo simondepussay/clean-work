@@ -56,6 +56,13 @@ export function HomePage({ name, onOpenApps, onPractice }: {
   const tr = useTr();
   const lang = tr.lang;
   const longDate = (iso: string) => formatDay(iso, lang);
+  /** « あと5日 » jusqu'à une date (0 : aujourd'hui). */
+  const countdown = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    const now = new Date();
+    const days = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86_400_000);
+    return days <= 0 ? tr({ ja: "今日まで", en: "due today", fr: "aujourd'hui" }) : tr({ ja: `あと${days}日`, en: `${days} days left`, fr: `dans ${days} j` });
+  };
   const today = ymd(new Date());
   const [apps, setApps] = useState<Application[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -209,9 +216,11 @@ export function HomePage({ name, onOpenApps, onPractice }: {
         <div className="highlights">
           {!loaded && <Loader size={32} />}
           {nextInterview && (
-            <p className="highlight interview">
-              <span>{tr({ ja: "次の面接", en: "Next interview", fr: "Prochain entretien" })}</span>
-              {longDate(nextInterview.date)}{nextInterview.time ? ` ${nextInterview.time}` : ""} {nextInterview.title}
+            <div className="highlight interview">
+              <DateStub iso={nextInterview.date} lang={lang} />
+              <div className="hl-body">
+              <span className="hl-label">{tr({ ja: "次の面接", en: "Next interview", fr: "Prochain entretien" })}{nextInterview.time && <b>{nextInterview.time}</b>}</span>
+              <strong className="hl-title">{nextInterview.title}{nextInterview.detail && <small> · {nextInterview.detail}</small>}</strong>
               {online ? (
                 <a className="join" href={nextInterview.place!.trim()} target="_blank" rel="noreferrer">
                   <LinkIcon size={14} /> {tr({ ja: "オンライン面接に参加", en: "Join the online interview", fr: "Rejoindre l'entretien en ligne" })}
@@ -219,10 +228,17 @@ export function HomePage({ name, onOpenApps, onPractice }: {
               ) : nextInterview.place && <small className="venue"><PinIcon size={13} /> {nextInterview.place}</small>}
               {weather.venue && <WeatherChip weather={weather.venue} label={tr({ ja: "会場", en: "Venue", fr: "Lieu" })} />}
               {weather.home && <WeatherChip weather={weather.home} label={tr({ ja: "自宅", en: "Home", fr: "Domicile" })} />}
-            </p>
+              </div>
+            </div>
           )}
           {goals[0] && (
-            <p className="highlight goal"><span>{tr(KIND_LABEL.goal)}</span><span><FlagIcon size={14} /> {goals[0].title} {tr({ ja: `（${longDate(goals[0].date)}まで）`, en: `(by ${longDate(goals[0].date)})`, fr: `(avant le ${longDate(goals[0].date)})` })}</span></p>
+            <div className="highlight goal">
+              <DateStub iso={goals[0].date} lang={lang} />
+              <div className="hl-body">
+                <span className="hl-label">{tr(KIND_LABEL.goal)}<b>{countdown(goals[0].date)}</b></span>
+                <strong className="hl-title"><FlagIcon size={15} /> {goals[0].title}</strong>
+              </div>
+            </div>
           )}
         </div>
       </header>
@@ -366,3 +382,20 @@ export function HomePage({ name, onOpenApps, onPractice }: {
     </div>
   );
 }
+
+/** Talon de date du ticket : grand numéro du jour, mois et jour de la semaine dans la langue choisie. */
+function DateStub({ iso, lang }: { iso: string; lang: Lang }) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const locale = { ja: "ja-JP", en: "en-US", fr: "fr-FR" }[lang];
+  const month = new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
+  const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date);
+  return (
+    <div className="hl-date" aria-hidden="true">
+      <span>{month}</span>
+      <b>{d}</b>
+      <span>{weekday}</span>
+    </div>
+  );
+}
+

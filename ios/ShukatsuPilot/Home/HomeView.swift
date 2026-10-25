@@ -75,11 +75,12 @@ private struct HomeContent: View {
             Text("CLEAN WORK").font(.caption.weight(.bold)).kerning(1.5).foregroundStyle(Color.cwBordeaux)
             Text(greeting).font(.title2.bold()).foregroundStyle(Color.cwBlue800)
             if let next = home.nextInterview {
-                highlight(tr("次の面接", "Next interview", "Prochain entretien"), "\(longDate(next.date))\(next.time.map { " \($0)" } ?? "")  \(next.title)",
-                          bordeaux: true) { interviewExtras(next) }
+                TicketCard(date: next.date, label: tr("次の面接", "Next interview", "Prochain entretien"), badge: next.time,
+                           title: next.title, detail: next.detail, bordeaux: true) { interviewExtras(next) }
             }
             if let goal = home.goals.first {
-                highlight(tr("目標", "Goal", "Objectif"), "⚑ \(goal.title)  " + tr("（\(longDate(goal.date))まで）", "(by \(longDate(goal.date)))", "(avant le \(longDate(goal.date)))"), bordeaux: false)
+                TicketCard(date: goal.date, label: tr("目標", "Goal", "Objectif"), badge: countdown(goal.date),
+                           title: "⚑ \(goal.title)", detail: nil, bordeaux: false) { EmptyView() }
             }
             if !home.loaded { ArcLoader(size: 28) }
         }
@@ -108,20 +109,12 @@ private struct HomeContent: View {
         if let mine = weather.home { WeatherBadge(weather: mine, label: tr("自宅", "Home", "Domicile")).padding(.top, 2) }
     }
 
-    private func highlight(_ label: String, _ text: String, bordeaux: Bool) -> some View {
-        highlight(label, text, bordeaux: bordeaux) { EmptyView() }
+    /// « あと5日 » jusqu'à une date (0 : aujourd'hui).
+    private func countdown(_ date: String) -> String {
+        let days = SelectionStage.daysUntil(date) ?? 0
+        return days <= 0 ? tr("今日まで", "due today", "aujourd'hui") : tr("あと\(days)日", "\(days) days left", "dans \(days) j")
     }
 
-    private func highlight<Extra: View>(_ label: String, _ text: String, bordeaux: Bool, @ViewBuilder extra: () -> Extra) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption2).foregroundStyle(Color.cwMuted)
-            Text(text).font(.subheadline.weight(.semibold)).foregroundStyle(bordeaux ? Color.cwBordeaux : Color.cwBlue700)
-            extra()
-        }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(bordeaux ? Color.cwBordeaux50 : Color.cwBlue100, in: RoundedRectangle(cornerRadius: 12))
-    }
 
     // MARK: Calendrier
 
@@ -378,3 +371,87 @@ extension DateFormatter {
         return f
     }()
 }
+
+/// Encadré « ticket » de l'accueil (prochain entretien, objectif) : talon de date coloré, ligne perforée,
+/// coins droits et un coin coupé, comme un intercalaire — même dessin que sur le site.
+private struct TicketCard<Extra: View>: View {
+    let date: String
+    let label: String
+    let badge: String?
+    let title: String
+    let detail: String?
+    let bordeaux: Bool
+    @ViewBuilder let extra: () -> Extra
+
+    private var accent: Color { bordeaux ? .cwBordeaux : .cwBlue700 }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            stub
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(label.uppercased()).font(.caption2).kerning(0.6).foregroundStyle(Color.cwMuted)
+                    if let badge { Text(badge).font(.caption.weight(.bold)).foregroundStyle(accent) }
+                }
+                (Text(title).font(.headline) + Text(detail.map { " · \($0)" } ?? "").font(.caption))
+                    .foregroundStyle(accent)
+                extra()
+            }
+            .padding(.leading, 12).padding(.trailing, 18).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .leading) {
+                Rectangle().fill(.clear).frame(width: 2)
+                    .overlay(Line().stroke(accent.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [5, 4])))
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(minHeight: 80)
+        .background(bordeaux ? Color.cwBordeaux50 : Color.cwBlue100)
+        .clipShape(CutCorner(cut: 14))
+    }
+
+    /// Talon : mois, grand numéro du jour, jour de la semaine.
+    private var stub: some View {
+        let parts = date.split(separator: "-").compactMap { Int($0) }
+        let day = parts.count == 3 ? Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) : nil
+        let f = DateFormatter()
+        f.locale = Locale(identifier: HelpLanguage.saved == .ja ? "ja_JP" : HelpLanguage.saved == .fr ? "fr_FR" : "en_US")
+        func text(_ format: String) -> String { day.map { f.dateFormat = format; return f.string(from: $0).uppercased() } ?? "" }
+        return VStack(spacing: 1) {
+            Text(text("MMM")).font(.system(size: 10, weight: .semibold)).kerning(0.8)
+            Text(parts.count == 3 ? "\(parts[2])" : "").font(.system(size: 28, weight: .heavy))
+            Text(text("EEE")).font(.system(size: 10, weight: .semibold)).kerning(0.8)
+        }
+        .foregroundStyle(.white)
+        .frame(width: 60)
+        .frame(maxHeight: .infinity)
+        .background(accent)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Ligne verticale (dessinée en pointillés pour la perforation du ticket).
+private struct Line: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+        return p
+    }
+}
+
+/// Rectangle aux coins droits, coin supérieur droit coupé en biais.
+private struct CutCorner: Shape {
+    var cut: CGFloat
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX - cut, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + cut))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        p.closeSubpath()
+        return p
+    }
+}
+
