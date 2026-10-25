@@ -6,6 +6,9 @@
 // (les voix de synthèse du Mac ont été écartées : trop plates pour la pub).
 //   1 忙しくて、  2 家族を、安心させたい。  3 全部、ひとりで抱えてた。  4 迷わない毎日へ。
 //
+// Musique : marketing/beta-ad/musique.mp3 (ou .m4a, .wav), ou MUSIC=chemin pour un essai. Son volume suit le récit :
+// il baisse sous chaque phrase dite, presque silence juste avant la notification, remonte pendant, plein sur la carte finale.
+//
 //   swift tools/make_montage.swift marketing/beta-ad
 import AVFoundation
 import AppKit
@@ -56,6 +59,8 @@ let voiceTrack = composition.addMutableTrack(withMediaType: .audio, preferredTra
 // (la piste reste vide tant qu'il n'y a pas d'enregistrement : elle est retirée avant l'export)
 var cursor = CMTime.zero
 var starts: [Double] = []
+/// Moments où la voix parle (début, fin) : la musique baisse en dessous.
+var spoken: [(Double, Double)] = []
 
 for shot in shots {
     let asset = AVURLAsset(url: dir.appending(path: shot.file))
@@ -71,8 +76,9 @@ for shot in shots {
     if let voice = shot.voice, let file = voiceFile(voice.number) {
         let audio = AVURLAsset(url: file)
         if let source = audio.tracks(withMediaType: .audio).first {
-            try voiceTrack.insertTimeRange(CMTimeRange(start: .zero, duration: audio.duration), of: source,
-                                           at: CMTimeAdd(cursor, CMTime(seconds: voice.at, preferredTimescale: 600)))
+            let at = CMTimeAdd(cursor, CMTime(seconds: voice.at, preferredTimescale: 600))
+            try voiceTrack.insertTimeRange(CMTimeRange(start: .zero, duration: audio.duration), of: source, at: at)
+            spoken.append((CMTimeGetSeconds(at), CMTimeGetSeconds(at) + CMTimeGetSeconds(audio.duration)))
         }
     }
     cursor = CMTimeAdd(cursor, range.duration)
@@ -162,6 +168,51 @@ for (i, shot) in shots.enumerated() {
 }
 videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parent)
 
+// MARK: musique et volume
+
+let total = CMTimeGetSeconds(cursor)
+let musicURL = ProcessInfo.processInfo.environment["MUSIC"].map { URL(fileURLWithPath: $0) }
+    ?? ["mp3", "m4a", "wav"].map { dir.appending(path: "musique.\($0)") }.first { FileManager.default.fileExists(atPath: $0.path) }
+var audioMix: AVMutableAudioMix?
+// L'asset est gardé dans une variable : une piste ne retient pas son asset, qui sinon disparaît avant le découpage (erreur -12780).
+let musicAsset = musicURL.map { AVURLAsset(url: $0, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]) }
+if let musicURL, let music = musicAsset?.tracks(withMediaType: .audio).first {
+    let musicTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!
+    let length = min(CMTimeGetSeconds(music.timeRange.duration), total)
+    // On part du début réel de la piste (un MP3 ne commence pas toujours à 0), en restant un peu en deçà de sa fin.
+    try musicTrack.insertTimeRange(CMTimeRange(start: music.timeRange.start, duration: CMTime(seconds: length - 0.05, preferredTimescale: 600)), of: music, at: .zero)
+
+    // Courbe de volume : une suite de points (moment, niveau), reliés par des rampes.
+    let full: Float = 0.8, under: Float = 0.22, breath: Float = 0.06
+    let notification = starts[shots.firstIndex { $0.notification }!]
+    let endcard = starts[shots.count - 1]
+    /// Niveau de fond selon le moment : plein pendant la journée, plus bas pendant la notification, plein à la fin.
+    func base(_ t: Double) -> Float { t < notification ? full : t < endcard ? 0.4 : 0.9 }
+    var points: [(Double, Float)] = [(0, 0), (0.6, full)]
+    for (from, to) in spoken {
+        points += [(from - 0.2, base(from)), (from, under), (to, under), (to + 0.4, base(to))]
+    }
+    // Juste avant la notification : presque le silence, puis la musique remonte doucement pendant le plan.
+    points.append((notification - 0.6, full))
+    points.append((notification, breath))
+    points.append((notification + 1.2, breath))
+    points.append((endcard - 0.2, 0.55))
+    points.append((endcard + 0.4, 0.9))
+    points.append((total - 1.2, 0.9))
+    points.append((total, 0))
+    points.sort { $0.0 < $1.0 }
+
+    let params = AVMutableAudioMixInputParameters(track: musicTrack)
+    for (a, b) in zip(points, points.dropFirst()) where b.0 > a.0 {
+        params.setVolumeRamp(fromStartVolume: a.1, toEndVolume: b.1,
+                             timeRange: CMTimeRange(start: CMTime(seconds: a.0, preferredTimescale: 600), end: CMTime(seconds: b.0, preferredTimescale: 600)))
+    }
+    let mix = AVMutableAudioMix()
+    mix.inputParameters = [params]
+    audioMix = mix
+    print("musique : \(musicURL.lastPathComponent)\(length < total ? String(format: " (plus courte que la vidéo : %.1f s)", length) : "")")
+}
+
 // MARK: export
 
 if voiceTrack.segments.isEmpty { composition.removeTrack(voiceTrack) }
@@ -172,6 +223,7 @@ guard let export = AVAssetExportSession(asset: composition, presetName: AVAssetE
 export.outputURL = out
 export.outputFileType = .mp4
 export.videoComposition = videoComposition
+export.audioMix = audioMix
 let done = DispatchSemaphore(value: 0)
 export.exportAsynchronously { done.signal() }
 done.wait()
