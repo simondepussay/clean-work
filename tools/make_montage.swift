@@ -207,6 +207,9 @@ if let musicURL, let music = musicAsset?.tracks(withMediaType: .audio).first {
     points.append((endcard + 0.4, 0.55))
     points.append((total - 1.2, 0.55))
     points.append((total, 0))
+    // Un point de la courbe générale qui tombe pendant une phrase ferait remonter la musique sur la voix : on l'enlève.
+    let ducks = Set(spoken.flatMap { [$0.0 - 0.2, $0.0, $0.1, $0.1 + 0.4] })
+    points = points.filter { p in ducks.contains(p.0) || p.0 >= total || !spoken.contains { p.0 > $0.0 - 0.2 && p.0 < $0.1 + 0.4 } }
     points.sort { $0.0 < $1.0 }
 
     let params = AVMutableAudioMixInputParameters(track: musicTrack)
