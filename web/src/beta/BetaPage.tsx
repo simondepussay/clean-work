@@ -32,9 +32,9 @@ export function BetaPage() {
     {
       title: tr({ ja: "メールアドレスを送る", en: "Send your email", fr: "Envoyez votre e-mail" }),
       text: tr({
-        ja: "iPhone・iPadで使っている Apple アカウント（Apple ID）のメールアドレスを、下のフォームから送ってください。",
-        en: "Use the form below to send the email address of the Apple Account (Apple ID) on your iPhone or iPad.",
-        fr: "Envoyez avec le formulaire ci-dessous l'adresse e-mail du compte Apple (identifiant Apple) de votre iPhone ou iPad.",
+        ja: "iPhone・iPadで使っている Apple アカウント（Apple ID）のメールアドレスを、このページのフォームから送ってください。",
+        en: "Use the form on this page to send the email address of the Apple Account (Apple ID) on your iPhone or iPad.",
+        fr: "Envoyez avec le formulaire de cette page l'adresse e-mail du compte Apple (identifiant Apple) de votre iPhone ou iPad.",
       }),
     },
     {
@@ -119,7 +119,7 @@ export function BetaPage() {
                 ? tr({ ja: "受け付けました", en: "Request received", fr: "Demande reçue" })
                 : tr({ ja: "このメールはすでに受け付けています", en: "This email is already on the list", fr: "Cette adresse est déjà inscrite" })}</h2>
               <p>{tr({
-                ja: "数日以内に Apple（TestFlight）から招待メールが届きます。届いたら、左の手順3から進めてください。",
+                ja: "数日以内に Apple（TestFlight）から招待メールが届きます。届いたら、手順3から進めてください。",
                 en: "Apple (TestFlight) will email your invitation within a few days. When it arrives, continue from step 3.",
                 fr: "Apple (TestFlight) vous enverra l'invitation sous quelques jours. À sa réception, reprenez à l'étape 3.",
               })}</p>
