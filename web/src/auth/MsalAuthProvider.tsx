@@ -1,5 +1,6 @@
 import {
   InteractionRequiredAuthError,
+  LogLevel,
   PublicClientApplication,
   type AccountInfo,
 } from "@azure/msal-browser";
@@ -27,6 +28,14 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
           postLogoutRedirectUri: `${window.location.origin}/`,
         },
         cache: { cacheLocation: "localStorage" },
+        // Diagnostic de la connexion : avertissements et erreurs de MSAL dans la console, jamais de données personnelles.
+        system: {
+          loggerOptions: {
+            logLevel: LogLevel.Warning,
+            piiLoggingEnabled: false,
+            loggerCallback: (level, message) => { if (level <= LogLevel.Warning) console.warn("[Clean Work · MSAL]", message); },
+          },
+        },
       }),
     [config],
   );
@@ -37,8 +46,11 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
   useEffect(() => {
     (async () => {
       await pca.initialize();
+      const returning = /[#&](code|error)=/.test(window.location.hash);
       const result = await pca.handleRedirectPromise();
       const current = result?.account ?? pca.getAllAccounts()[0] ?? null;
+      // Sans contenu personnel : seulement les étapes, pour comprendre une boucle de connexion.
+      console.info("[Clean Work] connexion :", { retourDeMicrosoft: returning, reponseTraitee: !!result, compteEnCache: pca.getAllAccounts().length, connecte: !!current });
       if (current) pca.setActiveAccount(current);
       setAccount(current);
       setReady(true);
