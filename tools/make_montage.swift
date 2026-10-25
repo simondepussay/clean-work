@@ -1,6 +1,10 @@
 // Montage de la vidéo de lancement (9:16, 1080×1920) à partir des plans générés par IA :
-// coupes, deux phrases en japonais, la notification qui descend, puis la carte finale (make_endcard.swift).
+// coupes, phrases en japonais (à l'écran et dites), la notification qui descend, puis la carte finale (make_endcard.swift).
 // Le son des plans n'est pas gardé : la musique s'ajoute au montage final.
+//
+// Voix : seulement des enregistrements, marketing/beta-ad/voix/1 … 4 (.m4a, .wav, .mp3) ; sans eux, pas de voix
+// (les voix de synthèse du Mac ont été écartées : trop plates pour la pub).
+//   1 忙しくて、  2 家族を、安心させたい。  3 全部、ひとりで抱えてた。  4 迷わない毎日へ。
 //
 //   swift tools/make_montage.swift marketing/beta-ad
 import AVFoundation
@@ -13,25 +17,43 @@ let dir = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "marke
 let size = CGSize(width: 1080, height: 1920)
 
 /// Un plan : quel fichier, à partir de quand, combien de temps, et le texte éventuel à l'écran.
-struct Shot { let file: String; let from: Double; let length: Double; var caption: String? = nil; var notification = false }
+struct Shot {
+    let file: String; let from: Double; let length: Double
+    var caption: String? = nil
+    /// Le texte reste affiché jusqu'à la fin de ce plan-là (index dans `shots`) : une phrase sur plusieurs plans.
+    var captionThrough: Int? = nil
+    var notification = false
+    /// Phrase dite (numéro du fichier voix/N.m4a s'il existe) et moment où elle commence dans le plan.
+    var voice: (number: Int, text: String, at: Double)? = nil
+}
 
 let shots: [Shot] = [
-    Shot(file: "clips/01-reveil.mp4", from: 1.0, length: 2.6),
+    // « 忙しくて、 » court sur toute la course du matin au soir, du réveil au petit boulot (plans 0 à 4).
+    Shot(file: "clips/01-reveil.mp4", from: 1.0, length: 2.6, caption: "忙しくて、", captionThrough: 4, voice: (1, "忙しくて、", 0.6)),
     // Elle sort de chez elle en tenue de tous les jours : au début de la journée, pas après le tailleur.
     Shot(file: "clips/09-depart.mp4", from: 1.0, length: 2.2),
     Shot(file: "clips/02-train.mp4", from: 1.0, length: 2.2),
     Shot(file: "clips/03-cours.mp4", from: 1.5, length: 2.0),
     Shot(file: "clips/04-baito.mp4", from: 1.5, length: 2.0),
-    Shot(file: "clips/05-entrainement.mp4", from: 1.0, length: 2.8, caption: "家族を、安心させたい。"),
-    Shot(file: "clips/06-seule-la-nuit.mp4", from: 1.0, length: 3.2, caption: "全部、ひとりで抱えてた。"),
+    Shot(file: "clips/05-entrainement.mp4", from: 1.0, length: 2.8, caption: "家族を、安心させたい。", voice: (2, "家族を、安心させたい。", 0.3)),
+    Shot(file: "clips/06-seule-la-nuit.mp4", from: 1.0, length: 3.2, caption: "全部、ひとりで抱えてた。", voice: (3, "全部、ひとりで抱えてた。", 0.3)),
     Shot(file: "clips/07-tailleur.mp4", from: 1.0, length: 2.4),
     Shot(file: "clips/08-notification.mp4", from: 0.5, length: 5.5, notification: true),
-    Shot(file: "endcard-9x16.mp4", from: 0, length: 6.0),
+    // Le slogan apparaît sur la carte finale vers 2,3 s : la voix le dit à ce moment-là.
+    Shot(file: "endcard-9x16.mp4", from: 0, length: 6.0, voice: (4, "迷わない毎日へ。", 2.4)),
 ]
+
+/// L'enregistrement de la phrase s'il existe (voix/N.m4a…), sinon rien.
+func voiceFile(_ number: Int) -> URL? {
+    ["m4a", "wav", "mp3", "aiff"].map { dir.appending(path: "voix/\(number).\($0)") }
+        .first { FileManager.default.fileExists(atPath: $0.path) }
+}
 
 let composition = AVMutableComposition()
 let track = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)!
 let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
+let voiceTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!
+// (la piste reste vide tant qu'il n'y a pas d'enregistrement : elle est retirée avant l'export)
 var cursor = CMTime.zero
 var starts: [Double] = []
 
@@ -46,6 +68,13 @@ for shot in shots {
     let dx = (size.width - natural.width * scale) / 2, dy = (size.height - natural.height * scale) / 2
     layerInstruction.setTransform(source.preferredTransform.concatenating(CGAffineTransform(scaleX: scale, y: scale)).concatenating(CGAffineTransform(translationX: dx, y: dy)), at: cursor)
     starts.append(CMTimeGetSeconds(cursor))
+    if let voice = shot.voice, let file = voiceFile(voice.number) {
+        let audio = AVURLAsset(url: file)
+        if let source = audio.tracks(withMediaType: .audio).first {
+            try voiceTrack.insertTimeRange(CMTimeRange(start: .zero, duration: audio.duration), of: source,
+                                           at: CMTimeAdd(cursor, CMTime(seconds: voice.at, preferredTimescale: 600)))
+        }
+    }
     cursor = CMTimeAdd(cursor, range.duration)
 }
 
@@ -97,7 +126,8 @@ func fade(_ layer: CALayer, start: Double, end: Double, inTime: Double = 0.35, o
 }
 
 for (i, shot) in shots.enumerated() {
-    let start = starts[i], end = start + shot.length
+    let start = starts[i]
+    let end = shot.captionThrough.map { starts[$0] + shots[$0].length } ?? start + shot.length
     if let caption = shot.caption {
         // Sous-titre blanc avec une ombre douce, centré en bas (lisible sur tous les fonds).
         // Dessiné en image : un CATextLayer ne survit pas à l'export vidéo sur macOS.
@@ -129,6 +159,8 @@ for (i, shot) in shots.enumerated() {
 videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parent)
 
 // MARK: export
+
+if voiceTrack.segments.isEmpty { composition.removeTrack(voiceTrack) }
 
 let out = dir.appending(path: "montage-9x16.mp4")
 try? FileManager.default.removeItem(at: out)
