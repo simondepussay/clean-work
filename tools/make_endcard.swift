@@ -1,4 +1,4 @@
-// Carte finale de la vidéo de lancement (6 s, 30 i/s) et image de la notification à incruster.
+// Carte finale de la vidéo (6 s, 30 i/s) : logo, nom, slogan, adresse, et image de la notification à incruster.
 // Dessinées par le code (CoreGraphics, CoreText, AVFoundation) : l'IA écrit mal le japonais et déforme les logos.
 //
 //   swift tools/make_endcard.swift marketing/beta-ad
@@ -120,33 +120,9 @@ func drawEndcard(_ ctx: CGContext, w: CGFloat, h: CGFloat, t: CGFloat) {
     drawText(ctx, "迷わない毎日へ。", font: font("HiraginoSans-W6", 84 * unit), color: color(blue700),
              centerX: w / 2, y: logoY + logoSize * 0.5 + (portrait ? 340 : 310) * unit, height: h, alpha: sloganIn, kern: 8 * unit)
 
-    // Appel à la bêta : étiquette bordeaux, puis l'adresse.
-    let ctaIn = easeOut(phase(t, 3.3, 3.9))
-    if ctaIn > 0 {
-        let label = "ベータ版 参加者募集中"
-        let f = font("HiraginoSans-W6", 54 * unit)
-        let pillW = textWidth(label, f) + 100 * unit, pillH = 110 * unit
-        let pillTop = logoY + logoSize * 0.5 + (portrait ? 470 : 400) * unit + 20 * unit * (1 - ctaIn)
-        ctx.saveGState()
-        ctx.setAlpha(ctaIn)
-        // Coins droits et un coin coupé, comme les encadrés « ticket » de l'app.
-        let cut = 22 * unit
-        let rect = CGRect(x: w / 2 - pillW / 2, y: h - pillTop - pillH, width: pillW, height: pillH)
-        let shape = CGMutablePath()
-        shape.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        shape.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        shape.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - cut))
-        shape.addLine(to: CGPoint(x: rect.maxX - cut, y: rect.maxY))
-        shape.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        shape.closeSubpath()
-        ctx.addPath(shape)
-        ctx.setFillColor(color(bordeaux))
-        ctx.fillPath()
-        ctx.restoreGState()
-        drawText(ctx, label, font: f, color: color(0xffffff), centerX: w / 2, y: pillTop + pillH / 2 + 19 * unit, height: h, alpha: ctaIn, kern: 3 * unit)
-        drawText(ctx, "cleanwork.simondepussay.com", font: font("AvenirNext-DemiBold", 46 * unit), color: color(muted),
-                 centerX: w / 2, y: pillTop + pillH + 86 * unit, height: h, alpha: easeOut(phase(t, 3.7, 4.3)))
-    }
+    // L'adresse du site, discrète, sous le slogan.
+    drawText(ctx, "cleanwork.simondepussay.com", font: font("AvenirNext-DemiBold", 46 * unit), color: color(muted),
+             centerX: w / 2, y: logoY + logoSize * 0.5 + (portrait ? 470 : 410) * unit, height: h, alpha: easeOut(phase(t, 3.3, 4.0)))
 
     // Fondu d'entrée depuis le noir (raccord avec le dernier plan).
     let fade = 1 - phase(t, 0, 0.35)
