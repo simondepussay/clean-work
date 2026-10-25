@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SITE: https://blue-rock-008b52800.2.azurestaticapps.net
+  SITE: https://cleanwork.simondepussay.com
 
 jobs:
   test:

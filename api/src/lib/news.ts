@@ -59,7 +59,7 @@ export function parseFeed(xml: string, source: string): NewsItem[] {
 type Fetcher = (url: string) => Promise<string>;
 
 const defaultFetcher: Fetcher = async (url) => {
-  const res = await fetch(url, { headers: { "user-agent": "CleanWork/1.0 (+https://blue-rock-008b52800.2.azurestaticapps.net)" }, signal: AbortSignal.timeout(8000) });
+  const res = await fetch(url, { headers: { "user-agent": "CleanWork/1.0 (+https://cleanwork.simondepussay.com)" }, signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`${url} : ${res.status}`);
   return res.text();
 };

@@ -9,7 +9,7 @@
 
 **Sprint 1 en cours** (développement commencé le 16 octobre 2026). Objectif : MVP publiée avant le 31 mars 2027, date où ouvrent les candidatures aux stages d'été.
 
-- Site : https://blue-rock-008b52800.2.azurestaticapps.net
+- Site : https://cleanwork.simondepussay.com (adresse d’origine d’Azure, toujours active : https://blue-rock-008b52800.2.azurestaticapps.net)
 - Journal de développement (JA / EN) : `docs/journal.html`
 
 ## Contenu

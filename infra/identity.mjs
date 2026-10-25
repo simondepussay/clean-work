@@ -33,7 +33,8 @@ if (!TENANT_ID) {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BUNDLE_ID = "com.simondepussay.ShukatsuPilot";
-const WEB_ORIGINS = ["https://blue-rock-008b52800.2.azurestaticapps.net", "http://localhost:5173"];
+// Adresse publique (cleanwork.simondepussay.com, depuis le 2026-10-25) et adresse d'origine d'Azure, qui reste active.
+const WEB_ORIGINS = ["https://cleanwork.simondepussay.com", "https://blue-rock-008b52800.2.azurestaticapps.net", "http://localhost:5173"];
 const API_NAME = "Shukatsu API";
 const WEB_NAME = "Shukatsu Web";
 const IOS_NAME = "Shukatsu iOS";

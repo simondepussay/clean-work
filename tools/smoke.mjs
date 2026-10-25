@@ -7,7 +7,7 @@
 //
 // Lancé après chaque déploiement (deploy.yml) et toutes les heures (monitor.yml).
 //
-//   node tools/smoke.mjs https://blue-rock-008b52800.2.azurestaticapps.net [version-attendue]
+//   node tools/smoke.mjs https://cleanwork.simondepussay.com [version-attendue]
 
 const site = (process.argv[2] ?? "").replace(/\/$/, "");
 const expectedVersion = process.argv[3];

@@ -50,7 +50,7 @@ targets:
         EntraClientID: a4837883-e8be-4db5-b6d9-63a5204707cc
         EntraTenantSubdomain: shukatsupilot
         EntraAPIScope: api://32d9ab54-b203-4930-8763-429163e4f47b/access
-        APIBaseURL: https://blue-rock-008b52800.2.azurestaticapps.net
+        APIBaseURL: https://cleanwork.simondepussay.com
         # Entraînement aux entretiens (S18) : répondre à voix haute.
         NSMicrophoneUsageDescription: 面接練習で、声で回答するためにマイクを使います。/ The microphone is used to answer interview practice questions by voice.
         NSSpeechRecognitionUsageDescription: 声の回答を文字にするために音声認識を使います。音声は本アプリのサーバーには送られません。/ Speech recognition turns your spoken answers into text. Your voice is not sent to our servers.
