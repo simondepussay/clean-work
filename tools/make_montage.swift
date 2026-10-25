@@ -28,13 +28,13 @@ struct Shot {
 }
 
 let shots: [Shot] = [
-    // « 忙しくて、 » court sur toute la course du matin au soir, du réveil au petit boulot (plans 0 à 4).
-    Shot(file: "clips/01-reveil.mp4", from: 1.0, length: 2.6, caption: "忙しくて、", captionThrough: 4, voice: (1, "忙しくて、", 0.6)),
+    // « 忙しくて、 » s'accumule pendant que la journée s'emballe : une fois, deux fois, trois fois (plans 0 à 4).
+    Shot(file: "clips/01-reveil.mp4", from: 1.0, length: 2.6, caption: "忙しくて、", captionThrough: 1, voice: (1, "忙しくて、", 0.6)),
     // Elle sort de chez elle en tenue de tous les jours : au début de la journée, pas après le tailleur.
     Shot(file: "clips/09-depart.mp4", from: 1.0, length: 2.2),
-    Shot(file: "clips/02-train.mp4", from: 1.0, length: 2.2),
+    Shot(file: "clips/02-train.mp4", from: 1.0, length: 2.2, caption: "忙しくて、忙しくて、", captionThrough: 3, voice: (1, "忙しくて、", 0.3)),
     Shot(file: "clips/03-cours.mp4", from: 1.5, length: 2.0),
-    Shot(file: "clips/04-baito.mp4", from: 1.5, length: 2.0),
+    Shot(file: "clips/04-baito.mp4", from: 1.5, length: 2.0, caption: "忙しくて、忙しくて、忙しくて、", voice: (1, "忙しくて、", 0.2)),
     Shot(file: "clips/05-entrainement.mp4", from: 1.0, length: 2.8, caption: "家族を、安心させたい。", voice: (2, "家族を、安心させたい。", 0.3)),
     Shot(file: "clips/06-seule-la-nuit.mp4", from: 1.0, length: 3.2, caption: "全部、ひとりで抱えてた。", voice: (3, "全部、ひとりで抱えてた。", 0.3)),
     Shot(file: "clips/07-tailleur.mp4", from: 1.0, length: 2.4),
@@ -97,13 +97,17 @@ parent.addSublayer(videoLayer)
 func captionImage(_ text: String, width: CGFloat, height: CGFloat) -> CGImage {
     let ctx = CGContext(data: nil, width: Int(width), height: Int(height), bitsPerComponent: 8, bytesPerRow: 0,
                         space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-    let font = CTFontCreateWithName("HiraginoSans-W6" as CFString, 68, nil)
-    let attrs: [NSAttributedString.Key: Any] = [
-        NSAttributedString.Key(kCTFontAttributeName as String): font,
-        NSAttributedString.Key(kCTForegroundColorAttributeName as String): CGColor(gray: 1, alpha: 1),
-        NSAttributedString.Key(kCTKernAttributeName as String): 6,
-    ]
-    let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: attrs))
+    // 68 pt, ou plus petit si la ligne est trop longue pour l'écran (« 忙しくて、» trois fois).
+    func line(_ pt: CGFloat) -> CTLine {
+        let attrs: [NSAttributedString.Key: Any] = [
+            NSAttributedString.Key(kCTFontAttributeName as String): CTFontCreateWithName("HiraginoSans-W6" as CFString, pt, nil),
+            NSAttributedString.Key(kCTForegroundColorAttributeName as String): CGColor(gray: 1, alpha: 1),
+            NSAttributedString.Key(kCTKernAttributeName as String): pt * 0.09,
+        ]
+        return CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: attrs))
+    }
+    let natural = CGFloat(CTLineGetTypographicBounds(line(68), nil, nil, nil))
+    let line = line(min(68, 68 * (width - 40) / natural))
     let lineWidth = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
     ctx.setShadow(offset: .zero, blur: 18, color: CGColor(gray: 0, alpha: 0.75))
     ctx.textPosition = CGPoint(x: (width - lineWidth) / 2, y: height / 2 - 24)
