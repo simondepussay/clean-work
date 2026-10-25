@@ -15,6 +15,7 @@ const InterviewPage = lazy(() => import("./interview/InterviewPage").then((m) =>
 const DocumentsPage = lazy(() => import("./profile/DocumentsPage").then((m) => (loadedFine(), { default: m.DocumentsPage })));
 const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => (loadedFine(), { default: m.ResumePanel })));
 const InfoPage = lazy(() => import("./info/InfoPage").then((m) => (loadedFine(), { default: m.InfoPage })));
+const BetaPage = lazy(() => import("./beta/BetaPage").then((m) => (loadedFine(), { default: m.BetaPage })));
 const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (loadedFine(), { default: m.ProfileEditor })));
 import { UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
@@ -22,7 +23,7 @@ import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
-const VIEWS = ["home", "apps", "es", "interview", "documents", "info", "account"] as const;
+const VIEWS = ["home", "apps", "es", "interview", "documents", "info", "account", "beta"] as const;
 type View = (typeof VIEWS)[number];
 
 function viewFromHash(): View {
@@ -200,7 +201,9 @@ export default function App() {
             message={tr({ ja: "このページを表示できませんでした。新しいバージョンが公開された可能性があります。", en: "This page could not be displayed. A new version may have been published.", fr: "Cette page n'a pas pu s'afficher. Une nouvelle version a peut-être été mise en ligne." })}
             action={tr({ ja: "再読み込み", en: "Reload", fr: "Recharger" })}>
             <Suspense fallback={<Loader />}>
-              {!signedIn && <SignedOut />}
+              {/* La page de la bêta est ouverte à tous, connecté ou non. */}
+              {view === "beta" && <BetaPage />}
+              {!signedIn && view !== "beta" && <SignedOut />}
               {signedIn && view === "home" && (
                 <HomePage name={signedIn.name} onOpenApps={() => open("apps")}
                   onPractice={(t) => { setInterviewSeed({ ...t, nonce: Date.now() }); open("interview"); }} />
@@ -227,6 +230,9 @@ export default function App() {
         <span>© Clean Work</span>
         <a href="/privacy.html">{tr({ ja: "プライバシーポリシー", en: "Privacy policy", fr: "Confidentialité" })}</a>
         <a href="/terms.html">{tr({ ja: "利用規約", en: "Terms of use", fr: "Conditions d'utilisation" })}</a>
+        <a href="#beta" className="footer-beta" onClick={(e) => { e.preventDefault(); open("beta"); }}>
+          {tr({ ja: "βテストに参加", en: "Join the beta", fr: "Rejoindre la bêta" })}
+        </a>
         <span className="status" role="status">
           {health.kind === "loading" && "API…"}
           {health.kind === "offline" && `API: ${tr({ ja: "オフライン", en: "offline", fr: "hors ligne" })}`}

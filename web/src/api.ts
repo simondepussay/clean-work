@@ -391,3 +391,21 @@ export const getCompanyFacts = async (token: string, corporateNumber: string, f?
   const facts = await optional<CompanyFacts>(token, `/api/company/${corporateNumber}`, f);
   return isObject(facts) && Array.isArray(facts.labels) ? facts : null;
 };
+
+// ------------------------------------------------------------------ bêta TestFlight (formulaire public, sans compte)
+
+export type BetaRequest = { email: string; device: "iphone" | "ipad" | "both"; message?: string; lang: "ja" | "en" | "fr"; consent: boolean; website: string };
+export type BetaOutcome = { ok: true; status: "ok" | "already" } | { ok: false; issues: Issue[] } | { ok: false; error: "limit" | "failed" };
+
+export async function requestBeta(body: BetaRequest, fetcher: typeof fetch = fetch): Promise<BetaOutcome> {
+  try {
+    const res = await fetcher("/api/beta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return { ok: true, status: data.status === "already" ? "already" : "ok" };
+    if (res.status === 400) return { ok: false, issues: data.issues ?? [] };
+    return { ok: false, error: res.status === 429 ? "limit" : "failed" };
+  } catch {
+    return { ok: false, error: "failed" };
+  }
+}
+

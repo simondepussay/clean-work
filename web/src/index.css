@@ -532,3 +532,29 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .page-error { margin: 24px auto; max-width: 520px; text-align: center; border-left: 3px solid var(--bordeaux); }
 .page-error p { margin: 0 0 12px; color: var(--blue-950); }
 
+/* Page « βテストに参加 » : étapes à gauche, formulaire à droite (une colonne sur téléphone). */
+.beta-page { max-width: 1040px; margin: 0 auto; }
+.beta-head { margin-bottom: 18px; }
+.beta-head h1 { margin: 4px 0 6px; color: var(--blue-800); }
+.beta-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .beta-grid { grid-template-columns: 1fr; } }
+.beta-steps h2, .beta-form-card h2 { margin-top: 0; color: var(--blue-800); }
+.beta-need { padding: 8px 12px; border-left: 3px solid var(--blue-700); background: var(--blue-50); border-radius: 3px; font-weight: 600; color: var(--blue-800); }
+.beta-steps ol { list-style: none; padding: 0; margin: 14px 0; display: flex; flex-direction: column; gap: 14px; }
+.beta-steps li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; }
+.beta-steps li p { margin: 2px 0 4px; color: var(--blue-950); line-height: 1.6; }
+.step-num { display: grid; place-items: center; width: 32px; height: 32px; background: var(--bordeaux); color: #fff; font-weight: 800;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); }
+.beta-form-card { border-top: 3px solid var(--bordeaux); position: sticky; top: 16px; }
+.beta-form-card form { display: flex; flex-direction: column; }
+.beta-form-card textarea { resize: vertical; }
+.beta-form-card .consent { flex-direction: row; align-items: flex-start; gap: 10px; font-size: 13px; }
+.beta-form-card .consent input { margin-top: 3px; flex: none; }
+.beta-form-card .consent span { color: var(--blue-950); font-size: 13px; }
+.beta-form-card button[type="submit"] { margin-top: 8px; }
+.trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.beta-done { text-align: center; padding: 12px 4px; }
+.beta-done .done-icon { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--blue-100); color: var(--blue-700); }
+.beta-done h2 { margin: 12px 0 6px; }
+.footer-beta { font-weight: 600; color: var(--bordeaux) !important; }
+
