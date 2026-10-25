@@ -4,7 +4,7 @@
 //
 // Voix : seulement des enregistrements, marketing/beta-ad/voix/1 … 4 (.m4a, .wav, .mp3) ; sans eux, pas de voix
 // (les voix de synthèse du Mac ont été écartées : trop plates pour la pub).
-//   1 忙しくて、  2 家族を、安心させたい。  3 全部、ひとりで抱えてた。  4 迷わない毎日へ。
+//   1 忙しくて、  2 家族を、安心させたい。  3 全部、ひとりで抱えてた。  4 迷わない毎日へ。  5 クリーンワーク
 //
 // Musique : marketing/beta-ad/musique.mp3 (ou .m4a, .wav), ou MUSIC=chemin pour un essai. Son volume suit le récit :
 // il baisse sous chaque phrase dite, presque silence juste avant la notification, remonte pendant, plein sur la carte finale.
@@ -28,6 +28,8 @@ struct Shot {
     var notification = false
     /// Phrase dite (numéro du fichier voix/N.m4a s'il existe) et moment où elle commence dans le plan.
     var voice: (number: Int, text: String, at: Double)? = nil
+    /// Une seconde phrase dans le même plan (le nom « Clean Work » à la fin).
+    var voice2: (number: Int, text: String, at: Double)? = nil
 }
 
 let shots: [Shot] = [
@@ -43,7 +45,8 @@ let shots: [Shot] = [
     Shot(file: "clips/07-tailleur.mp4", from: 1.0, length: 2.4),
     Shot(file: "clips/08-notification.mp4", from: 0.5, length: 5.5, notification: true),
     // Le slogan apparaît sur la carte finale vers 2,3 s : la voix le dit à ce moment-là.
-    Shot(file: "endcard-9x16.mp4", from: 0, length: 6.0, voice: (4, "迷わない毎日へ。", 2.4)),
+    // Puis le nom, dit clairement, pendant que tout est affiché (voix/5 : « クリーンワーク »).
+    Shot(file: "endcard-9x16.mp4", from: 0, length: 6.0, voice: (4, "迷わない毎日へ。", 2.4), voice2: (5, "クリーンワーク", 4.1)),
 ]
 
 /// L'enregistrement de la phrase s'il existe (voix/N.m4a…), sinon rien.
@@ -73,7 +76,8 @@ for shot in shots {
     let dx = (size.width - natural.width * scale) / 2, dy = (size.height - natural.height * scale) / 2
     layerInstruction.setTransform(source.preferredTransform.concatenating(CGAffineTransform(scaleX: scale, y: scale)).concatenating(CGAffineTransform(translationX: dx, y: dy)), at: cursor)
     starts.append(CMTimeGetSeconds(cursor))
-    if let voice = shot.voice, let file = voiceFile(voice.number) {
+    for voice in [shot.voice, shot.voice2].compactMap({ $0 }) {
+        guard let file = voiceFile(voice.number) else { continue }
         let audio = AVURLAsset(url: file)
         if let source = audio.tracks(withMediaType: .audio).first {
             let at = CMTimeAdd(cursor, CMTime(seconds: voice.at, preferredTimescale: 600))
