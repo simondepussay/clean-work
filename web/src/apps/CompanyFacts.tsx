@@ -31,6 +31,8 @@ export function CompanyFacts({ company, corporateNumber, onLink }: {
   const [facts, setFacts] = useState<Facts | null>(null);
   const [busy, setBusy] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  /** gBizINFO n'a pas répondu à la recherche (panne passagère) : on le dit, le bouton reste là. */
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setFacts(null);
@@ -46,9 +48,11 @@ export function CompanyFacts({ company, corporateNumber, onLink }: {
   async function search() {
     setBusy(true);
     try {
+      setFailed(false);
       const t = await auth.getToken();
-      const found = t ? await searchCompanies(t, company) : null;
-      if (found === null) setUnavailable(true);
+      const found = t ? await searchCompanies(t, company) : "error";
+      if (found === "off") setUnavailable(true);
+      else if (found === "error") setFailed(true);
       else setMatches(found);
     } finally {
       setBusy(false);
@@ -61,12 +65,27 @@ export function CompanyFacts({ company, corporateNumber, onLink }: {
   if (!corporateNumber) {
     return (
       <section className="company-facts" aria-label={tr({ ja: "企業データ", en: "Company data", fr: "Données de l'entreprise" })}>
-        {matches === null ? (
-          <button type="button" onClick={search} disabled={busy || company.trim().length < 2}>
-            <SearchIcon size={15} /> {tr({ ja: "公式データで企業を探す", en: "Find the official company data", fr: "Trouver les données officielles de l'entreprise" })}
-          </button>
-        ) : matches.length === 0 ? (
-          <p className="muted">{tr({ ja: "見つかりませんでした。正式な社名で試してください", en: "Not found. Try the full legal name", fr: "Introuvable. Essayez la raison sociale complète" })}</p>
+        {matches === null || matches.length === 0 ? (
+          <>
+            <button type="button" onClick={search} disabled={busy || company.trim().length < 2}>
+              <SearchIcon size={15} /> {matches === null
+                ? tr({ ja: "公式データで企業を探す", en: "Find the official company data", fr: "Trouver les données officielles de l'entreprise" })
+                : tr({ ja: "もう一度探す", en: "Search again", fr: "Chercher à nouveau" })}
+            </button>
+            {matches?.length === 0 && (
+              <p className="facts-hint" role="status">
+                <strong>{tr({ ja: `「${company}」は見つかりませんでした。`, en: `No company found for “${company}”.`, fr: `Aucune entreprise trouvée pour « ${company} ».` })}</strong>
+                {tr({
+                  ja: "登記上の正式な社名か確認してください（例：「ソニー」ではなく「ソニーグループ」）。英字の社名はカタカナでも試してください。",
+                  en: "Check that the company name is its official registered name (e.g. “ソニーグループ” rather than “ソニー”). For a name in Latin letters, also try it in katakana.",
+                  fr: "Vérifiez qu'il s'agit du nom officiel enregistré (ex. « ソニーグループ » plutôt que « ソニー »). Pour un nom en lettres latines, essayez aussi en katakana.",
+                })}
+              </p>
+            )}
+            {failed && (
+              <p className="facts-hint" role="alert">{tr({ ja: "公式データに接続できませんでした。少し時間をおいてお試しください。", en: "Could not reach the official data. Please try again in a moment.", fr: "Les données officielles ne répondent pas. Réessayez dans un instant." })}</p>
+            )}
+          </>
         ) : (
           <>
             <p className="facts-ask">{tr({ ja: "どの会社ですか？", en: "Which company is it?", fr: "De quelle entreprise s'agit-il ?" })}</p>

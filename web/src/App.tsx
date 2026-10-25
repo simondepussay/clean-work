@@ -103,6 +103,8 @@ function SignedOut() {
       {auth.state.status === "signedOut" && auth.state.error && (
         <p role="alert" className="notice signin-error">{auth.state.error === "user_cancelled"
           ? tr({ ja: "サインインがキャンセルされました。", en: "Sign-in was cancelled.", fr: "La connexion a été annulée." })
+          : auth.state.error === "session_expired"
+          ? tr({ ja: "サインインの有効期限が切れました。もう一度サインインしてください。", en: "Your session has expired. Please sign in again.", fr: "Votre session a expiré. Reconnectez-vous." })
           : tr({ ja: "サインインできませんでした。削除したアカウントは使えません。別のアカウントでお試しください。", en: "Could not sign in. A deleted account can no longer be used; try another account.", fr: "Connexion impossible. Un compte supprimé ne peut plus être utilisé : essayez avec un autre compte." })}</p>
       )}
       {auth.state.status === "signedOut" && (

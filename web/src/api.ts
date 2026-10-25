@@ -378,9 +378,14 @@ export const getWeather = async (token: string, date: string, location?: string 
   const w = await optional<DayWeather>(token, `/api/weather?date=${date}${location ? `&location=${encodeURIComponent(location)}` : ""}`, f);
   return isObject(w) && WEATHER_KINDS.includes(w.kind) ? w : null;
 };
-export const searchCompanies = async (token: string, name: string, f?: typeof fetch) => {
-  const found = await optional<CompanyMatch[]>(token, `/api/company/search?name=${encodeURIComponent(name)}`, f);
-  return Array.isArray(found) ? found : null;
+/** Liste trouvée ; « off » si gBizINFO n'est pas configuré (bloc masqué) ; « error » si le service ne répond pas. */
+export const searchCompanies = async (token: string, name: string, f?: typeof fetch): Promise<CompanyMatch[] | "off" | "error"> => {
+  try {
+    const r = await call<CompanyMatch[]>(token, "GET", `/api/company/search?name=${encodeURIComponent(name)}`, undefined, f);
+    return r.ok && Array.isArray(r.value) ? r.value : "error";
+  } catch (e) {
+    return String(e).includes(": 503") ? "off" : "error";
+  }
 };
 export const getCompanyFacts = async (token: string, corporateNumber: string, f?: typeof fetch) => {
   const facts = await optional<CompanyFacts>(token, `/api/company/${corporateNumber}`, f);

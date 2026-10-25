@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearApiCache } from "./api";
 import { CompanyFacts } from "./apps/CompanyFacts";
 import { AuthContext, type Auth } from "./auth/auth";
 import { HomePage } from "./home/HomePage";
@@ -104,9 +105,25 @@ describe("données ouvertes dans l'app", () => {
     expect(screen.getByText("82%")).toBeInTheDocument();
     cleanup();
 
-    server({});
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "not_configured" }, 503)));
     const { container } = wrap(<CompanyFacts company="ソニー" onLink={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: "公式データで企業を探す" }));
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("rien trouvé : un message qui aide à corriger le nom, et on peut chercher à nouveau ; panne : un autre message", async () => {
+    server({ "/api/company/search": [] });
+    wrap(<CompanyFacts company="ソニー" onLink={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "公式データで企業を探す" }));
+    expect(await screen.findByText("「ソニー」は見つかりませんでした。")).toBeInTheDocument();
+    expect(screen.getByText(/正式な社名/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "もう一度探す" })).toBeInTheDocument();
+    cleanup();
+    clearApiCache();
+
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "unavailable" }, 502)));
+    wrap(<CompanyFacts company="ソニー" onLink={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "公式データで企業を探す" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("公式データに接続できませんでした");
   });
 });

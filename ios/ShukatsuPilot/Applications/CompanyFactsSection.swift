@@ -27,21 +27,28 @@ struct CompanyFactsSection: View {
     }
 
     @ViewBuilder private var finder: some View {
-        if let matches {
-            if matches.isEmpty {
-                Text(tr("見つかりませんでした。正式な社名で試してください", "Not found. Try the full legal name", "Introuvable. Essayez la raison sociale complète"))
-                    .font(.callout).foregroundStyle(.secondary)
-            } else {
-                ForEach(matches) { m in
-                    Button {
-                        corporateNumber = m.corporateNumber
-                        location = m.location
-                        self.matches = nil
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Label(m.name, systemImage: "building.2").font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800)
-                            if let loc = m.location { Text(loc).font(.caption).foregroundStyle(.secondary) }
-                        }
+        if let matches, matches.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(tr("「\(company)」は見つかりませんでした。", "No company found for “\(company)”.", "Aucune entreprise trouvée pour « \(company) »."))
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBordeaux)
+                Text(tr("登記上の正式な社名か確認してください（例：「ソニー」ではなく「ソニーグループ」）。英字の社名はカタカナでも試してください。",
+                        "Check that it is the official registered name (e.g. “ソニーグループ” rather than “ソニー”). For a name in Latin letters, also try it in katakana.",
+                        "Vérifiez qu'il s'agit du nom officiel enregistré (ex. « ソニーグループ » plutôt que « ソニー »). Pour un nom en lettres latines, essayez aussi en katakana."))
+                    .font(.caption).foregroundStyle(Color.cwBlue950)
+            }
+            .listRowBackground(Color.cwBordeaux50)
+            Button(tr("もう一度探す", "Search again", "Chercher à nouveau"), systemImage: "magnifyingglass") { Task { await search() } }
+                .disabled(busy)
+        } else if let matches {
+            ForEach(matches) { m in
+                Button {
+                    corporateNumber = m.corporateNumber
+                    location = m.location
+                    self.matches = nil
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label(m.name, systemImage: "building.2").font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+                        if let loc = m.location { Text(loc).font(.caption).foregroundStyle(.secondary) }
                     }
                 }
             }

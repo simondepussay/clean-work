@@ -92,7 +92,15 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
       try {
         return (await pca.acquireTokenSilent({ scopes, account })).accessToken;
       } catch (e) {
-        if (e instanceof InteractionRequiredAuthError) await pca.acquireTokenRedirect({ scopes, account });
+        // Session impossible à renouveler (expirée, ou compte supprimé entre-temps) : on oublie ce compte
+        // dans ce navigateur et on revient à l'accueil avec un message. Avant, on renvoyait vers Microsoft,
+        // qui pouvait refuser à nouveau : une boucle de connexion sans fin.
+        if (e instanceof InteractionRequiredAuthError) {
+          await pca.logoutRedirect({ account, onRedirectNavigate: () => false }).catch(() => {});
+          clearApiCache();
+          setError("session_expired");
+          setAccount(null);
+        }
         return null;
       }
     },

@@ -82,6 +82,13 @@ describe("données ouvertes", () => {
     expect(found.map((c) => c.corporateNumber)).toEqual(["5010401067252", "1111111111111"]);
   });
 
+  it("recherche gBizINFO : « 株式会社 » et espaces retirés ; 404 = aucun résultat (pas une panne)", async () => {
+    const urls: string[] = [];
+    const fetcher = (async (url: string) => { urls.push(url); return new Response("{}", { status: 404 }); }) as typeof fetch;
+    expect(await new GBizClient("jeton", fetcher).search("株式会社 メルカリ")).toEqual([]);
+    expect(decodeURIComponent(urls[0])).toContain("name=メルカリ&");
+  });
+
   it("fiche : labels utiles en premier, pourcentages calculés, chiffres absents = null", () => {
     expect(labelId("プラチナくるみん認定")).toBe("kurumin");
     expect(labelId("ISO 9001")).toBeNull();

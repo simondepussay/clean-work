@@ -27,7 +27,7 @@ class Cache<T> {
 
 async function getJson(url: string, fetcher: Fetcher, headers: Record<string, string> = {}) {
   const res = await fetcher(url, { headers: { accept: "application/json", ...headers }, signal: AbortSignal.timeout(8000) });
-  if (!res.ok) throw new Error(`${url} → ${res.status}`);
+  if (!res.ok) throw Object.assign(new Error(`${url} → ${res.status}`), { status: res.status });
   return res.json();
 }
 
@@ -211,10 +211,13 @@ export class GBizClient {
 
   /** Entreprises en activité dont le nom contient `name`, les plus actives d'abord (5 au plus). */
   search(name: string): Promise<CompanyMatch[]> {
-    const q = name.trim();
+    // La recherche est « contient » : sans 株式会社 ni espaces, « ソニーグループ » trouve « ソニーグループ株式会社 ».
+    const q = name.normalize("NFKC").replace(/株式会社|有限会社|合同会社|\(株\)|（株）|\s+/g, "").trim();
     if (q.length < 2) return Promise.resolve([]);
     return searchCache.get(q, async () => {
-      const data = await this.get(`?name=${encodeURIComponent(q)}&exist_flg=true&limit=10`);
+      // gBizINFO répond 404 quand rien ne correspond : c'est « aucun résultat », pas une panne.
+      const data = await this.get(`?name=${encodeURIComponent(q)}&exist_flg=true&limit=10`)
+        .catch((e) => { if ((e as { status?: number }).status === 404) return null; throw e; });
       return ((data?.["hojin-infos"] ?? []) as Record<string, string>[])
         .filter((h) => !h.status || h.status === "-" || !/閉鎖/.test(h.status))
         .sort((a, b) => Number(b.number_of_activity ?? 0) - Number(a.number_of_activity ?? 0))
