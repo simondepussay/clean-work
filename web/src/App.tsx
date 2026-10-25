@@ -1,4 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { PageErrorBoundary } from "./PageErrorBoundary";
+import { loadedFine } from "./reloadOnNewVersion";
 import { Loader } from "./Loader";
 import { clearApiCache, deleteAccount, fetchHealth, fetchMe, type Health, type Me } from "./api";
 import { useAuth } from "./auth/auth";
@@ -7,13 +9,13 @@ import type { EsSeed } from "./es/EsPage";
 import { HomePage } from "./home/HomePage";
 
 // Chaque onglet est chargé la première fois qu'on l'ouvre : l'accueil s'affiche sans attendre le reste.
-const ApplicationsBoard = lazy(() => import("./apps/ApplicationsBoard").then((m) => ({ default: m.ApplicationsBoard })));
-const EsPage = lazy(() => import("./es/EsPage").then((m) => ({ default: m.EsPage })));
-const InterviewPage = lazy(() => import("./interview/InterviewPage").then((m) => ({ default: m.InterviewPage })));
-const DocumentsPage = lazy(() => import("./profile/DocumentsPage").then((m) => ({ default: m.DocumentsPage })));
-const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => ({ default: m.ResumePanel })));
-const InfoPage = lazy(() => import("./info/InfoPage").then((m) => ({ default: m.InfoPage })));
-const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => ({ default: m.ProfileEditor })));
+const ApplicationsBoard = lazy(() => import("./apps/ApplicationsBoard").then((m) => (loadedFine(), { default: m.ApplicationsBoard })));
+const EsPage = lazy(() => import("./es/EsPage").then((m) => (loadedFine(), { default: m.EsPage })));
+const InterviewPage = lazy(() => import("./interview/InterviewPage").then((m) => (loadedFine(), { default: m.InterviewPage })));
+const DocumentsPage = lazy(() => import("./profile/DocumentsPage").then((m) => (loadedFine(), { default: m.DocumentsPage })));
+const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => (loadedFine(), { default: m.ResumePanel })));
+const InfoPage = lazy(() => import("./info/InfoPage").then((m) => (loadedFine(), { default: m.InfoPage })));
+const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (loadedFine(), { default: m.ProfileEditor })));
 import { UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
 import { useTr, type T3 } from "./i18n";
@@ -194,26 +196,30 @@ export default function App() {
           </nav>
         )}
         <main className={signedIn ? "shell sheet" : "shell"}>
-          <Suspense fallback={<Loader />}>
-            {!signedIn && <SignedOut />}
-            {signedIn && view === "home" && (
-              <HomePage name={signedIn.name} onOpenApps={() => open("apps")}
-                onPractice={(t) => { setInterviewSeed({ ...t, nonce: Date.now() }); open("interview"); }} />
-            )}
-            {signedIn && view === "account" && <Account me={me} onSaved={refreshMe} />}
-            {signedIn && view === "apps" && (
-              <ApplicationsBoard
-                onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
-                onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
-            )}
-            {signedIn && (view === "es" || view === "documents") && (
-              <DocumentsPage current={view === "es" ? "es" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : "documents")}>
-                {view === "es" ? <EsPage seed={esSeed} /> : <ResumePanel />}
-              </DocumentsPage>
-            )}
-            {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
-            {signedIn && view === "info" && <InfoPage />}
-          </Suspense>
+          <PageErrorBoundary key={view}
+            message={tr({ ja: "このページを表示できませんでした。新しいバージョンが公開された可能性があります。", en: "This page could not be displayed. A new version may have been published.", fr: "Cette page n'a pas pu s'afficher. Une nouvelle version a peut-être été mise en ligne." })}
+            action={tr({ ja: "再読み込み", en: "Reload", fr: "Recharger" })}>
+            <Suspense fallback={<Loader />}>
+              {!signedIn && <SignedOut />}
+              {signedIn && view === "home" && (
+                <HomePage name={signedIn.name} onOpenApps={() => open("apps")}
+                  onPractice={(t) => { setInterviewSeed({ ...t, nonce: Date.now() }); open("interview"); }} />
+              )}
+              {signedIn && view === "account" && <Account me={me} onSaved={refreshMe} />}
+              {signedIn && view === "apps" && (
+                <ApplicationsBoard
+                  onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
+                  onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
+              )}
+              {signedIn && (view === "es" || view === "documents") && (
+                <DocumentsPage current={view === "es" ? "es" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : "documents")}>
+                  {view === "es" ? <EsPage seed={esSeed} /> : <ResumePanel />}
+                </DocumentsPage>
+              )}
+              {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
+              {signedIn && view === "info" && <InfoPage />}
+            </Suspense>
+          </PageErrorBoundary>
         </main>
       </div>
 

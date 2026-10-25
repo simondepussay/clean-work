@@ -2,6 +2,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
+import { installReloadOnNewVersion } from "./reloadOnNewVersion";
+
+installReloadOnNewVersion();
 import { AuthContext } from "./auth/auth";
 import identity from "./auth/identity.json";
 import { MsalAuthProvider, type IdentityConfig } from "./auth/MsalAuthProvider.tsx";

@@ -528,4 +528,7 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .facts-links { display: flex; gap: 14px; flex-wrap: wrap; margin: 0; font-size: 13px; }
 .facts-source { margin: 8px 0 0; font-size: 11px; color: var(--muted); }
 @media (max-width: 520px) { .facts-matches button { grid-template-columns: auto 1fr; } .facts-matches .muted { grid-column: 2; text-align: left; } }
+/* Onglet impossible à afficher : message et bouton plutôt qu'un écran blanc. */
+.page-error { margin: 24px auto; max-width: 520px; text-align: center; border-left: 3px solid var(--bordeaux); }
+.page-error p { margin: 0 0 12px; color: var(--blue-950); }
 
