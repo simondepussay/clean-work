@@ -47,7 +47,7 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/info"): body = Self.info
         // Données ouvertes (exemples).
         case ("GET", "/api/holidays"): body = ["2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日", "2027-01-01": "元日"]
-        case ("GET", "/api/weather"): body = ["date": Self.day(6), "prefecture": "東京都", "kind": "rain", "rainChance": 70, "tMax": 18, "tMin": 12] as [String: Any]
+        case ("GET", "/api/weather"): body = ["date": Self.day(6), "prefecture": "東京都", "place": "東京都港区", "kind": "rain", "rainChance": 70, "tMax": 18, "tMin": 12] as [String: Any]
         case ("GET", _) where path.hasPrefix("/api/postal/"): body = ["postalCode": "160-0023", "address": "東京都新宿区西新宿", "prefecture": "東京都"]
         case ("GET", "/api/company/search"):
             body = [["corporateNumber": "5010401067252", "name": "ソニーグループ株式会社", "location": "東京都港区港南１丁目７番１号"]]
@@ -90,7 +90,7 @@ private final class DemoURLProtocol: URLProtocol {
         ["id": "a1", "company": "株式会社サイバーエージェント", "position": "ゲームプランナー", "status": "es",
          "steps": [["id": "s1", "type": "es", "dueDate": day(2), "done": false]], "nextDeadline": day(2)],
         ["id": "a2", "company": "ソニーグループ", "position": "エンジニア", "status": "interview1",
-         "steps": [["id": "s2", "type": "interview1", "dueDate": day(6), "time": "14:00", "done": false]], "nextDeadline": day(6),
+         "steps": [["id": "s2", "type": "interview1", "dueDate": day(6), "time": "14:00", "place": "東京都港区港南1-7-1", "done": false]], "nextDeadline": day(6),
          "corporateNumber": "5010401067252", "location": "東京都港区港南１丁目７番１号"],
         ["id": "a3", "company": "楽天グループ", "status": "interested", "steps": [] as [Any]],
         ["id": "a4", "company": "LINEヤフー", "status": "test",

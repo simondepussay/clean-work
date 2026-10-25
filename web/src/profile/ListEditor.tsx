@@ -54,7 +54,7 @@ export function ListEditor<T extends Record<string, unknown>>({ title, name, ite
                   <textarea value={value} onChange={(e) => update(i, f.key, e.target.value)} rows={2} />
                 ) : (
                   <>
-                    <input type={f.type ?? "text"} value={value} list={f.suggestions ? `${id}.list` : undefined}
+                    <input type={f.type ?? "text"} value={value} list={f.suggestions ? `${id}.list` : undefined} placeholder={f.placeholder}
                       onChange={(e) => update(i, f.key, e.target.value)} />
                     {f.suggestions && (
                       <datalist id={`${id}.list`}>

@@ -21,7 +21,7 @@ const applications = [
   { id: "a1", company: "株式会社サイバーエージェント", position: "ゲームプランナー", industry: "it", companyType: "large", notes: "Cygames。若手に裁量を与える文化。",
     status: "es", steps: [{ id: "s1", type: "es", dueDate: inDays(2), done: false }], nextDeadline: inDays(2), createdAt: "", updatedAt: "" },
   { id: "a2", company: "ソニーグループ", position: "エンジニア", industry: "maker", companyType: "large", corporateNumber: "5010401067252", location: "東京都港区港南１丁目７番１号",
-    status: "interview1", steps: [{ id: "s2", type: "interview1", dueDate: inDays(6), time: "14:00", done: false }], nextDeadline: inDays(6), createdAt: "", updatedAt: "" },
+    status: "interview1", steps: [{ id: "s2", type: "interview1", dueDate: inDays(6), time: "14:00", done: false, place: "東京都港区港南1-7-1" }], nextDeadline: inDays(6), createdAt: "", updatedAt: "" },
   { id: "a3", company: "楽天グループ", status: "interested", steps: [], nextDeadline: null, createdAt: "", updatedAt: "" },
   { id: "a4", company: "LINEヤフー", status: "test", steps: [{ id: "s4", type: "test", dueDate: inDays(12), done: false }], nextDeadline: inDays(12), createdAt: "", updatedAt: "" },
   { id: "a5", company: "メルカリ", position: "バックエンドエンジニア", status: "applied", steps: [], nextDeadline: null, createdAt: "", updatedAt: "2026-10-22" },

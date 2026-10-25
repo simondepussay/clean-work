@@ -82,12 +82,13 @@ const plusHour = (time: string) => {
   return h >= 23 ? "2359" : `${String(h + 1).padStart(2, "0")}${String(m).padStart(2, "0")}`;
 };
 
-type Event = { uid: string; date: string; time?: string; title: string; description?: string; done?: boolean };
+type Event = { uid: string; date: string; time?: string; title: string; description?: string; done?: boolean; place?: string };
 
 export function buildFeed(apps: Application[], plans: Plan[], lang: FeedLang, now = new Date()): string {
   const events: Event[] = [
     ...apps.filter((a) => !CLOSED.has(a.status)).flatMap((a) => a.steps.filter((s) => s.dueDate).map((s): Event => ({
-      uid: `step-${s.id}`, date: s.dueDate!, title: `${a.company} ${STEP_NAMES[s.type]?.[lang] ?? s.type}`, description: s.note, done: s.done,
+      uid: `step-${s.id}`, date: s.dueDate!, time: s.time, title: `${a.company} ${STEP_NAMES[s.type]?.[lang] ?? s.type}`, description: s.note, done: s.done,
+      place: s.place,
     }))),
     ...plans.map((p): Event => ({
       uid: `plan-${p.id}`, date: p.date, time: p.kind === "event" ? p.time : undefined,
@@ -116,6 +117,11 @@ export function buildFeed(apps: Application[], plans: Plan[], lang: FeedLang, no
     }
     lines.push(`SUMMARY:${escape(`${e.done ? "✓ " : ""}${e.title}`)}`);
     if (e.description) lines.push(`DESCRIPTION:${escape(e.description)}`);
+    // Lieu de l'entretien, ou lien s'il est en ligne (Google et Apple affichent LOCATION ; URL est le lien cliquable).
+    if (e.place) {
+      lines.push(`LOCATION:${escape(e.place)}`);
+      if (/^https?:\/\//i.test(e.place)) lines.push(`URL:${e.place}`);
+    }
     lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");

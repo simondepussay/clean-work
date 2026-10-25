@@ -1,7 +1,7 @@
 import { app } from "@azure/functions";
 import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
-import { dayWeather, gbizFromEnv, holidays, postalAddress, prefectureOf, type GBizClient } from "../lib/openData";
+import { dayWeather, gbizFromEnv, holidays, postalAddress, type GBizClient } from "../lib/openData";
 
 type Deps = { verifier?: () => IdentityVerifier | null; fetcher?: typeof fetch; gbiz?: () => GBizClient | null; now?: () => Date };
 
@@ -9,7 +9,7 @@ type Deps = { verifier?: () => IdentityVerifier | null; fetcher?: typeof fetch; 
  * Données ouvertes (voir lib/openData.ts), réservées aux utilisateurs connectés :
  *   GET /api/holidays                       → { "2026-11-03": "文化の日", … }
  *   GET /api/postal/{code}                  → { postalCode, address, prefecture } ou 404
- *   GET /api/weather?date=&location=        → { date, prefecture, kind, rainChance, tMax, tMin } ou 404
+ *   GET /api/weather?date=&location=        → { date, prefecture, place, kind, rainChance, tMax, tMin } ou 404
  *   GET /api/company/search?name=           → [{ corporateNumber, name, location }]   (503 sans jeton gBizINFO)
  *   GET /api/company/{corporateNumber}      → fiche (labels, chiffres du lieu de travail) ou 404
  */
@@ -25,7 +25,7 @@ export function openDataHandler(what: "holidays" | "postal" | "weather" | "compa
       }
       if (what === "weather") {
         const date = req.query.get("date") ?? "";
-        const w = await dayWeather(date, prefectureOf(req.query.get("location")), fetcher, (deps.now ?? (() => new Date()))());
+        const w = await dayWeather(date, req.query.get("location"), fetcher, (deps.now ?? (() => new Date()))());
         return w ? { jsonBody: w } : { status: 404, jsonBody: { error: "not_found" } };
       }
       if (what === "company") {

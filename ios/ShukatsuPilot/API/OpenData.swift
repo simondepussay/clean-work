@@ -8,6 +8,8 @@ import SwiftUI
 struct DayWeather: Codable, Equatable {
     let date: String
     let prefecture: String
+    /// Lieu court (« 東京都渋谷区 ») ; absent dans les réponses des premières versions.
+    var place: String?
     let kind: String
     let rainChance: Int?
     let tMax: Int?
@@ -138,9 +140,11 @@ extension APIClient {
 /// Le temps du jour de l'entretien, en pastille blanche (accueil).
 struct WeatherBadge: View {
     let weather: DayWeather
+    var label: String?
 
     var body: some View {
         HStack(spacing: 6) {
+            if let label { Text(label).font(.caption2.weight(.semibold)).foregroundStyle(Color.cwMuted) }
             Image(systemName: weather.symbol)
                 .foregroundStyle(weather.kind == "sun" ? Color(red: 0.79, green: 0.54, blue: 0.11) : Color.cwBlue500)
             Text(weather.summary).foregroundStyle(Color.cwBlue800)

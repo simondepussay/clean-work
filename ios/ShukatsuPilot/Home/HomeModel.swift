@@ -14,6 +14,9 @@ struct AgendaItem: Identifiable, Equatable {
     var plan: Plan?
     var applicationId: String?
     var stepId: String?
+    /// Lieu de l'entretien ou lien s'il est en ligne.
+    var place: String?
+    var isOnline: Bool { place.map { $0.lowercased().hasPrefix("http") } ?? false }
 
     var kindName: String {
         switch kind {
@@ -39,7 +42,7 @@ enum Agenda {
                 return AgendaItem(id: "step-\(app.id)-\(step.id)", date: date, time: step.time,
                                   kind: interviews.contains(step.type) ? .interview : .step,
                                   title: app.company, detail: SelectionStage.name(step.type), done: step.done,
-                                  applicationId: app.id, stepId: step.id)
+                                  applicationId: app.id, stepId: step.id, place: step.place)
             }
         }
         let own = plans.map { p in
@@ -83,8 +86,11 @@ final class HomeModel {
     private(set) var loaded = false
     /// Jours fériés japonais (holidays-jp) : « 2026-11-03 » → « 文化の日 ».
     private(set) var holidays: [String: String] = [:]
-    /// Météo des entretiens des 15 prochains jours (Open-Meteo), par étape.
-    private(set) var interviewWeather: [String: DayWeather] = [:]
+    /// Météo des entretiens des 15 prochains jours (Open-Meteo), par étape : au lieu de l'entretien,
+    /// et chez l'utilisateur (c'est de là qu'il part : le parapluie, c'est au départ).
+    private(set) var interviewWeather: [String: (venue: DayWeather?, home: DayWeather?)] = [:]
+    /// Adresse du profil (domicile).
+    private(set) var homeAddress: String?
     var month: DateComponents
     var selected: String
     var message: String?
@@ -102,38 +108,52 @@ final class HomeModel {
     func items(on day: String) -> [AgendaItem] { agenda.filter { $0.date == day } }
     var nextInterview: AgendaItem? { agenda.first { $0.kind == .interview && !$0.done && $0.date >= today } }
     /// Météo du prochain entretien (préfecture du siège si l'entreprise est reliée à gBizINFO, sinon Tokyo).
-    var nextInterviewWeather: DayWeather? { nextInterview?.stepId.flatMap { interviewWeather[$0] } }
+    var nextInterviewWeather: (venue: DayWeather?, home: DayWeather?) {
+        nextInterview?.stepId.flatMap { interviewWeather[$0] } ?? (nil, nil)
+    }
     var goals: [Plan] { plans.filter { $0.kind == "goal" && !$0.done && $0.date >= today }.sorted { $0.date < $1.date } }
 
     func load() async {
         async let apps = try? api.applications()
         async let own = try? api.plans()
         async let days = api.holidays()
+        async let me = try? api.profile()
         applications = await apps ?? applications
         plans = await own ?? plans
         loaded = true
         holidays = await days
+        homeAddress = (await me)?.address.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
         interviewWeather = await weatherForUpcomingInterviews()
         // Au premier lancement, iOS demande l'autorisation des notifications : on attend que l'écran
         // d'ouverture (SplashView) soit parti, pour que la question ne s'affiche pas par-dessus.
         // Si la vue est recréée entre-temps (tâche annulée), c'est le nouveau chargement qui s'en chargera.
         guard (try? await Task.sleep(for: .seconds(SplashView.duration + 0.5))) != nil else { return }
         await DeadlineReminderScheduler.shared.prepare()
-        await DeadlineReminderScheduler.shared.reschedule(applications, weather: interviewWeather)
+        // Le conseil du rappel se fonde sur le temps au départ (domicile), sinon au lieu de l'entretien.
+        await DeadlineReminderScheduler.shared.reschedule(applications, weather: interviewWeather.compactMapValues { $0.home ?? $0.venue })
     }
 
     /// Les entretiens des 15 prochains jours (au plus 4) : la prévision n'existe pas au-delà.
-    private func weatherForUpcomingInterviews() async -> [String: DayWeather] {
+    private func weatherForUpcomingInterviews() async -> [String: (venue: DayWeather?, home: DayWeather?)] {
         let limit = Agenda.key(Calendar.current.date(byAdding: .day, value: 15, to: .now) ?? .now)
         let upcoming = agenda.filter { $0.kind == .interview && !$0.done && $0.date >= today && $0.date <= limit }.prefix(4)
-        var result: [String: DayWeather] = [:]
-        await withTaskGroup(of: (String, DayWeather?).self) { group in
+        var result: [String: (venue: DayWeather?, home: DayWeather?)] = [:]
+        let home = homeAddress
+        await withTaskGroup(of: (String, DayWeather?, DayWeather?).self) { group in
             for item in upcoming {
                 guard let stepId = item.stepId else { continue }
-                let location = applications.first { $0.id == item.applicationId }?.location
-                group.addTask { [api] in (stepId, await api.weather(date: item.date, location: location)) }
+                // Lieu saisi pour l'entretien, sinon le siège (gBizINFO), sinon le domicile ; rien pour un entretien en ligne.
+                let venue = item.isOnline ? nil : (item.place ?? applications.first { $0.id == item.applicationId }?.location ?? home)
+                group.addTask { [api] in
+                    async let v = venue == nil ? nil : api.weather(date: item.date, location: venue)
+                    async let h = (home == nil || home == venue) ? nil : api.weather(date: item.date, location: home)
+                    return (stepId, await v, await h)
+                }
             }
-            for await (stepId, weather) in group { if let weather { result[stepId] = weather } }
+            for await (stepId, venue, home) in group {
+                // Même ville : une seule pastille suffit.
+                result[stepId] = (venue, home?.place != nil && home?.place == venue?.place ? nil : home)
+            }
         }
         return result
     }

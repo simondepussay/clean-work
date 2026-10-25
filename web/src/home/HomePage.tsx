@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader } from "../Loader";
-import { createPlan, deletePlan, getHolidays, getWeather, listApplications, listPlans, updatePlan, type Application, type DayWeather, type Issue, type Plan, type PlanKind } from "../api";
+import { createPlan, deletePlan, getHolidays, getProfile, getWeather, isLink, listApplications, listPlans, updatePlan, type Application, type DayWeather, type Issue, type Plan, type PlanKind } from "../api";
 import { WeatherChip } from "./WeatherChip";
 import { useAuth } from "../auth/auth";
-import { CalendarIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, TrashIcon } from "../icons";
+import { CalendarIcon, CheckIcon, LinkIcon, PinIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, TrashIcon } from "../icons";
 import { apiMessage, formatDay, useTr, type Lang, type T3, type Tr } from "../i18n";
 import { CalendarMenu } from "../apps/CalendarMenu";
 import { buildAgenda, monthGrid, ymd, type AgendaItem, type AgendaKind } from "./agenda";
@@ -61,7 +61,9 @@ export function HomePage({ name, onOpenApps, onPractice }: {
   const [plans, setPlans] = useState<Plan[]>([]);
   /** Jours fériés japonais (holidays-jp) et météo du prochain entretien (Open-Meteo). */
   const [holidays, setHolidays] = useState<Record<string, string>>({});
-  const [weather, setWeather] = useState<DayWeather | null>(null);
+  /** Météo au lieu de l'entretien, et chez l'utilisateur (c'est de là qu'il part : le parapluie, c'est maintenant). */
+  const [weather, setWeather] = useState<{ venue: DayWeather | null; home: DayWeather | null }>({ venue: null, home: null });
+  const [homeAddress, setHomeAddress] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [month, setMonth] = useState(() => ({ y: new Date().getFullYear(), m: new Date().getMonth() }));
   const [selected, setSelected] = useState(today);
@@ -82,6 +84,7 @@ export function HomePage({ name, onOpenApps, onPractice }: {
     withToken(async (t) => {
       // Jours fériés : à part, pour ne pas retarder le calendrier si le service est lent.
       getHolidays(t).then((h) => h && setHolidays(h));
+      getProfile(t).then((p) => setHomeAddress(p?.address?.trim() || null)).catch(() => {});
       const [a, p] = await Promise.all([listApplications(t), listPlans(t)]);
       if (a.ok && Array.isArray(a.value)) setApps(a.value);
       if (p.ok && Array.isArray(p.value)) setPlans(p.value);
@@ -99,15 +102,23 @@ export function HomePage({ name, onOpenApps, onPractice }: {
   const dayItems = byDate.get(selected) ?? [];
   const goals = plans.filter((p) => p.kind === "goal" && !p.done && p.date >= today).slice(0, 4);
   const nextInterview = agenda.find((i) => i.kind === "interview" && !i.done && i.date >= today);
-  const interviewLocation = apps.find((a) => a.id === nextInterview?.applicationId)?.location;
+  const online = isLink(nextInterview?.place);
+  // Lieu de la météo : le lieu saisi pour l'entretien, sinon le siège (gBizINFO), sinon l'adresse de l'utilisateur.
+  const venue = online ? null : nextInterview?.place || apps.find((a) => a.id === nextInterview?.applicationId)?.location || homeAddress;
 
-  // Météo du prochain entretien (dans la préfecture du siège si l'entreprise est reliée à gBizINFO, sinon Tokyo).
   useEffect(() => {
-    setWeather(null);
+    setWeather({ venue: null, home: null });
     if (!nextInterview) return;
-    withToken((t) => getWeather(t, nextInterview.date, interviewLocation)).then(setWeather).catch(() => {});
+    withToken(async (t) => {
+      const [v, h] = await Promise.all([
+        online ? null : getWeather(t, nextInterview.date, venue),
+        homeAddress && homeAddress !== venue ? getWeather(t, nextInterview.date, homeAddress) : null,
+      ]);
+      // Même ville : une seule pastille suffit.
+      setWeather({ venue: v, home: h && h.place !== v?.place ? h : null });
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nextInterview?.date, interviewLocation]);
+  }, [nextInterview?.date, venue, homeAddress, online]);
 
   const shift = (delta: number) => setMonth(({ y, m }) => {
     const d = new Date(y, m + delta, 1);
@@ -201,7 +212,13 @@ export function HomePage({ name, onOpenApps, onPractice }: {
             <p className="highlight interview">
               <span>{tr({ ja: "次の面接", en: "Next interview", fr: "Prochain entretien" })}</span>
               {longDate(nextInterview.date)}{nextInterview.time ? ` ${nextInterview.time}` : ""} {nextInterview.title}
-              {weather && <WeatherChip weather={weather} />}
+              {online ? (
+                <a className="join" href={nextInterview.place!.trim()} target="_blank" rel="noreferrer">
+                  <LinkIcon size={14} /> {tr({ ja: "オンライン面接に参加", en: "Join the online interview", fr: "Rejoindre l'entretien en ligne" })}
+                </a>
+              ) : nextInterview.place && <small className="venue"><PinIcon size={13} /> {nextInterview.place}</small>}
+              {weather.venue && <WeatherChip weather={weather.venue} label={tr({ ja: "会場", en: "Venue", fr: "Lieu" })} />}
+              {weather.home && <WeatherChip weather={weather.home} label={tr({ ja: "自宅", en: "Home", fr: "Domicile" })} />}
             </p>
           )}
           {goals[0] && (

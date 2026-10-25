@@ -2,7 +2,7 @@ import { HttpRequest, InvocationContext } from "@azure/functions";
 import { describe, expect, it } from "vitest";
 import { openDataHandler } from "../src/functions/openData";
 import type { IdentityVerifier } from "../src/lib/identity";
-import { GBizClient, labelId, prefectureOf, toFacts, weatherKind } from "../src/lib/openData";
+import { GBizClient, labelId, prefectureOf, shortPlace, toFacts, weatherKind } from "../src/lib/openData";
 
 const verifier = (): IdentityVerifier => ({ verify: async () => ({ userId: "u1" }) });
 const ctx = new InvocationContext({ logHandler: () => {} });
@@ -26,15 +26,27 @@ describe("données ouvertes", () => {
     expect([0, 1, 3, 45, 61, 80, 73, 95].map(weatherKind)).toEqual(["sun", "sun", "cloud", "fog", "rain", "rain", "snow", "storm"]);
     expect(prefectureOf("大阪府大阪市北区…")).toBe("大阪府");
     expect(prefectureOf(null)).toBe("東京都");
+    expect(shortPlace("東京都渋谷区道玄坂一丁目２番３号")).toBe("東京都渋谷区");
   });
 
-  it("GET /api/weather : prévision du jour, arrondie ; rien au-delà de 15 jours", async () => {
-    const { fetcher, calls } = fakeFetch({ "open-meteo": { daily: { time: ["2026-10-30"], weather_code: [63], precipitation_probability_max: [80], temperature_2m_max: [18.6], temperature_2m_min: [12.2] } } });
+  it("GET /api/weather : adresse géocodée (国土地理院), prévision du jour arrondie ; rien au-delà de 15 jours", async () => {
+    const { fetcher, calls } = fakeFetch({
+      "msearch.gsi.go.jp": [{ geometry: { coordinates: [135.4977, 34.7000] }, properties: { title: "大阪府大阪市北区梅田一丁目" } }],
+      "open-meteo": { daily: { time: ["2026-10-30"], weather_code: [63], precipitation_probability_max: [80], temperature_2m_max: [18.6], temperature_2m_min: [12.2] } },
+    });
     const handler = openDataHandler("weather", { verifier, fetcher, now: () => new Date("2026-10-25T00:00:00Z") });
-    const res = await get(handler, "weather?date=2026-10-30&location=%E5%A4%A7%E9%98%AA%E5%BA%9C%E5%A4%A7%E9%98%AA%E5%B8%82");
-    expect(res.jsonBody).toEqual({ date: "2026-10-30", prefecture: "大阪府", kind: "rain", rainChance: 80, tMax: 19, tMin: 12 });
-    expect(calls[0]).toContain("latitude=34.69");
+    const res = await get(handler, `weather?date=2026-10-30&location=${encodeURIComponent("大阪市北区梅田1-1")}`);
+    expect(res.jsonBody).toEqual({ date: "2026-10-30", prefecture: "大阪府", place: "大阪府大阪市", kind: "rain", rainChance: 80, tMax: 19, tMin: 12 });
+    expect(calls.find((u) => u.includes("open-meteo"))).toContain("latitude=34.70&longitude=135.50");
     expect((await get(handler, "weather?date=2026-12-30")).status).toBe(404);
+  });
+
+  it("météo : un lien (entretien en ligne) n'est pas géocodé ; sans réponse du 国土地理院, la préfecture écrite suffit", async () => {
+    const { geocode } = await import("../src/lib/openData");
+    const { fetcher, calls } = fakeFetch({});
+    expect(await geocode("https://zoom.us/j/123", fetcher)).toBeNull();
+    expect(calls).toEqual([]);
+    expect(await geocode("福岡県福岡市中央区天神", fetcher)).toMatchObject({ prefecture: "福岡県", lat: 33.61 });
   });
 
   it("GET /api/postal/{code} : adresse complète, 404 si le code n'existe pas", async () => {

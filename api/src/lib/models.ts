@@ -118,6 +118,8 @@ export const stepSchema = z.object({
   time: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "HH:MM").optional()),
   done: z.boolean().default(false),
   note: text(500).optional(),
+  /** Lieu de l'entretien (adresse : la météo y est calculée) ou lien d'un entretien en ligne. */
+  place: text(300).optional(),
 });
 
 /** 業界 : IT・通信, メーカー, 商社, 金融, コンサル, 小売・流通, サービス・人材, 広告・マスコミ, インフラ・交通, 官公庁・団体, その他. */

@@ -30,6 +30,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
     { key: "type", label: tr({ ja: "選考", en: "Step", fr: "Étape" }), type: "select", options: stepTypes(lang), placeholder: tr({ ja: "選択", en: "Choose", fr: "Choisir" }), required: true },
     { key: "dueDate", label: tr({ ja: "締切・日程", en: "Date", fr: "Date" }), type: "date" },
     { key: "time", label: tr({ ja: "時間", en: "Time", fr: "Heure" }), type: "time" },
+    { key: "place", label: tr({ ja: "場所・オンラインのURL", en: "Place or online link", fr: "Lieu ou lien en ligne" }), placeholder: "東京都港区… / https://…" },
     { key: "done", label: tr({ ja: "完了", en: "Done", fr: "Terminé" }), type: "checkbox" },
     { key: "note", label: tr({ ja: "メモ", en: "Note", fr: "Note" }) },
   ];

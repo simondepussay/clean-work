@@ -91,12 +91,15 @@ enum InterviewReminders {
                 let stage = SelectionStage.name(step.type)
                 // La météo du jour (Open-Meteo), quand elle appelle un conseil : parapluie, neige, chaleur.
                 let advice = weather[step.id]?.advice.map { "\n" + $0 } ?? ""
+                // Le lieu (ou « en ligne ») rappelé dans la notification ; le lien lui-même s'ouvre depuis l'app.
+                let where_ = step.isOnline ? "\n" + tr("オンライン面接です。リンクはアプリから。", "Online interview: the link is in the app.", "Entretien en ligne : le lien est dans l'app.")
+                    : step.place.map { "\n" + tr("会場：", "Venue: ", "Lieu : ") + $0 } ?? ""
                 return (fire, Reminder(
                     id: "\(prefix)\(step.id)",
                     title: tr("まもなく面接です", "Interview in one hour", "Entretien dans une heure"),
                     body: tr("\(app.company)の\(stage)まであと1時間。ここまでの準備を信じて、いってらっしゃい！",
                              "\(stage) at \(app.company) in one hour. Trust the preparation you've done — you've got this!",
-                             "\(stage) chez \(app.company) dans une heure. Faites confiance à votre préparation : vous êtes prêt·e !") + advice,
+                             "\(stage) chez \(app.company) dans une heure. Faites confiance à votre préparation : vous êtes prêt·e !") + where_ + advice,
                     fireAt: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire)))
             }
         }

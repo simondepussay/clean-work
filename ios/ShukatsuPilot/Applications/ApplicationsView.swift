@@ -147,6 +147,8 @@ struct ApplicationEditor: View {
                             }
                         }
                         Toggle(tr("完了", "Done", "Fait"), isOn: $step.done)
+                        TextField(tr("場所・オンラインのURL", "Place or online link", "Lieu ou lien en ligne"), text: optional($step.place))
+                            .textInputAutocapitalization(.never)
                         TextField(tr("メモ", "Note", "Note"), text: optional($step.note))
                     }
                 }

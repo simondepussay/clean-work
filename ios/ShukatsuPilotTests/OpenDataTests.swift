@@ -45,4 +45,25 @@ final class OpenDataTests: XCTestCase {
         XCTAssertTrue(sent?["corporateNumber"] is NSNull, "null défait le lien côté API")
         XCTAssertTrue(sent?["location"] is NSNull)
     }
+
+    func testReminderNamesTheVenueOrSaysOnline() {
+        UserDefaults.standard.set("ja", forKey: HelpLanguage.storageKey)
+        var tokyo = Calendar(identifier: .gregorian)
+        tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        let now = tokyo.date(from: DateComponents(year: 2026, month: 10, day: 22, hour: 12))!
+        func app(_ place: String) -> JobApplication {
+            JobApplication(id: "a", company: "ソニー", status: "interview1",
+                           steps: [.init(id: "i1", type: "interview1", dueDate: "2026-10-30", time: "14:00", place: place)], nextDeadline: nil)
+        }
+        XCTAssertTrue(InterviewReminders.reminders(for: [app("東京都港区港南1-7-1")], now: now, calendar: tokyo)[0].body.contains("\n会場：東京都港区港南1-7-1"))
+        let online = InterviewReminders.reminders(for: [app("https://zoom.us/j/123")], now: now, calendar: tokyo)[0].body
+        XCTAssertTrue(online.contains("オンライン面接です"))
+        XCTAssertFalse(online.contains("zoom.us"), "le lien s'ouvre depuis l'app, pas dans la notification")
+    }
+
+    func testWeatherFromOlderAPIWithoutPlaceStillDecodes() throws {
+        let w = try JSONDecoder().decode(DayWeather.self, from: Data(#"{"date":"2026-10-30","prefecture":"東京都","kind":"rain","rainChance":80,"tMax":19,"tMin":12}"#.utf8))
+        XCTAssertNil(w.place)
+        XCTAssertTrue(w.wet)
+    }
 }

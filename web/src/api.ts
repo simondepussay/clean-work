@@ -205,7 +205,9 @@ async function downloadPdf(token: string, path: string, options: object, fetcher
 
 export type StepType = "es" | "applied" | "test" | "interview1" | "interview2" | "final" | "offer";
 export type AppStatus = "interested" | StepType | "rejected" | "withdrawn";
-export type Step = { id: string; type: StepType; dueDate?: string; time?: string; done: boolean; note?: string };
+/** `place` : adresse du lieu de l'entretien (la météo y est calculée) ou lien d'un entretien en ligne. */
+export type Step = { id: string; type: StepType; dueDate?: string; time?: string; done: boolean; note?: string; place?: string };
+export const isLink = (place?: string | null) => !!place && /^https?:\/\//i.test(place.trim());
 export type Industry = "it" | "maker" | "trading" | "finance" | "consulting" | "retail" | "service" | "media" | "infrastructure" | "public" | "other";
 export type CompanyType = "large" | "sme" | "startup" | "foreign";
 export type ApplicationInput = {
@@ -338,7 +340,7 @@ export async function importCv(token: string, text: string, fetcher: typeof fetc
 // ------------------------------------------------------------------ données ouvertes
 
 export type WeatherKind = "sun" | "cloud" | "rain" | "snow" | "storm" | "fog";
-export type DayWeather = { date: string; prefecture: string; kind: WeatherKind; rainChance: number | null; tMax: number | null; tMin: number | null };
+export type DayWeather = { date: string; prefecture: string; place?: string; kind: WeatherKind; rainChance: number | null; tMax: number | null; tMin: number | null };
 export type PostalAddress = { postalCode: string; address: string; prefecture: string };
 export type CompanyMatch = { corporateNumber: string; name: string; location: string | null };
 export type LabelId = "kurumin" | "eruboshi" | "youthyell" | "kenkou" | "monisu" | "anzen";

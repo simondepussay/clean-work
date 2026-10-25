@@ -76,7 +76,7 @@ private struct HomeContent: View {
             Text(greeting).font(.title2.bold()).foregroundStyle(Color.cwBlue800)
             if let next = home.nextInterview {
                 highlight(tr("次の面接", "Next interview", "Prochain entretien"), "\(longDate(next.date))\(next.time.map { " \($0)" } ?? "")  \(next.title)",
-                          bordeaux: true, weather: home.nextInterviewWeather)
+                          bordeaux: true) { interviewExtras(next) }
             }
             if let goal = home.goals.first {
                 highlight(tr("目標", "Goal", "Objectif"), "⚑ \(goal.title)  " + tr("（\(longDate(goal.date))まで）", "(by \(longDate(goal.date)))", "(avant le \(longDate(goal.date)))"), bordeaux: false)
@@ -90,11 +90,33 @@ private struct HomeContent: View {
         return tr("\(name.map { "\($0)さん、" } ?? "")おかえりなさい", "Welcome back\(name.map { ", \($0)" } ?? "")", "Bon retour\(name.map { ", \($0)" } ?? "")")
     }
 
-    private func highlight(_ label: String, _ text: String, bordeaux: Bool, weather: DayWeather? = nil) -> some View {
+    /// Sous le prochain entretien : le lieu (ou le bouton pour rejoindre en ligne) et la météo au lieu et chez soi.
+    @ViewBuilder private func interviewExtras(_ next: AgendaItem) -> some View {
+        if next.isOnline, let link = next.place.flatMap({ URL(string: $0.trimmingCharacters(in: .whitespaces)) }) {
+            Link(destination: link) {
+                Label(tr("オンライン面接に参加", "Join the online interview", "Rejoindre l'entretien en ligne"), systemImage: "link")
+                    .font(.caption.weight(.semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .background(Color.cwBordeaux, in: Capsule())
+            }
+            .padding(.top, 4)
+        } else if let place = next.place {
+            Label(place, systemImage: "mappin.and.ellipse").font(.caption).foregroundStyle(Color.cwBlue800).padding(.top, 2)
+        }
+        let weather = home.nextInterviewWeather
+        if let venue = weather.venue { WeatherBadge(weather: venue, label: tr("会場", "Venue", "Lieu")).padding(.top, 4) }
+        if let mine = weather.home { WeatherBadge(weather: mine, label: tr("自宅", "Home", "Domicile")).padding(.top, 2) }
+    }
+
+    private func highlight(_ label: String, _ text: String, bordeaux: Bool) -> some View {
+        highlight(label, text, bordeaux: bordeaux) { EmptyView() }
+    }
+
+    private func highlight<Extra: View>(_ label: String, _ text: String, bordeaux: Bool, @ViewBuilder extra: () -> Extra) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption2).foregroundStyle(Color.cwMuted)
             Text(text).font(.subheadline.weight(.semibold)).foregroundStyle(bordeaux ? Color.cwBordeaux : Color.cwBlue700)
-            if let weather { WeatherBadge(weather: weather).padding(.top, 4) }
+            extra()
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -44,6 +44,38 @@ describe("données ouvertes dans l'app", () => {
     expect(weatherCall).toContain(encodeURIComponent("大阪府大阪市"));
   });
 
+  it("accueil : météo au lieu de l'entretien ET chez soi quand ce n'est pas la même ville", async () => {
+    const today = ymd(new Date());
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.startsWith("/api/applications")) return json([{ id: "a1", company: "ソニー", status: "interview1", nextDeadline: null, createdAt: "", updatedAt: "",
+        steps: [{ id: "s1", type: "interview1", dueDate: today, time: "14:00", place: "大阪市北区梅田1-1", done: false }] }]);
+      if (url.startsWith("/api/profile")) return json({ nameKanji: "デプセ", nameKana: "でぷせ", address: "東京都新宿区西新宿", education: [], work: [], certifications: [], languages: [] });
+      if (url.startsWith("/api/weather")) {
+        const osaka = decodeURIComponent(url).includes("大阪");
+        return json({ date: today, prefecture: osaka ? "大阪府" : "東京都", place: osaka ? "大阪府大阪市" : "東京都新宿区", kind: osaka ? "sun" : "rain", rainChance: osaka ? 0 : 90, tMax: 20, tMin: 12 });
+      }
+      return json([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    wrap(<HomePage name="Simon" onOpenApps={vi.fn()} />);
+    expect(await screen.findByText("自宅")).toBeInTheDocument();
+    expect(screen.getByText("会場")).toBeInTheDocument();
+    expect(screen.getByText("大阪市北区梅田1-1")).toBeInTheDocument();
+    expect(screen.getByText(/傘を忘れずに/), "il pleut chez soi : parapluie au départ").toBeInTheDocument();
+  });
+
+  it("accueil : entretien en ligne → bouton pour rejoindre, pas de météo du lieu", async () => {
+    const today = ymd(new Date());
+    server({
+      "/api/applications": [{ id: "a1", company: "ソニー", status: "interview1", nextDeadline: null, createdAt: "", updatedAt: "",
+        steps: [{ id: "s1", type: "interview1", dueDate: today, place: "https://zoom.us/j/123", done: false }] }],
+      "/api/plans": [],
+    });
+    wrap(<HomePage name="Simon" onOpenApps={vi.fn()} />);
+    expect(await screen.findByRole("link", { name: /オンライン面接に参加/ })).toHaveAttribute("href", "https://zoom.us/j/123");
+    expect(screen.queryByText("会場")).toBeNull();
+  });
+
   it("profil : le 〒 à 7 chiffres remplit l'adresse vide", async () => {
     server({ "/api/profile": { nameKanji: "デプセ", nameKana: "でぷせ", education: [], work: [], certifications: [], languages: [] },
       "/api/postal/1600023": { postalCode: "160-0023", address: "東京都新宿区西新宿", prefecture: "東京都" } });

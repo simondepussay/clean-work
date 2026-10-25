@@ -13,13 +13,14 @@ export const WEATHER_NAMES: Record<WeatherKind, T3> = {
 };
 
 /** Le temps du jour de l'entretien : icône, températures, risque de pluie (et un conseil s'il pleut). */
-export function WeatherChip({ weather }: { weather: DayWeather }) {
+export function WeatherChip({ weather, label }: { weather: DayWeather; label?: string }) {
   const tr = useTr();
   const Icon = ICONS[weather.kind];
   const wet = weather.kind === "rain" || weather.kind === "storm" || (weather.rainChance ?? 0) >= 50;
   const temps = weather.tMax !== null && weather.tMin !== null ? `${weather.tMax}° / ${weather.tMin}°` : "";
   return (
-    <span className={`weather ${weather.kind}`} title={`${weather.prefecture} · Open-Meteo`}>
+    <span className={`weather ${weather.kind}`} title={`${weather.place ?? weather.prefecture} · Open-Meteo`}>
+      {label && <b>{label}</b>}
       <Icon size={16} />
       <span>{tr(WEATHER_NAMES[weather.kind])}{temps && ` · ${temps}`}{weather.rainChance !== null && weather.rainChance >= 30 && ` · ${weather.rainChance}%`}</span>
       {wet && <em>{tr({ ja: "傘を忘れずに", en: "Take an umbrella", fr: "Pensez au parapluie" })}</em>}

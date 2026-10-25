@@ -42,6 +42,15 @@ describe("lien de calendrier", () => {
     expect(ics.split("\r\n").every((l) => Buffer.byteLength(l) <= 75)).toBe(true);
   });
 
+  it("étape avec heure et lieu : à l'heure de Tokyo, LOCATION ; lien d'un entretien en ligne en URL", () => {
+    const steps = [{ id: "s2", type: "interview2", dueDate: "2026-11-05", time: "10:30", done: false, place: "東京都港区港南1-7-1" },
+      { id: "s3", type: "final", dueDate: "2026-11-12", done: false, place: "https://zoom.us/j/123" }] as Application["steps"];
+    const ics = buildFeed([{ ...sony, steps }], [], "ja");
+    expect(ics).toContain("DTSTART;TZID=Asia/Tokyo:20261105T103000");
+    expect(ics).toContain("LOCATION:東京都港区港南1-7-1");
+    expect(ics).toContain("URL:https://zoom.us/j/123");
+  });
+
   it("dans la langue du lien", () => {
     expect(buildFeed([sony], plans, "fr")).toContain("SUMMARY:ソニー 1er entretien");
     expect(buildFeed([sony], plans, "en")).toContain("[Goal] ES 3本提出");

@@ -20,6 +20,8 @@ export type AgendaItem = {
   applicationId?: string;
   /** L'étape de la candidature (pour s'entraîner à cet entretien précis). */
   stepId?: string;
+  /** Lieu de l'entretien ou lien s'il est en ligne. */
+  place?: string;
 };
 
 const INTERVIEWS = new Set(["interview1", "interview2", "final"]);
@@ -33,6 +35,7 @@ export function buildAgenda(apps: Application[], plans: Plan[], lang: Lang = "ja
       key: `step-${a.id}-${s.id}`,
       date: s.dueDate!,
       ...(s.time ? { time: s.time } : {}),
+      ...(s.place ? { place: s.place } : {}),
       kind: INTERVIEWS.has(s.type) ? "interview" : "step",
       title: a.company,
       detail: stepName(s.type, lang),

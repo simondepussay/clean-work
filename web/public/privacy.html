@@ -73,7 +73,7 @@
 <ul>
 <li>次の公開サービスには、本サービスのサーバーから<strong>必要な項目だけ</strong>を送ります。あなたの名前・メールアドレス・アカウントの情報は送りません。</li>
 <li>郵便番号から住所を調べるとき：郵便番号を zipcloud に送ります。</li>
-<li>面接の日の天気：日付と都道府県を Open-Meteo に送ります。</li>
+<li>面接の日の天気：面接会場（なければ企業の所在地、またはあなたの住所）を国土地理院の住所検索に送って位置を調べ、その位置と日付を Open-Meteo に送ります。オンライン面接のURLは送りません。</li>
 <li>企業データ：企業名または法人番号を gBizINFO（経済産業省）に送ります。</li>
 <li>祝日：holidays-jp から祝日の一覧を読み込みます（あなたの情報は送りません）。</li>
 </ul>
@@ -155,7 +155,7 @@
 <ul>
 <li>The service's server sends <strong>only the item needed</strong> to the following public services. Your name, email address and account details are never sent.</li>
 <li>Address from a postal code: the postal code is sent to zipcloud.</li>
-<li>Weather on the day of an interview: the date and prefecture are sent to Open-Meteo.</li>
+<li>Weather on the day of an interview: the interview venue (otherwise the company address, or your own address) is sent to the address search of the Geospatial Information Authority of Japan to find its location; that location and the date are sent to Open-Meteo. Online interview links are never sent.</li>
 <li>Company data: the company name or corporate number is sent to gBizINFO (Ministry of Economy, Trade and Industry).</li>
 <li>Public holidays: the list is read from holidays-jp (none of your information is sent).</li>
 </ul>

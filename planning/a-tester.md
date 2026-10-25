@@ -83,6 +83,8 @@ Site : https://blue-rock-008b52800.2.azurestaticapps.net
 - [ ] Candidature → « 公式データで企業を探す » avec une vraie entreprise : vérifier les labels (くるみん…) et les chiffres.
 - [ ] Profil : taper un vrai 〒 → l'adresse se remplit ; le 履歴書 PDF affiche le 〒.
 - [ ] Accueil : météo du prochain entretien (moins de 15 jours) ; jours fériés en bordeaux.
+- [ ] Entretien avec un lieu (adresse) → météo « 会場 », et « 自宅 » si l'adresse du profil est dans une autre ville.
+- [ ] Entretien avec un lien (https://…) → bouton « オンライン面接に参加 » sur l'accueil ; le rappel 1 h avant dit « オンライン面接です ».
 
 ## Surveillance (S21, jour 9)
 

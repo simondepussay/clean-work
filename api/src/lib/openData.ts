@@ -4,7 +4,8 @@
  *
  *  - jours fériés : holidays-jp (données du Cabinet Office, sans clé) ;
  *  - code postal → adresse : zipcloud (sans clé) ;
- *  - météo du jour de l'entretien : Open-Meteo (open source, sans clé, usage non commercial) ;
+ *  - météo du jour de l'entretien : Open-Meteo (open source, sans clé, usage non commercial),
+ *    au lieu exact grâce à la recherche d'adresses du 国土地理院 (sans clé) ;
  *  - fiche officielle d'une entreprise : gBizINFO (経済産業省, jeton GBIZ_API_TOKEN).
  */
 
@@ -86,7 +87,17 @@ export function prefectureOf(address?: string | null): string {
 }
 
 export type WeatherKind = "sun" | "cloud" | "rain" | "snow" | "storm" | "fog";
-export type DayWeather = { date: string; prefecture: string; kind: WeatherKind; rainChance: number | null; tMax: number | null; tMin: number | null };
+export type DayWeather = {
+  date: string;
+  /** Préfecture du lieu (compatibilité avec les premières versions de l'app). */
+  prefecture: string;
+  /** Lieu court affiché : « 東京都渋谷区 ». */
+  place: string;
+  kind: WeatherKind;
+  rainChance: number | null;
+  tMax: number | null;
+  tMin: number | null;
+};
 
 /** Codes météo de l'OMM (WMO) → une des six icônes de l'app. */
 export function weatherKind(code: number): WeatherKind {
@@ -98,22 +109,57 @@ export function weatherKind(code: number): WeatherKind {
   return "sun";
 }
 
-const weatherCache = new Cache<DayWeather | null>(3 * 3600_000);
+/** « 東京都渋谷区道玄坂一丁目… » → « 東京都渋谷区 » (préfecture et commune seulement). */
+export function shortPlace(address: string): string {
+  const m = address.match(/^(.+?[都道府県])?(.+?[市区町村])/);
+  return m ? `${m[1] ?? ""}${m[2]}` : address.slice(0, 12);
+}
 
-/** Prévision d'un jour (au plus 15 jours à l'avance), ou null si elle n'existe pas encore. */
-export function dayWeather(date: string, prefecture: string, fetcher: Fetcher = fetch, today = new Date()): Promise<DayWeather | null> {
-  const pref = PREFECTURES[prefecture] ? prefecture : "東京都";
+type Point = { lat: number; lon: number; place: string; prefecture: string };
+const geoCache = new Cache<Point | null>(30 * 24 * 3600_000);
+
+/**
+ * Adresse japonaise → coordonnées, avec le service de recherche d'adresses du 国土地理院 (GSI, sans clé).
+ * Il comprend aussi une adresse sans préfecture (« 渋谷区道玄坂… »). Sans réponse : chef-lieu de la préfecture.
+ */
+export function geocode(address: string, fetcher: Fetcher = fetch): Promise<Point | null> {
+  const q = address.trim();
+  if (!q || /^https?:\/\//i.test(q)) return Promise.resolve(null);
+  return geoCache.get(q, async () => {
+    try {
+      const found = await getJson(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(q)}`, fetcher);
+      const first = Array.isArray(found) ? found[0] : null;
+      const [lon, lat] = first?.geometry?.coordinates ?? [];
+      if (typeof lat === "number" && typeof lon === "number") {
+        const title = String(first.properties?.title ?? q);
+        return { lat, lon, place: shortPlace(title), prefecture: prefectureOf(title) };
+      }
+    } catch {
+      // Service indisponible : on retombe sur la préfecture écrite au début de l'adresse.
+    }
+    const pref = Object.keys(PREFECTURES).find((p) => q.startsWith(p));
+    return pref ? { lat: PREFECTURES[pref][0], lon: PREFECTURES[pref][1], place: pref, prefecture: pref } : null;
+  });
+}
+
+const weatherCache = new Cache<DayWeather | null>(3 * 3600_000);
+const TOKYO: Point = { lat: PREFECTURES["東京都"][0], lon: PREFECTURES["東京都"][1], place: "東京都", prefecture: "東京都" };
+
+/** Prévision d'un jour au lieu donné (Tokyo par défaut), au plus 15 jours à l'avance ; null sinon. */
+export async function dayWeather(date: string, location: string | null | undefined, fetcher: Fetcher = fetch, today = new Date()): Promise<DayWeather | null> {
   const ahead = (Date.parse(date) - Date.parse(today.toISOString().slice(0, 10))) / 86400_000;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || ahead < 0 || ahead > 15) return Promise.resolve(null);
-  return weatherCache.get(`${pref}/${date}`, async () => {
-    const [lat, lon] = PREFECTURES[pref];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !(ahead >= 0 && ahead <= 15)) return null;
+  const point = (location ? await geocode(location, fetcher) : null) ?? TOKYO;
+  // Arrondi à ~1 km : deux adresses voisines partagent la même prévision en cache.
+  const lat = point.lat.toFixed(2), lon = point.lon.toFixed(2);
+  return weatherCache.get(`${lat},${lon}/${date}`, async () => {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=Asia%2FTokyo`
       + `&daily=weather_code,precipitation_probability_max,temperature_2m_max,temperature_2m_min&start_date=${date}&end_date=${date}`;
     const d = (await getJson(url, fetcher))?.daily;
     if (!d?.time?.length) return null;
     const round = (v: unknown) => (typeof v === "number" ? Math.round(v) : null);
-    return { date, prefecture: pref, kind: weatherKind(Number(d.weather_code[0])), rainChance: round(d.precipitation_probability_max?.[0]),
-      tMax: round(d.temperature_2m_max?.[0]), tMin: round(d.temperature_2m_min?.[0]) };
+    return { date, prefecture: point.prefecture, place: point.place, kind: weatherKind(Number(d.weather_code[0])),
+      rainChance: round(d.precipitation_probability_max?.[0]), tMax: round(d.temperature_2m_max?.[0]), tMin: round(d.temperature_2m_min?.[0]) };
   });
 }
 

@@ -25,6 +25,11 @@ struct JobApplication: Codable, Equatable, Identifiable {
         var time: String?
         var done = false
         var note: String?
+        /// Lieu de l'entretien (adresse : la météo y est calculée) ou lien d'un entretien en ligne.
+        var place: String?
+
+        /// Un lien plutôt qu'une adresse : entretien en ligne.
+        var isOnline: Bool { place.map { $0.lowercased().hasPrefix("http://") || $0.lowercased().hasPrefix("https://") } ?? false }
     }
 }
 
