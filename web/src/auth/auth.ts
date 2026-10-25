@@ -3,7 +3,8 @@ import { createContext, useContext } from "react";
 export type AuthState =
   | { status: "disabled" }
   | { status: "loading" }
-  | { status: "signedOut" }
+  /** `error` : la dernière connexion a été refusée par l'annuaire (compte supprimé, annulation…). */
+  | { status: "signedOut"; error?: string }
   | { status: "signedIn"; email: string | null; name: string | null };
 
 /** Ce dont l'app a besoin pour la connexion, indépendamment de MSAL (et facile à simuler dans les tests). */

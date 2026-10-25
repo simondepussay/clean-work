@@ -32,6 +32,7 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
   );
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
     (async () => {
@@ -42,7 +43,10 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
       setAccount(current);
       setReady(true);
     })().catch((e) => {
+      // Retour de la page de connexion avec une erreur : on la garde pour l'afficher, au lieu de
+      // remontrer la page d'accueil sans explication.
       console.error("connexion : initialisation impossible", e);
+      setError((e as { errorCode?: string })?.errorCode ?? "unknown");
       setReady(true);
     });
   }, [pca]);
@@ -53,7 +57,7 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
     ? { status: "loading" }
     : account
       ? { status: "signedIn", email: account.username || null, name: account.name ?? null }
-      : { status: "signedOut" };
+      : { status: "signedOut", error };
 
   const auth: Auth = {
     state,

@@ -86,6 +86,12 @@ describe("App", () => {
     expect(auth.signIn).toHaveBeenCalled();
   });
 
+  it("connexion refusée par l'annuaire : un message, pas un retour silencieux à l'accueil", async () => {
+    stubApi();
+    renderWith({ state: { status: "signedOut", error: "interaction_required" } });
+    expect(screen.getByRole("alert")).toHaveTextContent("サインインできませんでした");
+  });
+
   it("propose de créer un compte sous la connexion", async () => {
     stubApi();
     const auth = renderWith({ state: { status: "signedOut" }, signUp: vi.fn() });

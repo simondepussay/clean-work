@@ -100,6 +100,11 @@ function SignedOut() {
       <p className="eyebrow">{tr({ ja: "日本人も外国人も使える就活アプリ", en: "Job hunting in Japan, for Japanese and international students", fr: "La recherche d'emploi au Japon, pour Japonais et étrangers" })}</p>
       <h1>Clean Work</h1>
       <p className="lead">{tr({ ja: "迷わない毎日へ。", en: "Toward days without feeling lost.", fr: "Vers des journées où l'on ne se perd plus." })}</p>
+      {auth.state.status === "signedOut" && auth.state.error && (
+        <p role="alert" className="notice signin-error">{auth.state.error === "user_cancelled"
+          ? tr({ ja: "サインインがキャンセルされました。", en: "Sign-in was cancelled.", fr: "La connexion a été annulée." })
+          : tr({ ja: "サインインできませんでした。削除したアカウントは使えません。別のアカウントでお試しください。", en: "Could not sign in. A deleted account can no longer be used; try another account.", fr: "Connexion impossible. Un compte supprimé ne peut plus être utilisé : essayez avec un autre compte." })}</p>
+      )}
       {auth.state.status === "signedOut" && (
         <div className="welcome-actions">
           <button className="primary large" onClick={() => auth.signIn()}>{tr({ ja: "サインイン", en: "Sign in", fr: "Se connecter" })}</button>
