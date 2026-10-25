@@ -178,16 +178,19 @@ var audioMix: AVMutableAudioMix?
 let musicAsset = musicURL.map { AVURLAsset(url: $0, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]) }
 if let musicURL, let music = musicAsset?.tracks(withMediaType: .audio).first {
     let musicTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!
-    let length = min(CMTimeGetSeconds(music.timeRange.duration), total)
-    // On part du début réel de la piste (un MP3 ne commence pas toujours à 0), en restant un peu en deçà de sa fin.
-    try musicTrack.insertTimeRange(CMTimeRange(start: music.timeRange.start, duration: CMTime(seconds: length - 0.05, preferredTimescale: 600)), of: music, at: .zero)
+    // La chanson commence à 10 s de son début (MUSIC_START pour changer).
+    let offset = Double(ProcessInfo.processInfo.environment["MUSIC_START"] ?? "10") ?? 10
+    let length = min(CMTimeGetSeconds(music.timeRange.duration) - offset, total)
+    try musicTrack.insertTimeRange(CMTimeRange(start: CMTimeAdd(music.timeRange.start, CMTime(seconds: offset, preferredTimescale: 600)),
+                                               duration: CMTime(seconds: length - 0.05, preferredTimescale: 600)), of: music, at: .zero)
 
     // Courbe de volume : une suite de points (moment, niveau), reliés par des rampes.
-    let full: Float = 0.8, under: Float = 0.22, breath: Float = 0.06
+    // Musique discrète : la voix doit rester nettement devant.
+    let full: Float = 0.45, under: Float = 0.1, breath: Float = 0.04
     let notification = starts[shots.firstIndex { $0.notification }!]
     let endcard = starts[shots.count - 1]
     /// Niveau de fond selon le moment : plein pendant la journée, plus bas pendant la notification, plein à la fin.
-    func base(_ t: Double) -> Float { t < notification ? full : t < endcard ? 0.4 : 0.9 }
+    func base(_ t: Double) -> Float { t < notification ? full : t < endcard ? 0.3 : 0.55 }
     var points: [(Double, Float)] = [(0, 0), (0.6, full)]
     for (from, to) in spoken {
         points += [(from - 0.2, base(from)), (from, under), (to, under), (to + 0.4, base(to))]
@@ -196,9 +199,9 @@ if let musicURL, let music = musicAsset?.tracks(withMediaType: .audio).first {
     points.append((notification - 0.6, full))
     points.append((notification, breath))
     points.append((notification + 1.2, breath))
-    points.append((endcard - 0.2, 0.55))
-    points.append((endcard + 0.4, 0.9))
-    points.append((total - 1.2, 0.9))
+    points.append((endcard - 0.2, 0.35))
+    points.append((endcard + 0.4, 0.55))
+    points.append((total - 1.2, 0.55))
     points.append((total, 0))
     points.sort { $0.0 < $1.0 }
 
