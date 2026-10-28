@@ -56,7 +56,22 @@ const plans = [
   { id: "p4", kind: "goal", title: "SPI 模試で7割", date: inDays(14), done: false, createdAt: "", updatedAt: "" },
 ];
 
+/** Onglet « こころ » : quelques jours notés, dont 3 jours de pluie cette semaine (palier « often »). */
+const moodDays: ["sunny" | "cloudy" | "rainy", string?][] = [
+  ["sunny"], ["cloudy"], ["sunny", "ほっとした"], ["cloudy"], ["rainy", "不安"], ["sunny"], ["cloudy", "疲れた"], ["sunny"], ["cloudy"],
+  ["sunny", "ワクワク"], ["rainy", "焦り"], ["cloudy"], ["rainy", "疲れた"], ["rainy", "不安"],
+];
+const kokoro = {
+  moods: moodDays.map(([weather, word], i) => ({ date: inDays(i - moodDays.length + 1), weather, ...(word ? { word } : {}) })),
+  values: ["家族を安心させたい", "誠実でいること", "人の役に立つものを作る"],
+  support: { level: "often", rainy7: 3, rainy14: 4 },
+  week: { applications: 2, drafts: 3, interviews: 1, rejections: 1 },
+  prefecture: "東京都",
+  international: true,
+};
+
 const routes: Record<string, unknown> = {
+  "GET /api/kokoro*": kokoro,
   "GET /api/plans": plans,
   "GET /api/info?page=1": {
     page: 1, pages: 2, total: 9, sources: [{ id: "mhlw", name: "厚生労働省" }, { id: "japantimes", name: "The Japan Times" }],
@@ -127,6 +142,11 @@ export function installDemoApi() {
     const key = `${method} ${url}`;
     // Ajout ou modification : on renvoie ce qui a été envoyé, avec un identifiant.
     const sent = typeof init?.body === "string" ? JSON.parse(init.body) : {};
+    // こころ : la météo choisie reste affichée pendant la démo.
+    if (key === "PUT /api/kokoro/mood") {
+      kokoro.moods = [...kokoro.moods.filter((m) => m.date !== sent.date), ...(sent.weather ? [{ date: sent.date, weather: sent.weather, ...(sent.word ? { word: sent.word } : {}) }] : [])];
+    }
+    if (key === "PUT /api/kokoro/values") kokoro.values = (sent.values as string[]).filter(Boolean);
     const echo = { id: crypto.randomUUID(), done: false, createdAt: "", updatedAt: "", ...plans.find((p) => url.endsWith(p.id)), ...sent };
     const prefix = Object.keys(routes).find((k) => k.endsWith("*") && key.startsWith(k.slice(0, -1)));
     const body = key in routes ? routes[key] : prefix ? routes[prefix] : method === "GET" ? [] : echo;

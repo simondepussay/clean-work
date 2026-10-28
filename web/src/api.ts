@@ -288,6 +288,30 @@ export const updatePlan = (token: string, id: string, p: Partial<PlanInput>, f?:
 export const deletePlan = (token: string, id: string, f?: typeof fetch) =>
   call<null>(token, "DELETE", `/api/plans/${encodeURIComponent(id)}`, undefined, f);
 
+// ------------------------------------------------------------------ onglet « こころ »
+
+export type MoodWeather = "sunny" | "cloudy" | "rainy";
+export type Mood = { date: string; weather: MoodWeather; word?: string };
+/** calm / rain (dernier jour de pluie) / often (3 jours sur 7) / long (10 jours sur 14, repère des 2 semaines). */
+export type SupportLevel = "calm" | "rain" | "often" | "long";
+export type Kokoro = {
+  moods: Mood[];
+  values: string[];
+  support: { level: SupportLevel; rainy7: number; rainy14: number };
+  week: { applications: number; drafts: number; interviews: number; rejections: number };
+  prefecture: string | null;
+  international: boolean;
+};
+
+export const getKokoro = (token: string, today: string, f?: typeof fetch) =>
+  call<Kokoro>(token, "GET", `/api/kokoro?today=${today}`, undefined, f);
+/** weather null : efface la note du jour. */
+export const setMood = (token: string, mood: { date: string; weather: MoodWeather | null; word?: string }, f?: typeof fetch) =>
+  call<null>(token, "PUT", "/api/kokoro/mood", mood, f);
+export const setValues = (token: string, values: string[], f?: typeof fetch) =>
+  call<{ values: string[] }>(token, "PUT", "/api/kokoro/values", { values }, f);
+export const eraseKokoro = (token: string, f?: typeof fetch) => call<null>(token, "DELETE", "/api/kokoro", undefined, f);
+
 // ------------------------------------------------------------------ abonnement de calendrier
 
 /** Le lien privé d'abonnement (Google, Apple, Outlook…), dans la langue choisie. */

@@ -558,3 +558,71 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .beta-done h2 { margin: 12px 0 6px; }
 .footer-beta { font-weight: 600; color: var(--bordeaux) !important; }
 
+
+/* ------------------------------------------------------------------ onglet « こころ » */
+.kokoro { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+@media (max-width: 860px) { .kokoro { grid-template-columns: 1fr; } }
+.kokoro-main { display: flex; flex-direction: column; gap: 16px; }
+.kokoro-side { display: flex; flex-direction: column; gap: 18px; padding: 18px; border-radius: var(--radius); background: var(--blue-50); border: 1px solid var(--line); }
+.kokoro-side h3 { margin: 0 0 8px; font-size: 15px; }
+.kokoro-side p { margin: 6px 0; }
+.kokoro-source { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+/* La météo du jour : trois grands boutons, comme des cases de bulletin météo. */
+.mood-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.mood { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 12px; font-weight: 600; }
+.mood[aria-checked="true"].sunny { background: #fff6dc; border-color: #d9a520; color: #7a5600; }
+.mood[aria-checked="true"].cloudy { background: var(--blue-100); border-color: var(--blue-500); color: var(--blue-800); }
+.mood[aria-checked="true"].rainy { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
+.mood-word { margin-bottom: 12px; }
+.mood-word-form { display: flex; gap: 8px; margin-top: 8px; }
+.mood-word-form input { flex: 1; min-width: 0; }
+
+/* Les 4 dernières semaines : 7 cases par ligne, aujourd'hui entouré. */
+.mood-weeks { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 320px; margin-top: 8px; }
+.mood-day { aspect-ratio: 1; display: grid; place-items: center; border-radius: 6px; background: var(--blue-50); border: 1px solid var(--line); color: var(--blue-700); }
+.mood-day.sunny { background: #fff6dc; color: #9a6c00; }
+.mood-day.cloudy { background: var(--blue-100); }
+.mood-day.rainy { background: var(--blue-700); color: #fff; }
+.mood-day.today { outline: 2px solid var(--bordeaux); outline-offset: 1px; }
+
+/* Soutien : bordure à gauche, plus marquée selon le palier. */
+.kokoro-support { border-left: 4px solid var(--blue-300); }
+.kokoro-support.often { border-left-color: var(--blue-700); }
+.kokoro-support.long { border-left-color: var(--bordeaux); }
+.kokoro-support h2 { font-size: 17px; }
+.kokoro-done strong { color: var(--blue-700); }
+
+/* Carte du rituel, en ticket comme les cartes de l'accueil (coin coupé). */
+.kokoro-ritual-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-left: 4px solid var(--bordeaux);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+.kokoro-ritual-card h2 { margin: 0; font-size: 16px; }
+.ritual { text-align: center; }
+.ritual h2 { font-size: 18px; }
+.ritual-steps { list-style: none; display: flex; justify-content: center; gap: 6px; margin: 0 0 12px; padding: 0; }
+.ritual-steps li { width: 28px; height: 4px; border-radius: 2px; background: var(--line); }
+.ritual-steps li.done { background: var(--blue-300); }
+.ritual-steps li.current { background: var(--bordeaux); }
+.ritual-values { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 8px; font-size: 18px; font-weight: 600; color: var(--blue-800); }
+.ritual-phrase { font-size: 20px; font-weight: 700; color: var(--blue-800); margin: 16px 0 6px; }
+.ritual .primary, .ritual > button { margin-top: 14px; }
+.ritual .link { display: block; margin: 10px auto 0; }
+
+/* Respiration : le cercle en vagues du logo grandit (4 s) puis rétrécit (6 s). */
+.breathing { display: flex; flex-direction: column; align-items: center; padding: 8px 0; }
+.breath-circle { width: 140px; height: 140px; border-radius: 50%; background: var(--blue-100);
+  box-shadow: 0 0 0 10px var(--blue-50), 0 0 0 11px var(--line), 0 0 0 24px var(--white), 0 0 0 25px var(--line);
+  margin: 30px 0 22px; transform: scale(.6);
+  animation: breathe 10s ease-in-out infinite; }
+@keyframes breathe { 0% { transform: scale(.6); } 40% { transform: scale(1); } 100% { transform: scale(.6); } }
+.breath-word { font-size: 20px; font-weight: 700; color: var(--blue-800); margin: 0; }
+@media (prefers-reduced-motion: reduce) { .breath-circle { animation: none; } }
+
+.values-form { display: flex; flex-direction: column; gap: 6px; }
+.values-list { margin: 0 0 6px; padding-left: 18px; font-weight: 600; color: var(--blue-800); }
+.kokoro-sources { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.kokoro-sources li { display: flex; flex-direction: column; }
+.kokoro-privacy { border-top: 1px dashed var(--line); padding-top: 10px; }
+@media (max-width: 600px) {
+  .kokoro-ritual-card { flex-direction: column; align-items: flex-start; }
+}

@@ -14,6 +14,7 @@ const EsPage = lazy(() => import("./es/EsPage").then((m) => (loadedFine(), { def
 const InterviewPage = lazy(() => import("./interview/InterviewPage").then((m) => (loadedFine(), { default: m.InterviewPage })));
 const DocumentsPage = lazy(() => import("./profile/DocumentsPage").then((m) => (loadedFine(), { default: m.DocumentsPage })));
 const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => (loadedFine(), { default: m.ResumePanel })));
+const KokoroPage = lazy(() => import("./kokoro/KokoroPage").then((m) => (loadedFine(), { default: m.KokoroPage })));
 const InfoPage = lazy(() => import("./info/InfoPage").then((m) => (loadedFine(), { default: m.InfoPage })));
 const BetaPage = lazy(() => import("./beta/BetaPage").then((m) => (loadedFine(), { default: m.BetaPage })));
 const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (loadedFine(), { default: m.ProfileEditor })));
@@ -23,7 +24,7 @@ import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
-const VIEWS = ["home", "apps", "es", "interview", "documents", "info", "account", "beta"] as const;
+const VIEWS = ["home", "kokoro", "apps", "es", "interview", "documents", "info", "account", "beta"] as const;
 type View = (typeof VIEWS)[number];
 
 function viewFromHash(): View {
@@ -33,6 +34,7 @@ function viewFromHash(): View {
 
 /** Les services de l'app, rassemblés au même endroit (la philosophie de « Clean Work »). */
 const SERVICES: { view: Exclude<View, "home" | "account">; ja: string; en: string; name: T3; text: T3 }[] = [
+  { view: "kokoro", ja: "こころ", en: "Mind", name: { ja: "こころ", en: "Mind", fr: "Esprit" }, text: { ja: "こころの天気と、面接前の3分", en: "Your inner weather, and 3 minutes before interviews", fr: "Météo intérieure et 3 minutes avant l'entretien" } },
   { view: "apps", ja: "応募", en: "Applications", name: { ja: "応募", en: "Applications", fr: "Candidatures" }, text: { ja: "選考の進み具合と締切", en: "Progress and deadlines", fr: "Avancement et échéances" } },
   { view: "interview", ja: "面接", en: "Interview", name: { ja: "面接", en: "Interview", fr: "Entretiens" }, text: { ja: "企業に合わせた模擬面接", en: "Mock interviews for each company", fr: "Entretiens simulés pour chaque entreprise" } },
   { view: "documents", ja: "書類", en: "Documents", name: { ja: "書類", en: "Documents", fr: "Documents" }, text: { ja: "ES（AI添削）と履歴書・職務経歴書のPDF", en: "Entry sheets (AI review) and résumé PDFs", fr: "ES (relecture par IA) et CV japonais en PDF" } },
@@ -220,6 +222,7 @@ export default function App() {
                 </DocumentsPage>
               )}
               {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
+              {signedIn && view === "kokoro" && <KokoroPage />}
               {signedIn && view === "info" && <InfoPage />}
             </Suspense>
           </PageErrorBoundary>
