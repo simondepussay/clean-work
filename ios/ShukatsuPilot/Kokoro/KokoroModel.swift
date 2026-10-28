@@ -15,6 +15,8 @@ struct Kokoro: Codable, Equatable {
     let week: Week
     let prefecture: String?
     let international: Bool
+    /// お守りの言葉 (écrites sur le web pour l'instant) : programmées en notifications locales.
+    var charms: [Charm]?
 }
 
 extension APIClient {
@@ -70,6 +72,7 @@ final class KokoroModel {
         do {
             data = try await api.kokoro(today: today)
             failed = false
+            if let charms = data?.charms { CharmStore.charms = charms }
         } catch {
             failed = data == nil
         }

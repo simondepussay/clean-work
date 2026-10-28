@@ -201,3 +201,51 @@ final class PushRegistrationTests: XCTestCase {
         XCTAssertEqual(cleared, 2)
     }
 }
+
+@MainActor
+final class CharmRemindersTests: XCTestCase {
+    private let tokyo: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        return c
+    }()
+    private var now: Date { tokyo.date(from: DateComponents(year: 2026, month: 10, day: 28, hour: 12))! }
+    override func tearDown() { UserDefaults.standard.removeObject(forKey: HelpLanguage.storageKey) }
+
+    private func interview(_ id: String, _ date: String, time: String? = nil, company: String = "ソニー") -> JobApplication {
+        JobApplication(id: id, company: company, status: "interview1",
+                       steps: [.init(id: "s-\(id)", type: "interview1", dueDate: date, time: time)], nextDeadline: nil)
+    }
+
+    func testEachCharmAtItsMoment() {
+        UserDefaults.standard.set("ja", forKey: HelpLanguage.storageKey)
+        let charms = [Charm(text: "いつも通りで大丈夫。", when: "eve"), Charm(text: "笑顔で入ろう。", when: "morning"),
+                      Charm(text: "準備してきた自分を信じて。", when: "hour"), Charm(text: "ゆっくり話そう。", when: "tenmin")]
+        let r = CharmReminders.reminders(for: [interview("a", "2026-10-30", time: "14:00")], charms: charms, now: now, calendar: tokyo)
+        XCTAssertEqual(r.map { "\($0.fireAt.day!) \($0.fireAt.hour!):\($0.fireAt.minute!)" }, ["29 21:0", "30 7:0", "30 13:0", "30 13:50"])
+        XCTAssertEqual(r[2].body, "準備してきた自分を信じて。")
+        XCTAssertEqual(r[2].title, "ソニーの一次面接へ")
+    }
+
+    func testWithoutTimeOnlyEveAndMorning_andOnlyTheNextTwoInterviews() {
+        let charms = [Charm(text: "a", when: "eve"), Charm(text: "b", when: "hour")]
+        let apps = [interview("x", "2026-11-05"), interview("y", "2026-10-30"), interview("z", "2026-11-01")]
+        let r = CharmReminders.reminders(for: apps, charms: charms, now: now, calendar: tokyo)
+        XCTAssertEqual(r.map(\.id), ["charm.s-y.0", "charm.s-z.0"], "sans heure : pas de « 1 h avant » ; deux entretiens au plus")
+        XCTAssertTrue(CharmReminders.reminders(for: apps, charms: [], now: now, calendar: tokyo).isEmpty)
+    }
+
+    func testCharmsAreScheduled_andDeadlinesFillOnlyTheRemainingRoom() async {
+        let center = FakeCenter()
+        let charms = (0..<6).map { Charm(text: "\($0)", when: "eve") }
+        let scheduler = DeadlineReminderScheduler(center: center, serverPushActive: { false }, charms: { charms })
+        // 2 entretiens × 6 phrases, et 40 échéances (80 rappels possibles) : on s'arrête à 64.
+        let deadlines = (0..<40).map { i in
+            JobApplication(id: "d\(i)", company: "会社\(i)", status: "es",
+                           steps: [.init(id: "e\(i)", type: "es", dueDate: "2026-11-\(String(format: "%02d", 3 + i % 25))")], nextDeadline: nil)
+        }
+        let added = await scheduler.reschedule([interview("a", "2026-10-30"), interview("b", "2026-10-31")] + deadlines, now: now)
+        XCTAssertEqual(added, DeadlineReminderScheduler.iosLimit)
+        XCTAssertEqual(center.added.filter { $0.id.hasPrefix(CharmReminders.prefix) }.count, 12)
+    }
+}

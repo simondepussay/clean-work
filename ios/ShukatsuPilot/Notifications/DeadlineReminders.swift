@@ -124,10 +124,14 @@ final class DeadlineReminderScheduler {
                                                   serverPushActive: { PushRegistration.shared.isServerActive })
     private let center: NotificationScheduling
     private let serverPushActive: @MainActor () -> Bool
+    private let charms: @MainActor () -> [Charm]
+    /// iOS ne garde que 64 rappels en attente par app.
+    static let iosLimit = 64
 
-    init(center: NotificationScheduling, serverPushActive: @escaping @MainActor () -> Bool = { false }) {
+    init(center: NotificationScheduling, serverPushActive: @escaping @MainActor () -> Bool = { false }, charms: @escaping @MainActor () -> [Charm] = { CharmStore.charms }) {
         self.center = center
         self.serverPushActive = serverPushActive
+        self.charms = charms
     }
 
     /// Renvoie le nombre de rappels locaux programmés (0 si l'utilisateur a refusé, ou si le serveur s'en charge).
@@ -136,13 +140,16 @@ final class DeadlineReminderScheduler {
         if Self.demo { return 0 }
         await removeLocal()
         let interviews = InterviewReminders.reminders(for: apps, weather: weather, now: now)
+        let charms = CharmReminders.reminders(for: apps, charms: charms(), now: now)
         let deadlines = DeadlineReminders.reminders(for: apps, now: now)
         // L'autorisation n'est demandée ici qu'au moment où il y a quelque chose à rappeler (sinon : prepare()).
-        guard !(interviews + deadlines).isEmpty, await center.authorizationAllowed() else { return 0 }
+        guard !(interviews + charms + deadlines).isEmpty, await center.authorizationAllowed() else { return 0 }
         // S26 : on (re)demande le jeton APNs.
         center.registerForRemoteNotifications()
-        // L'encouragement 1 h avant un entretien est toujours local ; les échéances seulement si le serveur ne s'en charge pas.
-        let reminders = serverPushActive() ? interviews : interviews + deadlines
+        // L'encouragement 1 h avant un entretien et les お守りの言葉 sont toujours locaux (à la minute) ;
+        // les échéances seulement si le serveur ne s'en charge pas, dans la place qui reste (iOS : 64 rappels par app).
+        let personal = interviews + charms
+        let reminders = serverPushActive() ? personal : personal + deadlines.prefix(max(0, Self.iosLimit - personal.count))
         var added = 0
         for r in reminders where (try? await center.add(r)) != nil { added += 1 }
         return added
@@ -167,7 +174,9 @@ final class DeadlineReminderScheduler {
 
     /// Retire nos rappels locaux (et seulement les nôtres).
     func removeLocal() async {
-        center.remove(await center.pendingIdentifiers().filter { $0.hasPrefix(DeadlineReminders.prefix) || $0.hasPrefix(InterviewReminders.prefix) })
+        center.remove(await center.pendingIdentifiers().filter {
+            $0.hasPrefix(DeadlineReminders.prefix) || $0.hasPrefix(InterviewReminders.prefix) || $0.hasPrefix(CharmReminders.prefix)
+        })
     }
 }
 
@@ -202,5 +211,68 @@ final class SystemNotificationCenter: NotificationScheduling {
 
     func registerForRemoteNotifications() {
         DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
+    }
+}
+
+/// « お守りの言葉 » : les phrases que l'utilisateur veut recevoir avant ses entretiens (écrites dans こころ).
+/// La veille à 21 h, le matin à 7 h, 1 h ou 10 min avant (ces deux-là demandent l'heure de l'entretien).
+struct Charm: Codable, Equatable {
+    let text: String
+    let when: String
+}
+
+/// Copie locale des phrases : les rappels sont programmés même sans réseau, depuis l'accueil ou 応募.
+enum CharmStore {
+    private static let key = "charms"
+    static var charms: [Charm] {
+        get { (UserDefaults.standard.data(forKey: key)).flatMap { try? JSONDecoder().decode([Charm].self, from: $0) } ?? [] }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: key) }
+    }
+}
+
+enum CharmReminders {
+    static let prefix = "charm."
+    /// Les deux prochains entretiens seulement (6 phrases au plus chacun) : iOS garde 64 rappels par app.
+    static let interviewsCovered = 2
+    private static let interviews: Set<String> = ["interview1", "interview2", "final"]
+    private static let closed: Set<String> = ["rejected", "withdrawn"]
+
+    static func reminders(for apps: [JobApplication], charms: [Charm], now: Date = .now, calendar: Calendar = .current) -> [Reminder] {
+        guard !charms.isEmpty else { return [] }
+        var tokyo = Calendar(identifier: .gregorian)
+        tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        let upcoming = apps.filter { !closed.contains($0.status) }.flatMap { app in
+            app.steps.compactMap { step -> (day: Date, start: Date?, app: JobApplication, step: JobApplication.Step)? in
+                guard interviews.contains(step.type), !step.done, let date = step.dueDate else { return nil }
+                let d = date.split(separator: "-").compactMap { Int($0) }
+                guard d.count == 3, let day = tokyo.date(from: DateComponents(year: d[0], month: d[1], day: d[2])) else { return nil }
+                let t = step.time?.split(separator: ":").compactMap { Int($0) } ?? []
+                let start = t.count == 2 ? tokyo.date(from: DateComponents(year: d[0], month: d[1], day: d[2], hour: t[0], minute: t[1])) : nil
+                guard (start ?? day.addingTimeInterval(86400)) > now else { return nil }
+                return (day, start, app, step)
+            }
+        }
+        .sorted { ($0.start ?? $0.day) < ($1.start ?? $1.day) }
+        .prefix(interviewsCovered)
+
+        return upcoming.flatMap { item in
+            charms.enumerated().compactMap { index, charm -> Reminder? in
+                let fire: Date?
+                switch charm.when {
+                case "eve": fire = item.day.addingTimeInterval(-3 * 3600)         // la veille, 21 h
+                case "morning": fire = item.day.addingTimeInterval(7 * 3600)      // le jour même, 7 h
+                case "hour": fire = item.start?.addingTimeInterval(-3600)
+                case "tenmin": fire = item.start?.addingTimeInterval(-600)
+                default: fire = nil
+                }
+                guard let fire, fire > now else { return nil }
+                let stage = SelectionStage.name(item.step.type)
+                return Reminder(
+                    id: "\(prefix)\(item.step.id).\(index)",
+                    title: tr("\(item.app.company)の\(stage)へ", "For your \(stage) at \(item.app.company)", "Pour votre \(stage) chez \(item.app.company)"),
+                    body: charm.text,
+                    fireAt: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire))
+            }
+        }
     }
 }

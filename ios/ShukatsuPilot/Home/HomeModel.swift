@@ -118,10 +118,13 @@ final class HomeModel {
         async let own = try? api.plans()
         async let days = api.holidays()
         async let me = try? api.profile()
+        // Les お守りの言葉 (onglet こころ) : gardées sur l'iPhone pour les rappels d'entretien.
+        async let kokoro = try? api.kokoro(today: ISO8601DateFormatter.dayOnly.string(from: .now))
         applications = await apps ?? applications
         plans = await own ?? plans
         loaded = true
         holidays = await days
+        if let charms = (await kokoro)?.charms { CharmStore.charms = charms }
         homeAddress = (await me)?.address.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
         interviewWeather = await weatherForUpcomingInterviews()
         // Au premier lancement, iOS demande l'autorisation des notifications : on attend que l'écran
