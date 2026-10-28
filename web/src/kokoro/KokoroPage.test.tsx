@@ -114,12 +114,15 @@ describe("KokoroPage (こころ)", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("le ciel prend la météo du jour", async () => {
+  it("le ciel et tout l'arrière-plan prennent la météo du jour, puis reviennent à la normale", async () => {
     server(kokoro({ moods: [{ date: today, weather: "rainy" }] }));
-    const { container } = renderPage();
+    const { container, unmount } = renderPage();
     await screen.findByRole("radio", { name: /雨/ });
     expect(container.querySelector(".kokoro-sky")).toHaveClass("rainy");
     expect(screen.getByText(/ひと息つきましょう/)).toBeInTheDocument();
+    expect(document.documentElement.dataset.mood).toBe("rainy");
+    unmount();
+    expect(document.documentElement.dataset.mood).toBeUndefined();
   });
 
   it("écrit ses valeurs (3 lignes au plus)", async () => {

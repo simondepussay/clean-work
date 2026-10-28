@@ -273,6 +273,15 @@ export function KokoroPage() {
 
   const todayMood = data?.moods.find((m) => m.date === today);
 
+  // Sur cet onglet, tout l'arrière-plan prend la météo du jour (voir index.css, html[data-mood]).
+  const moodWeather = todayMood?.weather;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (moodWeather) root.dataset.mood = moodWeather;
+    else delete root.dataset.mood;
+    return () => { delete root.dataset.mood; };
+  }, [moodWeather]);
+
   async function choose(weather: MoodWeather | null, newWord = word) {
     const token = await auth.getToken();
     if (!token || !data) return;

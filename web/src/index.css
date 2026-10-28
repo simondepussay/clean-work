@@ -38,6 +38,23 @@ a { color: var(--blue-700); }
     linear-gradient(180deg, var(--white) 0%, var(--blue-50) 100%);
 }
 
+/* Onglet « こころ » : l'arrière-plan entier prend la météo intérieure du jour, dans les tons de l'estampe. */
+.waves::after { content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease;
+  background: repeating-linear-gradient(105deg, transparent 0 22px, rgba(44, 52, 67, .07) 22px 23px, transparent 23px 58px);
+  background-size: 100% 90px; animation: rain-bg 1.8s linear infinite; }
+@keyframes rain-bg { to { background-position: -24px 90px; } }
+html[data-mood="sunny"] .waves { background:
+  repeating-radial-gradient(circle at 50% 135%, transparent 0 54px, rgba(176, 125, 53, .11) 54px 57px),
+  linear-gradient(180deg, #fff7ea 0%, #f6e1c2 100%); }
+html[data-mood="cloudy"] .waves { background:
+  repeating-radial-gradient(circle at 50% 135%, transparent 0 54px, rgba(78, 98, 128, .10) 54px 57px),
+  linear-gradient(180deg, #f4f4f1 0%, #dce2e9 100%); }
+html[data-mood="rainy"] .waves { background:
+  repeating-radial-gradient(circle at 50% 135%, transparent 0 54px, rgba(44, 52, 67, .11) 54px 57px),
+  linear-gradient(180deg, #e8e7e2 0%, #c6cbd1 100%); }
+html[data-mood="rainy"] .waves::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .waves::after { animation: none; } }
+
 /* En-tête : « Clean Work » à gauche (retour à l'accueil), menu, icône du compte à droite. */
 .topbar {
   position: relative; z-index: 10;
