@@ -339,7 +339,8 @@ export async function sendTestPush(token: string, fetcher: typeof fetch = fetch)
   if (res.status === 429) return "limit";
   if (res.status === 503) return "off";
   if (!res.ok) return "failed";
-  return ((await res.json()) as { sent: number }).sent > 0 ? "sent" : "failed";
+  const body = (await res.json().catch(() => null)) as { sent?: number } | null;
+  return (body?.sent ?? 0) > 0 ? "sent" : "failed";
 }
 
 // ------------------------------------------------------------------ abonnement de calendrier

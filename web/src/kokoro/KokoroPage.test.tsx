@@ -27,6 +27,7 @@ function kokoro(over: Partial<Kokoro> = {}): Kokoro {
 
 function server(data: Kokoro, apps: unknown[] = []) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === "/api/kokoro/test-push") return { ok: true, status: 200, json: async () => ({ sent: 1 }) };
     if (url.startsWith("/api/kokoro") && init?.method && init.method !== "GET") return { ok: true, status: 204, json: async () => null };
     if (url.startsWith("/api/kokoro")) return { ok: true, status: 200, json: async () => data };
     if (url === "/api/applications") return { ok: true, status: 200, json: async () => apps };
@@ -183,6 +184,7 @@ describe("KokoroPage : liens avec le reste de l'app", () => {
     expect(JSON.parse(put[1]!.body as string)).toEqual({ cheerFrequency: "weekly" });
     await userEvent.click(within(box).getByRole("button", { name: "テスト通知を送る" }));
     expect(fetchMock.mock.calls.some(([url, init]) => url === "/api/kokoro/test-push" && init?.method === "POST")).toBe(true);
+    expect(await within(box).findByText("送りました。iPhoneを見てみてください。")).toBeInTheDocument();
   });
 
   it("通知 : aucun iPhone relié → lien vers l'app iPhone (bêta)", async () => {
