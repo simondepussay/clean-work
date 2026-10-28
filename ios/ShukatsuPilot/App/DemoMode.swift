@@ -45,6 +45,7 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/interviews"): body = [] as [Any]
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
         case ("GET", "/api/info"): body = Self.info
+        case ("GET", "/api/kokoro"): body = Self.kokoro
         // Données ouvertes (exemples).
         case ("GET", "/api/holidays"): body = ["2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日", "2027-01-01": "元日"]
         case ("GET", "/api/weather"): body = ["date": Self.day(6), "prefecture": "東京都", "place": "東京都港区", "kind": "rain", "rainChance": 70, "tMax": 18, "tMin": 12] as [String: Any]
@@ -98,6 +99,21 @@ private final class DemoURLProtocol: URLProtocol {
         ["id": "a5", "company": "メルカリ", "position": "バックエンドエンジニア", "status": "applied", "steps": [] as [Any]],
         ["id": "a6", "company": "トヨタ自動車", "position": "ソフトウェア開発", "status": "applied", "steps": [] as [Any]],
     ]}
+
+    /// Onglet « こころ » : 3 jours de pluie cette semaine (palier « often »).
+    static var kokoro: [String: Any] {
+        let days: [(String, String?)] = [("sunny", nil), ("cloudy", nil), ("sunny", "ほっとした"), ("cloudy", nil), ("rainy", "不安"), ("sunny", nil), ("cloudy", "疲れた"),
+                                         ("sunny", nil), ("cloudy", nil), ("sunny", "ワクワク"), ("rainy", "焦り"), ("cloudy", nil), ("rainy", "疲れた"), ("rainy", "不安")]
+        let moods = days.enumerated().map { i, d -> [String: Any] in
+            var m: [String: Any] = ["date": day(i - days.count + 1), "weather": d.0]
+            if let w = d.1 { m["word"] = w }
+            return m
+        }
+        return ["moods": moods, "values": ["家族を安心させたい", "誠実でいること", "人の役に立つものを作る"],
+                "support": ["level": "often", "rainy7": 3, "rainy14": 4],
+                "week": ["applications": 2, "drafts": 3, "interviews": 1, "rejections": 1],
+                "prefecture": "東京都", "international": true]
+    }
 
     static var plans: [[String: Any]] {[
         ["id": "p1", "kind": "event", "title": "合同企業説明会", "date": day(1), "time": "13:00", "done": false],

@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// Les cinq onglets de Clean Work (mêmes que le site).
+/// Les onglets de Clean Work (mêmes que le site).
 enum MainTab: String, CaseIterable, Identifiable {
-    case home, apps, interview, documents, info
+    case home, kokoro, apps, interview, documents, info
     var id: String { rawValue }
 
     /// Les intercalaires restent en japonais + anglais, comme sur le site.
     var ja: String {
-        switch self { case .home: "ホーム"; case .apps: "応募"; case .interview: "面接"; case .documents: "書類"; case .info: "情報" }
+        switch self { case .home: "ホーム"; case .kokoro: "こころ"; case .apps: "応募"; case .interview: "面接"; case .documents: "書類"; case .info: "情報" }
     }
     var en: String {
-        switch self { case .home: "Home"; case .apps: "Applications"; case .interview: "Interview"; case .documents: "Documents"; case .info: "Info" }
+        switch self { case .home: "Home"; case .kokoro: "Mind"; case .apps: "Applications"; case .interview: "Interview"; case .documents: "Documents"; case .info: "Info" }
     }
 }
 
@@ -53,6 +53,8 @@ struct MainView: View {
                         tab = .interview
                     })
                 }
+            case .kokoro:
+                KokoroView(model: KokoroModel(api: api))
             case .apps:
                 NavigationStack { ApplicationsView(model: ApplicationsModel(api: api)) }
             case .interview:
@@ -150,7 +152,7 @@ struct BinderTabBar: View {
     private let tints: [Color] = [
         Color(red: 0.875, green: 0.914, blue: 0.969), Color(red: 0.827, green: 0.882, blue: 0.957),
         Color(red: 0.780, green: 0.851, blue: 0.945), Color(red: 0.729, green: 0.816, blue: 0.933),
-        Color(red: 0.678, green: 0.780, blue: 0.918),
+        Color(red: 0.678, green: 0.780, blue: 0.918), Color(red: 0.627, green: 0.745, blue: 0.902),
     ]
 
     var body: some View {
