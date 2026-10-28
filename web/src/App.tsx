@@ -7,6 +7,7 @@ import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
 import type { EsSeed } from "./es/EsPage";
 import { HomePage } from "./home/HomePage";
+import { KokoroLoading } from "./kokoro/KokoroSky";
 
 // Chaque onglet est chargé la première fois qu'on l'ouvre : l'accueil s'affiche sans attendre le reste.
 const ApplicationsBoard = lazy(() => import("./apps/ApplicationsBoard").then((m) => (loadedFine(), { default: m.ApplicationsBoard })));
@@ -202,7 +203,7 @@ export default function App() {
           <PageErrorBoundary key={view}
             message={tr({ ja: "このページを表示できませんでした。新しいバージョンが公開された可能性があります。", en: "This page could not be displayed. A new version may have been published.", fr: "Cette page n'a pas pu s'afficher. Une nouvelle version a peut-être été mise en ligne." })}
             action={tr({ ja: "再読み込み", en: "Reload", fr: "Recharger" })}>
-            <Suspense fallback={<Loader />}>
+            <Suspense fallback={view === "kokoro" ? <KokoroLoading label={tr({ ja: "読み込み中", en: "Loading", fr: "Chargement" })} /> : <Loader />}>
               {/* La page de la bêta est ouverte à tous, connecté ou non. */}
               {view === "beta" && <BetaPage />}
               {!signedIn && view !== "beta" && <SignedOut />}

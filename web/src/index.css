@@ -600,6 +600,15 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .sky-sun { animation: rise .9s ease both; }
 
 .hero-content { position: relative; text-align: center; padding: 30px 20px 74px; color: var(--blue-950); transition: color 1s; }
+/* Rideau de nuages : deux moitiés de すやり霞 qui se ferment au centre, puis s'écartent. */
+.cloud-curtain { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.cloud-curtain.closed { pointer-events: auto; }
+.curtain-half { position: absolute; top: 0; bottom: 0; width: 62%; transition: transform .75s cubic-bezier(.65, 0, .35, 1), opacity .75s ease; opacity: 0; }
+.curtain-half svg { width: 100%; height: 100%; display: block; }
+.curtain-half.left { left: 0; transform: translateX(-100%); }
+.curtain-half.right { right: 0; transform: translateX(100%); }
+.cloud-curtain.closed .curtain-half { transform: none; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .curtain-half { transition: opacity .3s; } }
 .hero-hello, .hero-content h2, .hero-echo { text-shadow: 0 0 6px rgba(246, 236, 216, .95), 0 0 14px rgba(246, 236, 216, .8); }
 .hero-hello { margin: 0 0 4px; font-size: 14px; letter-spacing: .04em; opacity: .8; }
 .hero-content h2 { margin: 0 0 22px; font-family: var(--k-mincho); font-size: 26px; font-weight: 600; letter-spacing: .04em; }

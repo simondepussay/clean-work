@@ -111,3 +111,60 @@ export function KokoroSky({ weather }: { weather?: MoodWeather }) {
     </div>
   );
 }
+
+/** Bandes d'une moitié du rideau (x, y, largeur) en coordonnées 400 × 340, et leur couleur. */
+const CURTAIN_ROWS: [number, number, number, string][] = [
+  [-30, 22, 300, "#f6efe0"], [-30, 66, 390, "#ead6a6"], [-30, 112, 330, "#e3e8ee"], [-30, 158, 320, "#f6efe0"],
+  [-30, 204, 350, "#ead6a6"], [-30, 250, 400, "#e3e8ee"], [-30, 296, 320, "#f6efe0"],
+];
+
+/**
+ * Le rideau de nuages (すやり霞) : il se ferme pendant un chargement, puis s'ouvre sur le ciel —
+ * comme les bandes de brume qui séparent les scènes dans la peinture et l'estampe japonaises
+ * (or pâle, crème, gris bleuté). Les deux moitiés se chevauchent en fondu : pas de couture au centre.
+ */
+export function CloudCurtain({ closed }: { closed: boolean }) {
+  const id = useId().replace(/:/g, "");
+  // Deux couches par moitié : les fonds d'abord, les bandes ensuite (aucune bande n'est recouverte au centre).
+  const layer = (side: "left" | "right", part: "base" | "bands") => (
+    <div className={`curtain-half ${side}`}>
+      <svg viewBox="0 0 400 340" preserveAspectRatio="none" style={side === "right" ? { transform: "scaleX(-1)" } : undefined}>
+        {part === "base" ? (
+          <>
+            <defs>
+              <linearGradient id={`${id}-${side}`} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stopColor="#efe5d2" />
+                <stop offset="0.72" stopColor="#efe5d2" />
+                <stop offset="1" stopColor="#efe5d2" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <rect width="400" height="340" fill={`url(#${id}-${side})`} />
+          </>
+        ) : CURTAIN_ROWS.map(([x, y, w, color], i) => (
+          <path key={i} d={band(x + (side === "right" ? 24 : 0), y, w, 30)} fill={color} stroke="#a8b4c4" strokeWidth="1" strokeLinejoin="round" />
+        ))}
+      </svg>
+    </div>
+  );
+  return (
+    <div className={`cloud-curtain${closed ? " closed" : ""}`} aria-hidden="true">
+      {layer("left", "base")}
+      {layer("right", "base")}
+      {layer("left", "bands")}
+      {layer("right", "bands")}
+    </div>
+  );
+}
+
+/** Écran d'attente de l'onglet « こころ » : le ciel, couvert de nuages. Aussi utilisé par App
+ *  pendant le téléchargement du code de l'onglet (ce fichier est léger et chargé d'avance). */
+export function KokoroLoading({ label }: { label: string }) {
+  return (
+    <div className="kokoro">
+      <section className="kokoro-hero" aria-busy="true" aria-label={label}>
+        <KokoroSky />
+        <CloudCurtain closed />
+      </section>
+    </div>
+  );
+}

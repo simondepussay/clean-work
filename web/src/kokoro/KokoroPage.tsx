@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Loader } from "../Loader";
 import { eraseKokoro, getKokoro, listApplications, setMood, setValues, type Application, type Kokoro, type MoodWeather } from "../api";
 import { useAuth } from "../auth/auth";
 import { buildAgenda, ymd } from "../home/agenda";
 import { ChatIcon, CloseIcon, CloudIcon, GlobeIcon, HeartIcon, PhoneIcon, RainIcon, SunIcon } from "../icons";
 import { formatDay, useTr, type T3, type Tr } from "../i18n";
-import { KokoroSky } from "./KokoroSky";
+import { CloudCurtain, KokoroLoading, KokoroSky } from "./KokoroSky";
 
 /**
  * Onglet « こころ » : un endroit calme pour prendre soin de soi pendant le 就活.
@@ -251,6 +250,8 @@ export function KokoroPage() {
   const [mode, setMode] = useState<"none" | "breathe" | "ritual">("none");
   const [editing, setEditing] = useState(false);
   const [draftValues, setDraftValues] = useState(["", "", ""]);
+  /** Rideau de nuages fermé pendant un chargement (au début, et quand la météo change). */
+  const [veiled, setVeiled] = useState(true);
 
   async function load() {
     const token = await auth.getToken();
@@ -262,8 +263,9 @@ export function KokoroPage() {
       if (a && a.ok) setApps(a.value);
     } catch { setFailed(true); }
   }
+  // Au premier affichage, les nuages s'ouvrent une fois les données arrivées.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load().finally(() => setTimeout(() => setVeiled(false), 250)); }, []);
 
   /** Le prochain entretien dans les 7 jours : le rituel lui est dédié. */
   const nextInterview = useMemo(() => {
@@ -282,12 +284,18 @@ export function KokoroPage() {
     return () => { delete root.dataset.mood; };
   }, [moodWeather]);
 
-  async function choose(weather: MoodWeather | null, newWord = word) {
+  async function choose(weather: MoodWeather | null, newWord = word, curtain = false) {
     const token = await auth.getToken();
     if (!token || !data) return;
     const trimmed = newWord.trim();
-    const res = await setMood(token, { date: today, weather, ...(trimmed && weather ? { word: trimmed } : {}) }).catch(() => null);
+    // Changer de météo : les nuages se ferment, le ciel change derrière, puis ils s'ouvrent.
+    if (curtain) setVeiled(true);
+    const [res] = await Promise.all([
+      setMood(token, { date: today, weather, ...(trimmed && weather ? { word: trimmed } : {}) }).catch(() => null),
+      curtain ? new Promise((r) => setTimeout(r, 650)) : null,
+    ]);
     if (res?.ok) await load();
+    if (curtain) setVeiled(false);
   }
 
   async function saveValues(e: FormEvent) {
@@ -307,7 +315,8 @@ export function KokoroPage() {
   const editValues = () => { setDraftValues([...(data?.values ?? []), "", "", ""].slice(0, 3)); setEditing(true); };
 
   if (failed) return <p className="muted">{tr({ ja: "読み込めませんでした。", en: "Could not load.", fr: "Chargement impossible." })}</p>;
-  if (!data) return <Loader />;
+  // Pendant le premier chargement : le ciel est couvert de nuages (pas de roue qui tourne).
+  if (!data) return <KokoroLoading label={tr({ ja: "読み込み中", en: "Loading", fr: "Chargement" })} />;
 
   // Les 4 dernières semaines, en « jardin » de points (aujourd'hui en dernier).
   const days = Array.from({ length: 28 }, (_, i) => ymd(new Date(Date.now() - (27 - i) * 86_400_000)));
@@ -319,13 +328,14 @@ export function KokoroPage() {
     <div className="kokoro">
       <section className="kokoro-hero" aria-label={tr({ ja: "今日のこころの天気", en: "Today's inner weather", fr: "La météo du jour" })}>
         <KokoroSky weather={todayMood?.weather} />
+        <CloudCurtain closed={veiled} />
         <div className="hero-content">
           <p className="hero-hello">{greeting(tr, name)}</p>
           <h2>{tr({ ja: "今日のこころの天気は？", en: "How's your inner weather today?", fr: "Quelle météo intérieure aujourd'hui ?" })}</h2>
           <div className="mood-choices" role="radiogroup" aria-label={tr({ ja: "天気", en: "Weather", fr: "Météo" })}>
             {WEATHERS.map(({ id, label, Icon }) => (
               <button key={id} role="radio" aria-checked={todayMood?.weather === id} className={`mood ${id}`}
-                onClick={() => choose(todayMood?.weather === id ? null : id)}>
+                onClick={() => choose(todayMood?.weather === id ? null : id, word, true)}>
                 <span className="mood-icon"><Icon size={30} /></span><span>{tr(label)}</span>
               </button>
             ))}
