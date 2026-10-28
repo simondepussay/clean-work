@@ -13,8 +13,9 @@
  *            on conseille d'en parler à un professionnel.
  */
 import { z } from "zod";
-import { needsJlpt } from "./reminders";
-import { containers, messages, type Application, type Draft, type Profile } from "./models";
+import { cheerFrequencies, cheersFor, readWords, type CheerFrequency, type Word } from "./cheer";
+import { needsJlpt, tokyoDate } from "./reminders";
+import { containers, messages, type Application, type Device, type Draft, type Profile } from "./models";
 import type { Interview } from "./interview";
 import type { DocStore } from "./store";
 
@@ -37,8 +38,24 @@ export const valuesInputSchema = z.object({
     .transform((list) => list.filter((v) => v.length > 0)),
 });
 
+/** お守りの言葉 : des phrases à soi, reçues sur l'iPhone avant chaque entretien (notification locale, à la minute). */
+export const charmTimings = ["eve", "morning", "hour", "tenmin"] as const;
+export type CharmTiming = (typeof charmTimings)[number];
+export const charmsInputSchema = z.object({
+  charms: z.array(z.object({
+    text: z.string().trim().min(1, messages.required).max(80, messages.tooLong(80)),
+    when: z.enum(charmTimings),
+  })).max(6),
+});
+export type Charm = z.infer<typeof charmsInputSchema>["charms"][number];
+
+export const settingsInputSchema = z.object({ cheerFrequency: z.enum(cheerFrequencies) });
+
 export type Mood = { date: string; weather: MoodWeather; word?: string };
-export type KokoroDoc = { id: "kokoro"; userId: string; moods: Mood[]; values: string[]; updatedAt: string };
+export type KokoroDoc = {
+  id: "kokoro"; userId: string; moods: Mood[]; values: string[];
+  charms?: Charm[]; cheerFrequency?: CheerFrequency; updatedAt: string;
+};
 
 export type SupportLevel = "calm" | "rain" | "often" | "long";
 
@@ -68,9 +85,9 @@ export function prefectureOf(address?: string) {
 }
 
 export class KokoroService {
-  constructor(private store: DocStore, private now: () => Date = () => new Date()) {}
+  constructor(private store: DocStore, private now: () => Date = () => new Date(), private words: () => Word[] = readWords) {}
 
-  private async doc(userId: string): Promise<KokoroDoc> {
+  async doc(userId: string): Promise<KokoroDoc> {
     return (await this.store.get<KokoroDoc>(containers.profiles, userId, DOC_ID))
       ?? { id: DOC_ID, userId, moods: [], values: [], updatedAt: this.now().toISOString() };
   }
@@ -79,13 +96,14 @@ export class KokoroService {
    * Tout ce que l'écran « こころ » affiche. `today` est la date locale de l'appareil (le Japon
    * pour la plupart des utilisateurs) ; sans elle, la date du serveur.
    */
-  async view(userId: string, today = this.now().toISOString().slice(0, 10)) {
-    const [doc, profile, apps, drafts, interviews] = await Promise.all([
+  async view(userId: string, today = tokyoDate(this.now())) {
+    const [doc, profile, apps, drafts, interviews, devices] = await Promise.all([
       this.doc(userId),
       this.store.get<Profile>(containers.profiles, userId, userId),
       this.store.list<Application>(containers.applications, userId),
       this.store.list<Draft>(containers.drafts, userId),
       this.store.list<Interview>(containers.interviews, userId),
+      this.store.list<Device>(containers.devices, userId),
     ]);
     const weekStart = `${shift(today, -6)}T00:00:00`;
     const since = (d?: string) => (d ?? "") >= weekStart;
@@ -100,6 +118,12 @@ export class KokoroService {
         interviews: interviews.filter((i) => since(i.createdAt)).length,
         rejections: apps.filter((a) => a.status === "rejected" && since(a.updatedAt)).length,
       },
+      // Félicitations, réconfort, petites poussées vers les autres onglets, mot du jour (voir cheer.ts).
+      cheers: cheersFor({ userId, apps, drafts, interviews, moods: doc.moods, values: doc.values, today, now: this.now(), words: this.words() }),
+      charms: doc.charms ?? [],
+      cheerFrequency: doc.cheerFrequency ?? "daily",
+      // iPhone reliés au compte (ils reçoivent les notifications).
+      devices: { count: devices.length, lastSeen: devices.map((d) => d.updatedAt).sort().at(-1) ?? null },
       // Personnalisation des aides : la région (新卒応援ハローワーク), et des lignes en anglais pour
       // les étudiants dont le japonais n'est pas la langue maternelle.
       prefecture: prefectureOf(profile?.address),
@@ -128,7 +152,21 @@ export class KokoroService {
     return values;
   }
 
-  /** Efface tout (humeurs et valeurs), tout de suite : rien à garder pour une restauration. */
+  async setCharms(userId: string, input: unknown) {
+    const { charms } = charmsInputSchema.parse(input);
+    const doc = await this.doc(userId);
+    await this.store.put<KokoroDoc>(containers.profiles, { ...doc, charms, updatedAt: this.now().toISOString() });
+    return charms;
+  }
+
+  async setSettings(userId: string, input: unknown) {
+    const { cheerFrequency } = settingsInputSchema.parse(input);
+    const doc = await this.doc(userId);
+    await this.store.put<KokoroDoc>(containers.profiles, { ...doc, cheerFrequency, updatedAt: this.now().toISOString() });
+    return { cheerFrequency };
+  }
+
+  /** Efface tout (humeurs, valeurs, phrases), tout de suite : rien à garder pour une restauration. */
   erase(userId: string) {
     return this.store.remove(containers.profiles, userId, DOC_ID);
   }

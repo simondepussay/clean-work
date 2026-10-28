@@ -82,7 +82,7 @@ function backend() {
     usage: review.usage,
     resume: resumeHandler(common),
     devices: devicesHandler({ ...common, push: () => phone }),
-    pushRun: pushRunHandler({ secret: () => SECRET, store: () => store, push: () => phone, now: () => NOW }),
+    pushRun: pushRunHandler({ secret: () => SECRET, store: () => store, push: () => phone, now: () => NOW, cheers: false }),
   };
 
   /** Appelle une route comme le ferait l'app : jeton dans x-shukatsu-token, corps JSON. */

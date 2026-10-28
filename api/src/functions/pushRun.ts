@@ -1,7 +1,8 @@
 import { app, type HttpRequest } from "@azure/functions";
 import { timingSafeEqual } from "node:crypto";
 import { getPushSender, type PushSender } from "../lib/push";
-import { runReminders } from "../lib/reminders";
+import type { Word } from "../lib/cheer";
+import { readJlptSchedule, runReminders } from "../lib/reminders";
 import { getStore, type DocStore } from "../lib/store";
 
 export const CRON_HEADER = "x-shukatsu-cron";
@@ -20,13 +21,13 @@ function sameSecret(given: string | null, expected: string | undefined) {
  * c'est un workflow GitHub Actions planifié (.github/workflows/reminders.yml) qui appelle
  * cette route chaque matin, avec un secret partagé dans l'en-tête x-shukatsu-cron.
  */
-export function pushRunHandler(deps: { secret?: () => string | undefined; store?: () => DocStore; push?: () => PushSender | null; now?: () => Date } = {}) {
+export function pushRunHandler(deps: { secret?: () => string | undefined; store?: () => DocStore; push?: () => PushSender | null; now?: () => Date; words?: () => Word[]; cheers?: boolean } = {}) {
   return async (req: HttpRequest) => {
     const secret = (deps.secret ?? (() => process.env.PUSH_CRON_SECRET))();
     if (!sameSecret(req.headers.get(CRON_HEADER), secret)) return { status: 401, jsonBody: { error: "unauthorized" } };
     const sender = (deps.push ?? getPushSender)();
     if (!sender) return { status: 503, jsonBody: { error: "push_not_configured" } };
-    const summary = await runReminders((deps.store ?? getStore)(), sender, (deps.now ?? (() => new Date()))());
+    const summary = await runReminders((deps.store ?? getStore)(), sender, (deps.now ?? (() => new Date()))(), readJlptSchedule(), deps.words?.(), deps.cheers ?? true);
     return { jsonBody: summary };
   };
 }

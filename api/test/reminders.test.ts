@@ -8,6 +8,8 @@ import { MemoryStore } from "../src/lib/store";
 
 // 23 h UTC le 22 = 8 h le 23 à Tokyo : c'est l'heure du workflow.
 const NOW = new Date("2026-10-22T23:00:00Z");
+/** Ces tests portent sur les échéances, le JLPT et la relance : ni JLPT ni mot du jour par défaut. */
+const NO_JLPT: JlptSchedule = { url: "", sessions: [] };
 
 const application = (userId: string, company: string, steps: { type: string; dueDate: string; done?: boolean }[], status = "es") =>
   ({ id: `${userId}-${company}`, userId, company, status, nextDeadline: null, createdAt: "2026-10-20T00:00:00Z", updatedAt: "2026-10-20T00:00:00Z",
@@ -61,28 +63,28 @@ describe("rappels du jour (S26)", () => {
   it("envoie à tous les iPhone de l'utilisateur, une seule fois par jour", async () => {
     const store = await seed([application("u1", "楽天", [{ type: "es", dueDate: "2026-10-24" }])], [device("u1", "aa"), device("u1", "bb")]);
     const sender = new FakeSender();
-    expect(await runReminders(store, sender, NOW)).toMatchObject({ users: 1, notified: 1, sent: 2 });
-    expect(await runReminders(store, sender, NOW)).toMatchObject({ notified: 0, skipped: 1 });
+    expect(await runReminders(store, sender, NOW, NO_JLPT, [], false)).toMatchObject({ users: 1, notified: 1, sent: 2 });
+    expect(await runReminders(store, sender, NOW, NO_JLPT, [], false)).toMatchObject({ notified: 0, skipped: 1 });
     expect(sender.sent).toHaveLength(2);
   });
 
   it("rien à rappeler → rien d'envoyé", async () => {
     const store = await seed([application("u1", "楽天", [{ type: "es", dueDate: "2026-11-30" }])], [device("u1", "aa")]);
     const sender = new FakeSender();
-    expect(await runReminders(store, sender, NOW)).toMatchObject({ users: 1, notified: 0 });
+    expect(await runReminders(store, sender, NOW, NO_JLPT, [], false)).toMatchObject({ users: 1, notified: 0 });
     expect(sender.sent).toEqual([]);
   });
 
   it("oublie les jetons refusés par Apple", async () => {
     const store = await seed([application("u1", "楽天", [{ type: "es", dueDate: "2026-10-23" }])], [device("u1", "aa"), device("u1", "old")]);
-    await runReminders(store, new FakeSender((d) => (d.token === "old" ? "gone" : "sent")), NOW);
+    await runReminders(store, new FakeSender((d) => (d.token === "old" ? "gone" : "sent")), NOW, NO_JLPT, [], false);
     expect((await store.list<Device>(containers.devices, "u1")).map((d) => d.token)).toEqual(["aa"]);
   });
 
   it("panne d'Apple : la marque est retirée, un nouvel essai peut envoyer", async () => {
     const store = await seed([application("u1", "楽天", [{ type: "es", dueDate: "2026-10-23" }])], [device("u1", "aa")]);
-    expect(await runReminders(store, new FakeSender(() => "failed"), NOW)).toMatchObject({ notified: 0, failed: 1 });
-    expect(await runReminders(store, new FakeSender(), NOW)).toMatchObject({ notified: 1, sent: 1 });
+    expect(await runReminders(store, new FakeSender(() => "failed"), NOW, NO_JLPT, [], false)).toMatchObject({ notified: 0, failed: 1 });
+    expect(await runReminders(store, new FakeSender(), NOW, NO_JLPT, [], false)).toMatchObject({ notified: 1, sent: 1 });
   });
 
   it("un iPhone passé d'un compte à un autre ne reçoit que les échéances du compte le plus récent", async () => {
@@ -91,7 +93,7 @@ describe("rappels du jour (S26)", () => {
       application("nouveau", "楽天", [{ type: "es", dueDate: "2026-10-23" }]),
     ], [device("ancien", "aa", "2026-10-01"), device("nouveau", "aa", "2026-10-20")]);
     const sender = new FakeSender();
-    await runReminders(store, sender, NOW);
+    await runReminders(store, sender, NOW, NO_JLPT, [], false);
     expect(sender.sent.map((s) => s.message.body)).toEqual(["今日：楽天 ES"]);
   });
 
@@ -99,7 +101,7 @@ describe("rappels du jour (S26)", () => {
     const store = await seed([application("u1", "楽天", [{ type: "es", dueDate: "2026-10-23" }])], [device("u1", "aa")]);
     await store.markDeleted(containers.devices, "u1", { deletedAt: "2026-10-22", ttl: 100 });
     const sender = new FakeSender();
-    expect(await runReminders(store, sender, NOW)).toMatchObject({ users: 0 });
+    expect(await runReminders(store, sender, NOW, NO_JLPT, [], false)).toMatchObject({ users: 0 });
   });
 });
 
@@ -142,9 +144,9 @@ describe("notifications personnalisées", () => {
     await store.put(containers.applications, { ...application("u1", "楽天", [{ type: "es", dueDate: "2026-10-23" }]), updatedAt: "2026-10-01T00:00:00Z", createdAt: "2026-10-01T00:00:00Z" });
     await store.put(containers.profiles, profile([{ language: "vi", level: "native" }]));
     const sender = new FakeSender();
-    expect(await runReminders(store, sender, NOW, JLPT)).toMatchObject({ notified: 1, sent: 3 });
+    expect(await runReminders(store, sender, NOW, JLPT, [], false)).toMatchObject({ notified: 1, sent: 3 });
     expect(sender.sent.map((s) => s.message.title)).toEqual(["今日締切があります", "JLPTの申込みが始まりました", "最近どうですか？"]);
-    expect(await runReminders(store, sender, NOW, JLPT)).toMatchObject({ sent: 0, skipped: 3 });
+    expect(await runReminders(store, sender, NOW, JLPT, [], false)).toMatchObject({ sent: 0, skipped: 3 });
   });
 });
 
@@ -152,7 +154,7 @@ describe("POST /api/push/run", () => {
   const SECRET = "s".repeat(40);
   const ctx = new InvocationContext({ logHandler: () => {} });
   const call = (header: string | undefined, push: PushSender | null = new FakeSender()) =>
-    pushRunHandler({ secret: () => SECRET, store: () => new MemoryStore(), push: () => push, now: () => NOW })(
+    pushRunHandler({ secret: () => SECRET, store: () => new MemoryStore(), push: () => push, now: () => NOW, cheers: false })(
       new HttpRequest({ url: "https://x/api/push/run", method: "POST", headers: header ? { "x-shukatsu-cron": header } : {} }), ctx);
 
   it("refuse sans le bon secret", async () => {

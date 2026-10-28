@@ -5,7 +5,9 @@
  *  - échéances : UN résumé des échéances d'aujourd'hui et de demain, plutôt qu'une notification par échéance ;
  *  - JLPT : le jour où l'inscription ouvre, puis 3 jours avant la clôture, pour ceux dont le japonais
  *    n'est pas la langue maternelle (en 2026, des sessions ont fermé plus tôt que prévu : s'inscrire tôt compte) ;
- *  - relance : après 7 jours sans rien ajouter ni modifier dans 応募, au plus une fois par semaine.
+ *  - relance : après 7 jours sans rien ajouter ni modifier dans 応募, au plus une fois par semaine ;
+ *  - encouragement (onglet こころ, voir cheer.ts) : réconfort, félicitations, petite poussée ou mot du jour,
+ *    au plus un par jour, au rythme choisi par l'utilisateur.
  *
  * Le rappel d'encouragement 1 h avant un entretien est programmé par l'iPhone lui-même (notification locale) :
  * il demande la précision de la minute, et le serveur ne tourne qu'une fois par jour.
@@ -15,7 +17,10 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { containers, type Application, type Device, type Profile } from "./models";
+import { cheersFor, pickForPush, readWords, type Word } from "./cheer";
+import type { KokoroDoc } from "./kokoro";
+import { containers, type Application, type Device, type Draft, type Profile } from "./models";
+import type { Interview } from "./interview";
 import type { PushMessage, PushSender } from "./push";
 import type { DocStore } from "./store";
 
@@ -182,7 +187,8 @@ export type RunSummary = { users: number; notified: number; skipped: number; sen
 
 type Outgoing = { markId: string; ttl: number; message: PushMessage };
 
-export async function runReminders(store: DocStore, sender: PushSender, now = new Date(), jlpt = readJlptSchedule()): Promise<RunSummary> {
+/** `cheers: false` : sans les encouragements (tests qui ne portent que sur les rappels). */
+export async function runReminders(store: DocStore, sender: PushSender, now = new Date(), jlpt = readJlptSchedule(), words: Word[] = readWords(), cheers = true): Promise<RunSummary> {
   const today = tokyoDate(now);
   const tomorrow = tokyoDate(now, 1);
   const summary: RunSummary = { users: 0, notified: 0, skipped: 0, sent: 0, gone: 0, failed: 0 };
@@ -205,6 +211,20 @@ export async function runReminders(store: DocStore, sender: PushSender, now = ne
     const idle = idleMessage(apps, since, now, lang);
     // Une seule marque, qui expire après une semaine : au plus une relance par semaine.
     if (idle) outgoing.push({ markId: "push-idle", ttl: IDLE_DAYS * DAY - 3600, message: idle });
+
+    // Encouragement du jour (même calcul que la page « こころ »).
+    if (cheers) await addCheer();
+    async function addCheer() {
+    const [kokoro, drafts, interviews] = await Promise.all([
+      store.get<KokoroDoc>(containers.profiles, userId, "kokoro"),
+      store.list<Draft>(containers.drafts, userId),
+      store.list<Interview>(containers.interviews, userId),
+    ]);
+    const cheer = pickForPush(cheersFor({
+      userId, apps, drafts, interviews, moods: kokoro?.moods ?? [], values: kokoro?.values ?? [], today, now, words,
+    }), kokoro?.cheerFrequency ?? "daily", today);
+    if (cheer) outgoing.push({ markId: `push-cheer-${today}`, ttl: 2 * DAY, message: { title: say(lang, cheer.title), body: say(lang, cheer.body) } });
+    }
 
     let notified = false;
     for (const o of outgoing) {
