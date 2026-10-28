@@ -81,7 +81,8 @@ describe("KokoroPage (こころ)", () => {
     await screen.findByRole("region", { name: "相談先" });
     const box = screen.getByRole("status");
     expect(within(box).getByText(/ひとりで抱えなくて大丈夫/)).toBeInTheDocument();
-    expect(within(box).getByText("応募 2件・ES 1本")).toBeInTheDocument();
+    expect(within(box).getByText("応募 2件")).toBeInTheDocument();
+    expect(within(box).getByText("ES 1本")).toBeInTheDocument();
     expect(within(box).getByText(/臨床心理士/)).toBeInTheDocument();
     expect(within(box).getByText(/お祈りメール/)).toBeInTheDocument();
   });
@@ -102,13 +103,23 @@ describe("KokoroPage (こころ)", () => {
     renderPage();
     expect(await screen.findByText(/、ソニーの面接の前に/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "はじめる" }));
-    const ritual = screen.getByRole("region", { name: "面接前の3分" });
+    const ritual = screen.getByRole("dialog", { name: "面接前の3分" });
     await userEvent.click(within(ritual).getByRole("button", { name: "次へ" }));
     expect(within(ritual).getByText("家族を安心させたい")).toBeInTheDocument();
     await userEvent.click(within(ritual).getByRole("button", { name: "次へ" }));
     expect(within(ritual).getByText(/ワクワクしてる/)).toBeInTheDocument();
     await userEvent.click(within(ritual).getByRole("button", { name: "終わる" }));
     expect(within(ritual).getByText("ソニー、いってらっしゃい。")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("le ciel prend la météo du jour", async () => {
+    server(kokoro({ moods: [{ date: today, weather: "rainy" }] }));
+    const { container } = renderPage();
+    await screen.findByRole("radio", { name: /雨/ });
+    expect(container.querySelector(".kokoro-sky")).toHaveClass("rainy");
+    expect(screen.getByText(/ひと息つきましょう/)).toBeInTheDocument();
   });
 
   it("écrit ses valeurs (3 lignes au plus)", async () => {

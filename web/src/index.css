@@ -560,69 +560,180 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 
 
 /* ------------------------------------------------------------------ onglet « こころ » */
-.kokoro { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
-@media (max-width: 860px) { .kokoro { grid-template-columns: 1fr; } }
-.kokoro-main { display: flex; flex-direction: column; gap: 16px; }
-.kokoro-side { display: flex; flex-direction: column; gap: 18px; padding: 18px; border-radius: var(--radius); background: var(--blue-50); border: 1px solid var(--line); }
-.kokoro-side h3 { margin: 0 0 8px; font-size: 15px; }
-.kokoro-side p { margin: 6px 0; }
-.kokoro-source { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+/* Inspirations : How We Feel, Headspace, Calm, Daylio, Finch. Un endroit plus chaud que le reste de l'app :
+   fond crème, coins très arrondis, une chose à la fois. Le ciel du haut prend la météo intérieure du jour. */
+.kokoro { --k-cream: #fbf7f1; --k-paper: #fffdf8; --k-sand: #efe6d9; --k-sun: #f3b562; --k-cloud: #b9c8dc; --k-rain: #3f6596;
+  --k-mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px;
+  background: var(--k-cream); border-radius: 28px; padding: 18px; }
+.kokoro h3 { font-size: 17px; margin: 0 0 10px; color: var(--blue-950); }
+.kokoro-sub { margin: -4px 0 14px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.kokoro-source { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.kokoro-block { background: #fff; border-radius: 22px; padding: 22px 24px; box-shadow: 0 6px 24px rgba(70, 50, 30, .06); }
 
-/* La météo du jour : trois grands boutons, comme des cases de bulletin météo. */
-.mood-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
-.mood { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 12px; font-weight: 600; }
-.mood[aria-checked="true"].sunny { background: #fff6dc; border-color: #d9a520; color: #7a5600; }
-.mood[aria-checked="true"].cloudy { background: var(--blue-100); border-color: var(--blue-500); color: var(--blue-800); }
-.mood[aria-checked="true"].rainy { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
-.mood-word { margin-bottom: 12px; }
-.mood-word-form { display: flex; gap: 8px; margin-top: 8px; }
-.mood-word-form input { flex: 1; min-width: 0; }
+/* --- Le ciel ------------------------------------------------------------------------------------- */
+.kokoro-hero { position: relative; overflow: hidden; border-radius: 24px; min-height: 330px; display: flex; align-items: center; justify-content: center; }
+.kokoro-sky { position: absolute; inset: 0; transition: background 1.2s ease; background: linear-gradient(180deg, #e7f0fa 0%, #f6f2ea 100%); }
+.kokoro-sky.sunny { background: linear-gradient(180deg, #ffe2b8 0%, #fff1dc 50%, #fbf7f1 100%); }
+.kokoro-sky.cloudy { background: linear-gradient(180deg, #d7e0eb 0%, #e9eef4 55%, #f6f5f1 100%); }
+.kokoro-sky.rainy { background: linear-gradient(180deg, #4d6c98 0%, #7f99bd 55%, #d9e3ef 100%); }
+.sky-sun { position: absolute; top: 34px; right: 12%; width: 86px; height: 86px; border-radius: 50%; opacity: 0; transition: opacity 1.2s;
+  background: radial-gradient(circle, #ffd68a 0 45%, rgba(255, 214, 138, .35) 46% 70%, transparent 71%); animation: glow 6s ease-in-out infinite; }
+.sunny .sky-sun { opacity: 1; }
+@keyframes glow { 50% { transform: scale(1.08); } }
+.sky-cloud { position: absolute; height: 34px; border-radius: 40px; background: rgba(255, 255, 255, .85); opacity: 0; transition: opacity 1.2s;
+  box-shadow: 18px -14px 0 4px rgba(255, 255, 255, .85), 44px -2px 0 -2px rgba(255, 255, 255, .85); animation: drift 40s linear infinite; }
+.sky-cloud.one { top: 54px; left: 8%; width: 110px; }
+.sky-cloud.two { top: 112px; right: 10%; width: 80px; animation-duration: 55s; animation-direction: reverse; }
+.cloudy .sky-cloud, .rainy .sky-cloud { opacity: 1; }
+.rainy .sky-cloud { background: rgba(225, 233, 244, .5); box-shadow: 18px -14px 0 4px rgba(225, 233, 244, .5), 44px -2px 0 -2px rgba(225, 233, 244, .5); }
+@keyframes drift { 50% { transform: translateX(40px); } }
+.sky-rain { position: absolute; inset: -40px 0 0; opacity: 0; transition: opacity 1.2s;
+  background: repeating-linear-gradient(105deg, transparent 0 18px, rgba(255, 255, 255, .28) 18px 19px, transparent 19px 46px);
+  background-size: 100% 80px; animation: rain .9s linear infinite; }
+.rainy .sky-rain { opacity: 1; }
+@keyframes rain { to { background-position: -22px 80px; } }
+.sky-waves { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 64px; }
+.sky-waves .wave-back { fill: rgba(255, 255, 255, .45); }
+.sky-waves .wave-front { fill: var(--k-cream); }
 
-/* Les 4 dernières semaines : 7 cases par ligne, aujourd'hui entouré. */
-.mood-weeks { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 320px; margin-top: 8px; }
-.mood-day { aspect-ratio: 1; display: grid; place-items: center; border-radius: 6px; background: var(--blue-50); border: 1px solid var(--line); color: var(--blue-700); }
-.mood-day.sunny { background: #fff6dc; color: #9a6c00; }
-.mood-day.cloudy { background: var(--blue-100); }
-.mood-day.rainy { background: var(--blue-700); color: #fff; }
-.mood-day.today { outline: 2px solid var(--bordeaux); outline-offset: 1px; }
+.hero-content { position: relative; text-align: center; padding: 34px 20px 70px; color: var(--blue-950); transition: color 1s; }
+.kokoro-hero:has(.rainy) .hero-content { color: #fff; }
+.hero-hello { margin: 0 0 4px; font-size: 14px; letter-spacing: .04em; opacity: .8; }
+.hero-content h2 { margin: 0 0 22px; font-family: var(--k-mincho); font-size: 26px; font-weight: 600; letter-spacing: .04em; }
+.mood-choices { display: flex; justify-content: center; gap: 18px; }
+.mood { width: 92px; height: 92px; border-radius: 50%; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: 0; background: rgba(255, 255, 255, .82); color: var(--blue-800); font-weight: 600; font-size: 14px;
+  box-shadow: 0 8px 22px rgba(30, 50, 80, .12); transition: transform .25s ease, background .4s, color .4s, box-shadow .25s; }
+.mood:hover { transform: translateY(-3px); background: #fff; }
+.mood[aria-checked="true"] { transform: translateY(-4px) scale(1.06); color: #fff; box-shadow: 0 12px 28px rgba(30, 50, 80, .22); }
+.mood[aria-checked="true"].sunny { background: var(--k-sun); }
+.mood[aria-checked="true"].cloudy { background: #8fa4c0; }
+.mood[aria-checked="true"].rainy { background: var(--k-rain); }
+.hero-echo { margin: 20px auto 0; max-width: 420px; font-family: var(--k-mincho); font-size: 16px; line-height: 1.8; animation: rise .8s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 
-/* Soutien : bordure à gauche, plus marquée selon le palier. */
-.kokoro-support { border-left: 4px solid var(--blue-300); }
-.kokoro-support.often { border-left-color: var(--blue-700); }
-.kokoro-support.long { border-left-color: var(--bordeaux); }
-.kokoro-support h2 { font-size: 17px; }
-.kokoro-done strong { color: var(--blue-700); }
+/* --- Un mot -------------------------------------------------------------------------------------- */
+.mood-word { animation: rise .6s ease both; }
+.word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.word-chips button { padding: 7px 16px; border-radius: 999px; border: 1px solid var(--k-sand); background: var(--k-cream); color: var(--blue-800); font-size: 14px; }
+.word-chips button[aria-pressed="true"] { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
+.mood-word-form { display: flex; gap: 8px; margin-top: 12px; }
+.mood-word-form input { flex: 1; min-width: 0; border-radius: 999px; padding: 9px 16px; border: 1px solid var(--k-sand); background: var(--k-paper); }
 
-/* Carte du rituel, en ticket comme les cartes de l'accueil (coin coupé). */
-.kokoro-ritual-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-left: 4px solid var(--bordeaux);
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
-.kokoro-ritual-card h2 { margin: 0; font-size: 16px; }
-.ritual { text-align: center; }
-.ritual h2 { font-size: 18px; }
-.ritual-steps { list-style: none; display: flex; justify-content: center; gap: 6px; margin: 0 0 12px; padding: 0; }
-.ritual-steps li { width: 28px; height: 4px; border-radius: 2px; background: var(--line); }
-.ritual-steps li.done { background: var(--blue-300); }
-.ritual-steps li.current { background: var(--bordeaux); }
-.ritual-values { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 8px; font-size: 18px; font-weight: 600; color: var(--blue-800); }
-.ritual-phrase { font-size: 20px; font-weight: 700; color: var(--blue-800); margin: 16px 0 6px; }
-.ritual .primary, .ritual > button { margin-top: 14px; }
-.ritual .link { display: block; margin: 10px auto 0; }
+/* --- La lettre ------------------------------------------------------------------------------------ */
+.kokoro-letter { position: relative; padding: 30px 30px 26px; border-radius: 6px; transform: rotate(-.4deg);
+  background: var(--k-paper) repeating-linear-gradient(transparent 0 31px, rgba(61, 124, 201, .08) 31px 32px);
+  box-shadow: 0 10px 30px rgba(70, 50, 30, .10); line-height: 2; color: var(--blue-950); }
+.kokoro-letter::before { content: ""; position: absolute; top: -10px; left: 50%; width: 110px; height: 24px; margin-left: -55px; transform: rotate(-2deg);
+  background: rgba(123, 30, 46, .16); border-radius: 2px; }
+.kokoro-letter p { margin: 0 0 8px; }
+.letter-to { font-family: var(--k-mincho); font-size: 18px; font-weight: 600; }
+.letter-lead { font-family: var(--k-mincho); font-size: 19px; font-weight: 600; color: var(--blue-800); }
+.letter-stamps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; font-size: 14px; }
+.letter-stamps b { padding: 2px 12px; border: 1.5px dashed var(--bordeaux); border-radius: 6px; color: var(--bordeaux); font-weight: 700; transform: rotate(-1.5deg); }
+.letter-stamps b:nth-child(odd) { transform: rotate(1.2deg); }
+.letter-soft { color: var(--muted); font-size: 14px; }
+.kokoro-soft-button { margin-top: 8px; border: 0; background: var(--blue-100); color: var(--blue-800); padding: 10px 20px; font-weight: 600; }
+.kokoro-soft-button:hover { background: var(--blue-300); }
 
-/* Respiration : le cercle en vagues du logo grandit (4 s) puis rétrécit (6 s). */
-.breathing { display: flex; flex-direction: column; align-items: center; padding: 8px 0; }
-.breath-circle { width: 140px; height: 140px; border-radius: 50%; background: var(--blue-100);
-  box-shadow: 0 0 0 10px var(--blue-50), 0 0 0 11px var(--line), 0 0 0 24px var(--white), 0 0 0 25px var(--line);
-  margin: 30px 0 22px; transform: scale(.6);
-  animation: breathe 10s ease-in-out infinite; }
-@keyframes breathe { 0% { transform: scale(.6); } 40% { transform: scale(1); } 100% { transform: scale(.6); } }
-.breath-word { font-size: 20px; font-weight: 700; color: var(--blue-800); margin: 0; }
-@media (prefers-reduced-motion: reduce) { .breath-circle { animation: none; } }
+/* --- Le rituel ------------------------------------------------------------------------------------ */
+.kokoro-ritual { display: flex; align-items: center; gap: 20px; padding: 24px; border-radius: 22px; color: #fff;
+  background: linear-gradient(135deg, #22375f 0%, #3a5a8c 60%, #6e8bb5 100%); box-shadow: 0 12px 30px rgba(30, 50, 90, .25); }
+.kokoro-ritual .eyebrow { color: #f3c7cf; margin-bottom: 4px; }
+.kokoro-ritual h3 { color: #fff; margin: 0; font-family: var(--k-mincho); font-weight: 600; line-height: 1.6; }
+.ritual-text { flex: 1; }
+.ritual-art { position: relative; width: 72px; height: 72px; flex: none; }
+.ritual-art span { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .5); animation: ripple 6s ease-in-out infinite; }
+.ritual-art span:nth-child(2) { inset: 14px; animation-delay: .6s; }
+.ritual-art span:nth-child(3) { inset: 28px; background: rgba(255, 255, 255, .85); border: 0; animation-delay: 1.2s; }
+@keyframes ripple { 50% { transform: scale(1.12); opacity: .7; } }
+.kokoro-ritual .primary { flex: none; }
 
-.values-form { display: flex; flex-direction: column; gap: 6px; }
-.values-list { margin: 0 0 6px; padding-left: 18px; font-weight: 600; color: var(--blue-800); }
-.kokoro-sources { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+/* --- Le jardin (Daylio) ---------------------------------------------------------------------------- */
+.garden-dots { display: grid; grid-template-columns: repeat(7, 26px); gap: 12px 16px; justify-content: start; }
+.dot { width: 26px; height: 26px; border-radius: 50%; background: var(--k-sand); display: inline-block; transition: transform .2s; }
+.dot:hover { transform: scale(1.15); }
+.dot.sunny { background: var(--k-sun); }
+.dot.cloudy { background: var(--k-cloud); }
+.dot.rainy { background: var(--k-rain); }
+.dot.today { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--bordeaux); }
+.garden-legend { display: flex; gap: 18px; margin: 16px 0 0; font-size: 13px; color: var(--muted); }
+.garden-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.garden-legend .dot { width: 12px; height: 12px; }
+
+/* --- Ce qui compte ------------------------------------------------------------------------------- */
+.values-notes { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.values-notes li { position: relative; padding: 12px 16px 12px 40px; border-radius: 14px; background: var(--k-cream);
+  font-family: var(--k-mincho); font-size: 17px; font-weight: 600; color: var(--blue-800); }
+.values-notes li::before { content: "“"; position: absolute; left: 14px; top: 2px; font-size: 34px; color: var(--bordeaux); opacity: .5; }
+.values-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1.5px dashed var(--k-sand); }
+.values-empty p { margin: 0; color: var(--muted); }
+.values-form { display: flex; flex-direction: column; gap: 8px; }
+.values-form input { border-radius: 12px; padding: 10px 14px; border: 1px solid var(--k-sand); background: var(--k-paper); }
+
+/* --- Les aides ----------------------------------------------------------------------------------- */
+.help-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.help-list a { display: flex; align-items: center; gap: 14px; padding: 10px 8px; border-radius: 14px; text-decoration: none; color: inherit; }
+.help-list a:hover { background: var(--k-cream); }
+.help-icon { display: grid; place-items: center; width: 42px; height: 42px; flex: none; border-radius: 50%; background: var(--blue-50); color: var(--blue-700); }
+.help-list strong { display: block; color: var(--blue-800); font-size: 15px; }
+.help-list small { display: block; color: var(--muted); font-size: 13px; }
+
+/* --- Pied ---------------------------------------------------------------------------------------- */
+.kokoro-foot { text-align: center; color: var(--muted); font-size: 13px; padding: 4px 0 8px; }
+.kokoro-foot p { margin: 0 0 8px; }
+.kokoro-foot details { margin: 0 auto 10px; max-width: 520px; text-align: left; }
+.kokoro-foot summary { cursor: pointer; text-align: center; }
+.kokoro-sources { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .kokoro-sources li { display: flex; flex-direction: column; }
-.kokoro-privacy { border-top: 1px dashed var(--line); padding-top: 10px; }
+
+/* --- Plein écran (Calm) -------------------------------------------------------------------------- */
+.calm { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; overflow-y: auto;
+  background: linear-gradient(165deg, #1b2d52 0%, #34558a 55%, #8aa3c8 100%); color: #fff; animation: fade .5s ease both; }
+@keyframes fade { from { opacity: 0; } }
+.calm-close { position: absolute; top: 18px; right: 18px; width: 46px; height: 46px; padding: 0; display: grid; place-items: center;
+  border: 0; background: rgba(255, 255, 255, .14); color: #fff; }
+.calm-close:hover { background: rgba(255, 255, 255, .24); }
+.calm-body { width: min(520px, 100% - 40px); text-align: center; padding: 40px 0; display: flex; flex-direction: column; align-items: center; }
+.calm h2 { font-family: var(--k-mincho); font-weight: 600; font-size: 24px; letter-spacing: .04em; margin: 0 0 6px; }
+.calm .kokoro-source, .calm .link { color: rgba(255, 255, 255, .75); }
+.calm-hint { color: rgba(255, 255, 255, .8); font-size: 14px; }
+.calm-next { margin-top: 22px; border: 0; background: #fff; color: var(--blue-800); padding: 12px 34px; font-weight: 700; }
+.calm-next:hover { background: var(--blue-50); }
+.calm-skip { margin-top: 14px; border: 0; background: none; color: rgba(255, 255, 255, .8); text-decoration: underline; }
+.calm-skip:hover { background: none; }
+.ritual-steps { list-style: none; display: flex; justify-content: center; gap: 8px; margin: 0 0 26px; padding: 0; }
+.ritual-steps li { width: 34px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .25); }
+.ritual-steps li.done { background: rgba(255, 255, 255, .6); }
+.ritual-steps li.current { background: #f3c7cf; }
+.ritual-values { list-style: none; padding: 0; margin: 18px 0; display: flex; flex-direction: column; gap: 14px; font-family: var(--k-mincho); font-size: 22px; font-weight: 600; }
+.ritual-phrase { font-family: var(--k-mincho); font-size: 24px; font-weight: 600; margin: 22px 0 8px; line-height: 1.7; }
+.ritual-end { font-size: 28px !important; margin-top: 20px !important; }
+
+.breathing { display: flex; flex-direction: column; align-items: center; padding: 16px 0 4px; }
+.breath-circle { width: 220px; height: 220px; border-radius: 50%; display: grid; place-items: center; margin: 18px 0 20px;
+  background: radial-gradient(circle, rgba(255, 255, 255, .08) 0 60%, transparent 61%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .25), 0 0 0 26px rgba(255, 255, 255, .05), 0 0 0 27px rgba(255, 255, 255, .18); }
+.breath-circle span { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #dfe8f5);
+  box-shadow: 0 0 40px rgba(255, 255, 255, .45); transform: scale(.6); animation: breathe 10s ease-in-out infinite; }
+@keyframes breathe { 0% { transform: scale(.6); } 40% { transform: scale(1); } 100% { transform: scale(.6); } }
+.breath-word { font-family: var(--k-mincho); font-size: 24px; font-weight: 600; margin: 0; }
+.breath-count { margin: 4px 0 0; font-size: 13px; opacity: .7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .breath-circle span, .sky-sun, .sky-cloud, .sky-rain, .ritual-art span { animation: none; }
+}
 @media (max-width: 600px) {
-  .kokoro-ritual-card { flex-direction: column; align-items: flex-start; }
+  .kokoro { padding: 10px; border-radius: 20px; gap: 16px; }
+  .kokoro-hero { min-height: 290px; }
+  .hero-content h2 { font-size: 21px; }
+  .mood-choices { gap: 12px; }
+  .mood { width: 80px; height: 80px; }
+  .kokoro-block { padding: 18px; }
+  .kokoro-letter { padding: 26px 20px 22px; }
+  .kokoro-ritual { flex-wrap: wrap; }
+  .ritual-art { width: 56px; height: 56px; }
+  .garden-dots { grid-template-columns: repeat(7, 1fr); gap: 10px; }
+  .dot { width: 100%; height: auto; aspect-ratio: 1; max-width: 30px; }
 }
