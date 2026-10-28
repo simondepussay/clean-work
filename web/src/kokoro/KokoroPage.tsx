@@ -5,6 +5,7 @@ import { useAuth } from "../auth/auth";
 import { buildAgenda, ymd } from "../home/agenda";
 import { ChatIcon, CloseIcon, CloudIcon, GlobeIcon, HeartIcon, PhoneIcon, RainIcon, SunIcon } from "../icons";
 import { formatDay, useTr, type T3, type Tr } from "../i18n";
+import { KokoroSky } from "./KokoroSky";
 
 /**
  * Onglet « こころ » : un endroit calme pour prendre soin de soi pendant le 就活.
@@ -12,7 +13,7 @@ import { formatDay, useTr, type T3, type Tr } from "../i18n";
  * Inspirations : How We Feel (Yale) — choisir son humeur, puis la nommer ; Headspace et Calm —
  * une chose à la fois, respiration en plein écran ; Daylio — le calendrier en « jardin » de points ;
  * Finch — l'app parle doucement, comme une amie. Propre à Clean Work : le ciel en haut de la page
- * devient la météo intérieure de l'utilisateur, posé sur les vagues de la marque.
+ * devient la météo intérieure de l'utilisateur, dessiné comme une estampe (voir KokoroSky.tsx).
  *
  * Données privées, jamais envoyées à l'IA. Les paliers de soutien sont calculés par l'API.
  */
@@ -167,22 +168,6 @@ function Ritual({ values, company, onEditValues, onClose }: { values: string[]; 
   );
 }
 
-/** Le ciel du haut de page : il prend la météo intérieure du jour, posé sur les vagues de la marque. */
-function Sky({ weather }: { weather?: MoodWeather }) {
-  return (
-    <div className={`kokoro-sky ${weather ?? "none"}`} aria-hidden="true">
-      <span className="sky-sun" />
-      <span className="sky-cloud one" />
-      <span className="sky-cloud two" />
-      <span className="sky-rain" />
-      <svg className="sky-waves" viewBox="0 0 600 60" preserveAspectRatio="none">
-        <path className="wave-back" d="M0 34 C100 16 200 16 300 34 S500 52 600 34 V60 H0 Z" />
-        <path className="wave-front" d="M0 44 C120 30 240 30 360 44 S540 58 600 46 V60 H0 Z" />
-      </svg>
-    </div>
-  );
-}
-
 /** La petite lettre de soutien, selon le palier (voir api/src/lib/kokoro.ts). */
 function Letter({ data, name, tr, onBreathe }: { data: Kokoro; name: string | null; tr: Tr; onBreathe: () => void }) {
   const { level } = data.support;
@@ -324,7 +309,7 @@ export function KokoroPage() {
   return (
     <div className="kokoro">
       <section className="kokoro-hero" aria-label={tr({ ja: "今日のこころの天気", en: "Today's inner weather", fr: "La météo du jour" })}>
-        <Sky weather={todayMood?.weather} />
+        <KokoroSky weather={todayMood?.weather} />
         <div className="hero-content">
           <p className="hero-hello">{greeting(tr, name)}</p>
           <h2>{tr({ ja: "今日のこころの天気は？", en: "How's your inner weather today?", fr: "Quelle météo intérieure aujourd'hui ?" })}</h2>

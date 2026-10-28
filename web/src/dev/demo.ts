@@ -61,6 +61,9 @@ const moodDays: ["sunny" | "cloudy" | "rainy", string?][] = [
   ["sunny"], ["cloudy"], ["sunny", "ほっとした"], ["cloudy"], ["rainy", "不安"], ["sunny"], ["cloudy", "疲れた"], ["sunny"], ["cloudy"],
   ["sunny", "ワクワク"], ["rainy", "焦り"], ["cloudy"], ["rainy", "疲れた"], ["rainy", "不安"],
 ];
+// « ?demo&mood=sunny » : choisir la météo du jour pour comparer les ciels (captures).
+const demoMood = new URLSearchParams(location.search).get("mood");
+if (demoMood === "sunny" || demoMood === "cloudy" || demoMood === "rainy") moodDays[moodDays.length - 1] = [demoMood];
 const kokoro = {
   moods: moodDays.map(([weather, word], i) => ({ date: inDays(i - moodDays.length + 1), weather, ...(word ? { word } : {}) })),
   values: ["家族を安心させたい", "誠実でいること", "人の役に立つものを作る"],

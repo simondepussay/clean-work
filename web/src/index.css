@@ -571,34 +571,19 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .kokoro-source { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .kokoro-block { background: #fff; border-radius: 22px; padding: 22px 24px; box-shadow: 0 6px 24px rgba(70, 50, 30, .06); }
 
-/* --- Le ciel ------------------------------------------------------------------------------------- */
-.kokoro-hero { position: relative; overflow: hidden; border-radius: 24px; min-height: 330px; display: flex; align-items: center; justify-content: center; }
-.kokoro-sky { position: absolute; inset: 0; transition: background 1.2s ease; background: linear-gradient(180deg, #e7f0fa 0%, #f6f2ea 100%); }
-.kokoro-sky.sunny { background: linear-gradient(180deg, #ffe2b8 0%, #fff1dc 50%, #fbf7f1 100%); }
-.kokoro-sky.cloudy { background: linear-gradient(180deg, #d7e0eb 0%, #e9eef4 55%, #f6f5f1 100%); }
-.kokoro-sky.rainy { background: linear-gradient(180deg, #4d6c98 0%, #7f99bd 55%, #d9e3ef 100%); }
-.sky-sun { position: absolute; top: 34px; right: 12%; width: 86px; height: 86px; border-radius: 50%; opacity: 0; transition: opacity 1.2s;
-  background: radial-gradient(circle, #ffd68a 0 45%, rgba(255, 214, 138, .35) 46% 70%, transparent 71%); animation: glow 6s ease-in-out infinite; }
-.sunny .sky-sun { opacity: 1; }
-@keyframes glow { 50% { transform: scale(1.08); } }
-.sky-cloud { position: absolute; height: 34px; border-radius: 40px; background: rgba(255, 255, 255, .85); opacity: 0; transition: opacity 1.2s;
-  box-shadow: 18px -14px 0 4px rgba(255, 255, 255, .85), 44px -2px 0 -2px rgba(255, 255, 255, .85); animation: drift 40s linear infinite; }
-.sky-cloud.one { top: 54px; left: 8%; width: 110px; }
-.sky-cloud.two { top: 112px; right: 10%; width: 80px; animation-duration: 55s; animation-direction: reverse; }
-.cloudy .sky-cloud, .rainy .sky-cloud { opacity: 1; }
-.rainy .sky-cloud { background: rgba(225, 233, 244, .5); box-shadow: 18px -14px 0 4px rgba(225, 233, 244, .5), 44px -2px 0 -2px rgba(225, 233, 244, .5); }
-@keyframes drift { 50% { transform: translateX(40px); } }
-.sky-rain { position: absolute; inset: -40px 0 0; opacity: 0; transition: opacity 1.2s;
-  background: repeating-linear-gradient(105deg, transparent 0 18px, rgba(255, 255, 255, .28) 18px 19px, transparent 19px 46px);
-  background-size: 100% 80px; animation: rain .9s linear infinite; }
-.rainy .sky-rain { opacity: 1; }
-@keyframes rain { to { background-position: -22px 80px; } }
-.sky-waves { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 64px; }
-.sky-waves .wave-back { fill: rgba(255, 255, 255, .45); }
-.sky-waves .wave-front { fill: var(--k-cream); }
+/* --- Le ciel (estampe, voir KokoroSky.tsx) ------------------------------------------------------ */
+.kokoro-hero { position: relative; overflow: hidden; border-radius: 24px; min-height: 340px; display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(47, 76, 122, .25); }
+.kokoro-sky { position: absolute; inset: 0; animation: fade 1s ease both; }
+.sky-print { width: 100%; height: 100%; display: block; }
+.sky-bands { animation: mist 30s ease-in-out infinite; }
+@keyframes mist { 50% { transform: translateX(14px); } }
+.sky-rain line { animation: fall 1.4s linear infinite; }
+@keyframes fall { to { stroke-dashoffset: -300; } }
+.sky-sun { animation: rise .9s ease both; }
 
-.hero-content { position: relative; text-align: center; padding: 34px 20px 70px; color: var(--blue-950); transition: color 1s; }
-.kokoro-hero:has(.rainy) .hero-content { color: #fff; }
+.hero-content { position: relative; text-align: center; padding: 30px 20px 74px; color: var(--blue-950); transition: color 1s; }
+.hero-hello, .hero-content h2, .hero-echo { text-shadow: 0 0 6px rgba(246, 236, 216, .95), 0 0 14px rgba(246, 236, 216, .8); }
 .hero-hello { margin: 0 0 4px; font-size: 14px; letter-spacing: .04em; opacity: .8; }
 .hero-content h2 { margin: 0 0 22px; font-family: var(--k-mincho); font-size: 26px; font-weight: 600; letter-spacing: .04em; }
 .mood-choices { display: flex; justify-content: center; gap: 18px; }
@@ -722,7 +707,7 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .breath-count { margin: 4px 0 0; font-size: 13px; opacity: .7; }
 
 @media (prefers-reduced-motion: reduce) {
-  .breath-circle span, .sky-sun, .sky-cloud, .sky-rain, .ritual-art span { animation: none; }
+  .breath-circle span, .sky-bands, .sky-rain line, .ritual-art span { animation: none; }
 }
 @media (max-width: 600px) {
   .kokoro { padding: 10px; border-radius: 20px; gap: 16px; }
