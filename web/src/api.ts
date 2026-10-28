@@ -294,11 +294,25 @@ export type MoodWeather = "sunny" | "cloudy" | "rainy";
 export type Mood = { date: string; weather: MoodWeather; word?: string };
 /** calm / rain (dernier jour de pluie) / often (3 jours sur 7) / long (10 jours sur 14, repère des 2 semaines). */
 export type SupportLevel = "calm" | "rain" | "often" | "long";
+export type Text3 = { ja: string; en: string; fr: string };
+/** Félicitation, réconfort, petite poussée vers un autre onglet, ou mot du jour (api/src/lib/cheer.ts). */
+export type Cheer = {
+  id: string; kind: "care" | "offer" | "done" | "streak" | "nudge" | "word"; title: Text3; body: Text3;
+  action?: { tab: "interview" | "documents" | "apps" | "kokoro"; applicationId?: string };
+};
+/** お守りの言葉 : reçues sur l'iPhone la veille au soir, le matin, 1 h ou 10 min avant chaque entretien. */
+export type CharmTiming = "eve" | "morning" | "hour" | "tenmin";
+export type Charm = { text: string; when: CharmTiming };
+export type CheerFrequency = "daily" | "every2" | "weekly" | "off";
 export type Kokoro = {
   moods: Mood[];
   values: string[];
   support: { level: SupportLevel; rainy7: number; rainy14: number };
   week: { applications: number; drafts: number; interviews: number; rejections: number };
+  cheers: Cheer[];
+  charms: Charm[];
+  cheerFrequency: CheerFrequency;
+  devices: { count: number; lastSeen: string | null };
   prefecture: string | null;
   international: boolean;
 };
@@ -311,6 +325,22 @@ export const setMood = (token: string, mood: { date: string; weather: MoodWeathe
 export const setValues = (token: string, values: string[], f?: typeof fetch) =>
   call<{ values: string[] }>(token, "PUT", "/api/kokoro/values", { values }, f);
 export const eraseKokoro = (token: string, f?: typeof fetch) => call<null>(token, "DELETE", "/api/kokoro", undefined, f);
+export const setCharms = (token: string, charms: Charm[], f?: typeof fetch) =>
+  call<{ charms: Charm[] }>(token, "PUT", "/api/kokoro/charms", { charms }, f);
+export const setCheerFrequency = (token: string, cheerFrequency: CheerFrequency, f?: typeof fetch) =>
+  call<{ cheerFrequency: CheerFrequency }>(token, "PUT", "/api/kokoro/settings", { cheerFrequency }, f);
+
+/** Notification d'essai vers les iPhone du compte : ok, aucun iPhone relié, limite du jour, ou push non configuré. */
+export async function sendTestPush(token: string, fetcher: typeof fetch = fetch): Promise<"sent" | "no_device" | "limit" | "off" | "failed"> {
+  clearApiCache();
+  const res = await fetcher("/api/kokoro/test-push", { method: "POST", headers: { [TOKEN_HEADER]: token } }).catch(() => null);
+  if (!res) return "failed";
+  if (res.status === 409) return "no_device";
+  if (res.status === 429) return "limit";
+  if (res.status === 503) return "off";
+  if (!res.ok) return "failed";
+  return ((await res.json()) as { sent: number }).sent > 0 ? "sent" : "failed";
+}
 
 // ------------------------------------------------------------------ abonnement de calendrier
 

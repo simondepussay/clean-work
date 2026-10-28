@@ -20,7 +20,8 @@ const tomorrow = ymd(new Date(Date.now() + 86_400_000));
 function kokoro(over: Partial<Kokoro> = {}): Kokoro {
   return {
     moods: [], values: [], support: { level: "calm", rainy7: 0, rainy14: 0 },
-    week: { applications: 0, drafts: 0, interviews: 0, rejections: 0 }, prefecture: null, international: false, ...over,
+    week: { applications: 0, drafts: 0, interviews: 0, rejections: 0 }, prefecture: null, international: false,
+    cheers: [], charms: [], cheerFrequency: "daily", devices: { count: 0, lastSeen: null }, ...over,
   };
 }
 
@@ -35,7 +36,7 @@ function server(data: Kokoro, apps: unknown[] = []) {
   return fetchMock;
 }
 
-const renderPage = () => render(<AuthContext.Provider value={auth}><KokoroPage /></AuthContext.Provider>);
+const renderPage = (onOpen = vi.fn()) => render(<AuthContext.Provider value={auth}><KokoroPage onOpen={onOpen} /></AuthContext.Provider>);
 
 describe("KokoroPage (こころ)", () => {
   it("note la météo du jour, avec la date de l'appareil", async () => {
@@ -141,6 +142,57 @@ describe("KokoroPage (こころ)", () => {
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "記録をすべて消す" }));
     expect(fetchMock.mock.calls.some(([url, init]) => url === "/api/kokoro" && init?.method === "DELETE")).toBe(true);
+  });
+});
+
+describe("KokoroPage : liens avec le reste de l'app", () => {
+  const word = { id: "word-g1", kind: "word" as const, title: { ja: "今日のひとこと", en: "Today's word", fr: "Le mot du jour" }, body: { ja: "深呼吸を3回。", en: "Three breaths.", fr: "Trois respirations." } };
+
+  it("今日のあなたへ : une poussée mène au bon onglet, pour la bonne candidature", async () => {
+    server(kokoro({ cheers: [
+      { id: "n", kind: "nudge", title: { ja: "面接の練習をしてみませんか", en: "", fr: "" }, body: { ja: "ソニーの一次面接まであと2日。", en: "", fr: "" }, action: { tab: "interview", applicationId: "a1" } },
+      word,
+    ] }), [{ id: "a1", company: "ソニー", status: "interview1", steps: [], nextDeadline: null, createdAt: "", updatedAt: "" }]);
+    const onOpen = vi.fn();
+    renderPage(onOpen);
+    const box = await screen.findByRole("region", { name: "今日のあなたへ" });
+    expect(within(box).getByText("深呼吸を3回。")).toBeInTheDocument();
+    await userEvent.click(within(box).getByRole("button", { name: /面接の練習へ/ }));
+    expect(onOpen).toHaveBeenCalledWith({ tab: "interview", applicationId: "a1", company: "ソニー" });
+  });
+
+  it("お守りの言葉 : ajoute une suggestion, choisit le moment, enregistre", async () => {
+    const fetchMock = server(kokoro());
+    renderPage();
+    const box = await screen.findByRole("region", { name: "お守りの言葉" });
+    await userEvent.click(within(box).getByRole("button", { name: /いつも通りで大丈夫/ }));
+    await userEvent.selectOptions(within(box).getByRole("combobox", { name: "届くタイミング" }), "tenmin");
+    await userEvent.click(within(box).getByRole("button", { name: "保存" }));
+    const put = fetchMock.mock.calls.find(([url]) => url === "/api/kokoro/charms")!;
+    expect(JSON.parse(put[1]!.body as string)).toEqual({ charms: [{ text: "いつも通りで大丈夫。", when: "tenmin" }] });
+    expect(await within(box).findByText(/iPhoneアプリにサインインすると届きます/)).toBeInTheDocument();
+  });
+
+  it("通知 : sans iPhone, explique comment le relier ; avec, propose un essai et le rythme", async () => {
+    const fetchMock = server(kokoro({ devices: { count: 1, lastSeen: "2026-10-20T00:00:00Z" } }));
+    renderPage();
+    const box = await screen.findByRole("region", { name: "通知" });
+    expect(within(box).getByText("iPhone 1台とつながっています")).toBeInTheDocument();
+    await userEvent.click(within(box).getByRole("radio", { name: "週に1回" }));
+    const put = fetchMock.mock.calls.find(([url]) => url === "/api/kokoro/settings")!;
+    expect(JSON.parse(put[1]!.body as string)).toEqual({ cheerFrequency: "weekly" });
+    await userEvent.click(within(box).getByRole("button", { name: "テスト通知を送る" }));
+    expect(fetchMock.mock.calls.some(([url, init]) => url === "/api/kokoro/test-push" && init?.method === "POST")).toBe(true);
+  });
+
+  it("通知 : aucun iPhone relié → lien vers l'app iPhone (bêta)", async () => {
+    server(kokoro());
+    const onOpen = vi.fn();
+    renderPage(onOpen);
+    const box = await screen.findByRole("region", { name: "通知" });
+    expect(within(box).getByText("まだiPhoneがつながっていません")).toBeInTheDocument();
+    await userEvent.click(within(box).getByRole("button", { name: /iPhoneアプリ/ }));
+    expect(onOpen).toHaveBeenCalledWith({ tab: "beta" });
   });
 });
 

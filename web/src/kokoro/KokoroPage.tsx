@@ -4,6 +4,7 @@ import { useAuth } from "../auth/auth";
 import { buildAgenda, ymd } from "../home/agenda";
 import { ChatIcon, CloseIcon, CloudIcon, GlobeIcon, HeartIcon, PhoneIcon, RainIcon, SunIcon } from "../icons";
 import { formatDay, useTr, type T3, type Tr } from "../i18n";
+import { Charms, Cheers, Notifications, type CheerOpen } from "./KokoroCare";
 import { CloudCurtain, KokoroLoading, KokoroSky } from "./KokoroSky";
 
 /**
@@ -238,7 +239,8 @@ function Helplines({ data, tr }: { data: Kokoro; tr: Tr }) {
   );
 }
 
-export function KokoroPage() {
+/** onOpen : aller vers un autre onglet (面接, 書類, 応募, βテスト) depuis une carte d'encouragement. */
+export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | "documents" | "apps" | "beta"; applicationId?: string; company?: string }) => void } = {}) {
   const auth = useAuth();
   const tr = useTr();
   const name = auth.state.status === "signedIn" ? auth.state.name ?? null : null;
@@ -313,6 +315,10 @@ export function KokoroPage() {
   }
 
   const editValues = () => { setDraftValues([...(data?.values ?? []), "", "", ""].slice(0, 3)); setEditing(true); };
+  const openCheer: CheerOpen = (action) => {
+    if (action.tab === "kokoro") return;
+    onOpen?.({ tab: action.tab, applicationId: action.applicationId, company: apps.find((a) => a.id === action.applicationId)?.company });
+  };
 
   if (failed) return <p className="muted">{tr({ ja: "読み込めませんでした。", en: "Could not load.", fr: "Chargement impossible." })}</p>;
   // Pendant le premier chargement : le ciel est couvert de nuages (pas de roue qui tourne).
@@ -363,6 +369,8 @@ export function KokoroPage() {
       )}
 
       <Letter data={data} name={name} tr={tr} onBreathe={() => setMode("breathe")} />
+
+      <Cheers cheers={data.cheers} tr={tr} onOpen={openCheer} onBreathe={() => setMode("breathe")} onValues={editValues} />
 
       <section className="kokoro-ritual">
         <div className="ritual-art" aria-hidden="true"><span /><span /><span /></div>
@@ -415,6 +423,10 @@ export function KokoroPage() {
           </div>
         )}
       </section>
+
+      <Charms initial={data.charms} tr={tr} hasDevice={data.devices.count > 0} />
+
+      <Notifications data={data} tr={tr} onOpenBeta={() => onOpen?.({ tab: "beta" })} />
 
       <Helplines data={data} tr={tr} />
 

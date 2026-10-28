@@ -71,6 +71,18 @@ const kokoro = {
   week: { applications: 2, drafts: 3, interviews: 1, rejections: 1 },
   prefecture: "東京都",
   international: true,
+  cheers: [
+    { id: "done-1", kind: "done", title: { ja: "昨日もよくがんばりました", en: "Nice work yesterday", fr: "Belle journée hier" },
+      body: { ja: "1社を追加、ESを1本、面接練習を1回。ちゃんと前に進んでいます。", en: "1 company added, 1 entry sheet written, 1 practice interview. You're really moving forward.", fr: "1 entreprise ajoutée, 1 ES rédigée, 1 entretien d'entraînement. Vous avancez vraiment." } },
+    { id: "nudge-1", kind: "nudge", title: { ja: "面接の練習をしてみませんか", en: "A little interview practice?", fr: "Un peu d'entraînement ?" },
+      body: { ja: "ソニーグループの一次面接まであと3日。10分だけでも、話す感覚がつかめます。", en: "3 days until your first interview at Sony Group. Even ten minutes helps you find your words.", fr: "3 jours avant votre premier entretien chez Sony Group. Dix minutes suffisent pour trouver vos mots." },
+      action: { tab: "interview", applicationId: "a2" } },
+    { id: "word-g05", kind: "word", title: { ja: "今日のひとこと", en: "Today's word", fr: "Le mot du jour" },
+      body: { ja: "深呼吸を3回。それだけで、少し景色が変わります。", en: "Three deep breaths. That alone changes the view a little.", fr: "Trois grandes respirations. Ça suffit à changer un peu le paysage." } },
+  ],
+  charms: [{ text: "準備してきた自分を信じて。", when: "hour" }, { text: "笑顔で入ろう。", when: "tenmin" }],
+  cheerFrequency: "daily",
+  devices: { count: 1, lastSeen: today.toISOString() },
 };
 
 const routes: Record<string, unknown> = {

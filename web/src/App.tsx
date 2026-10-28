@@ -223,7 +223,13 @@ export default function App() {
                 </DocumentsPage>
               )}
               {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
-              {signedIn && view === "kokoro" && <KokoroPage />}
+              {signedIn && view === "kokoro" && (
+                <KokoroPage onOpen={(t) => {
+                  if (t.tab === "interview" && t.applicationId) { setInterviewSeed({ applicationId: t.applicationId, nonce: Date.now() }); open("interview"); }
+                  else if (t.tab === "documents" && t.applicationId && t.company) { setEsSeed({ company: t.company, applicationId: t.applicationId, nonce: Date.now() }); open("es"); }
+                  else open(t.tab === "documents" ? "es" : t.tab === "interview" ? "interview" : t.tab);
+                }} />
+              )}
               {signedIn && view === "info" && <InfoPage />}
             </Suspense>
           </PageErrorBoundary>
