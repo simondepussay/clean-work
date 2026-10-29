@@ -27,6 +27,8 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
           redirectUri: `${window.location.origin}/`,
           postLogoutRedirectUri: `${window.location.origin}/`,
         },
+        // localStorage : la session survit à la fermeture de l'onglet. La Content-Security-Policy
+        // (staticwebapp.config.json, script-src 'self') empêche un script étranger de venir l'y lire.
         cache: { cacheLocation: "localStorage" },
         // Diagnostic de la connexion : avertissements et erreurs de MSAL dans la console, jamais de données personnelles.
         system: {

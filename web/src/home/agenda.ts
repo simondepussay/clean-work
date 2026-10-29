@@ -43,10 +43,17 @@ export function buildAgenda(apps: Application[], plans: Plan[], lang: Lang = "ja
       applicationId: a.id,
       stepId: s.id,
     })));
+  // Les relances (フォローアップ) : dans le calendrier comme une échéance, avec ce qu'il faut faire.
+  const followUps = apps
+    .filter((a) => !CLOSED.has(a.status))
+    .flatMap((a) => (a.followUps ?? []).map((f): AgendaItem => ({
+      key: `followup-${a.id}-${f.id}`, date: f.date, kind: "step", title: a.company,
+      detail: `${stepName("followup", lang)}：${f.note}`, done: f.done, applicationId: a.id,
+    })));
   const own = plans.map((p): AgendaItem => ({
     key: `plan-${p.id}`, date: p.date, ...(p.time ? { time: p.time } : {}), kind: p.kind, title: p.title, done: p.done, plan: p,
   }));
-  return [...steps, ...own].sort((a, b) =>
+  return [...steps, ...followUps, ...own].sort((a, b) =>
     a.date.localeCompare(b.date) || (a.time ?? "99").localeCompare(b.time ?? "99") || ORDER[a.kind] - ORDER[b.kind]);
 }
 

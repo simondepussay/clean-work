@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader } from "../Loader";
-import { getCalendarLink } from "../api";
+import { getCalendarLink, resetCalendarLink } from "../api";
 import { useAuth } from "../auth/auth";
 import { useTr } from "../i18n";
 import { CalendarIcon, CheckIcon, DocIcon } from "../icons";
@@ -49,6 +49,21 @@ export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?:
       href: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(url)}&name=${encodeURIComponent("Clean Work")}` },
   ] : [];
 
+  async function reset() {
+    if (!window.confirm(tr({
+      ja: "新しいリンクを作成しますか？今のリンクは使えなくなり、カレンダーにもう一度追加する必要があります。",
+      en: "Create a new link? The current link will stop working and you will need to add the calendar again.",
+      fr: "Créer un nouveau lien ? Le lien actuel ne marchera plus et il faudra rajouter le calendrier.",
+    }))) return;
+    try {
+      const t = await auth.getToken();
+      const r = t ? await resetCalendarLink(t, tr.lang) : null;
+      if (r?.ok) setUrl(r.value.url); else setFailed(true);
+    } catch {
+      setFailed(true);
+    }
+  }
+
   async function copy() {
     if (!url) return;
     try {
@@ -92,6 +107,11 @@ export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?:
             en: "This link is private: anyone who has it can see your schedule, so don't share it.",
             fr: "Ce lien est personnel : toute personne qui l'a peut voir votre agenda, ne le partagez pas.",
           })}</p>
+          {url && (
+            <button type="button" role="menuitem" className="menu-link" onClick={reset}>
+              {tr({ ja: "リンクを作り直す（今のリンクは無効に）", en: "Create a new link (the current one stops working)", fr: "Créer un nouveau lien (l'actuel ne marchera plus)" })}
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -210,8 +210,14 @@ export type Step = { id: string; type: StepType; dueDate?: string; time?: string
 export const isLink = (place?: string | null) => !!place && /^https?:\/\//i.test(place.trim());
 export type Industry = "it" | "maker" | "trading" | "finance" | "consulting" | "retail" | "service" | "media" | "infrastructure" | "public" | "other";
 export type CompanyType = "large" | "sme" | "startup" | "foreign";
+/** やりとり : un échange avec l'entreprise (mail, appel, 説明会, OB・OG訪問, 面談, autre). */
+export type EventKind = "email" | "call" | "seminar" | "ob" | "meeting" | "other";
+export type AppEvent = { id: string; date: string; kind: EventKind; note?: string };
+/** フォローアップ : une relance datée, rappelée comme une échéance. */
+export type FollowUp = { id: string; date: string; note: string; done: boolean };
 export type ApplicationInput = {
   company: string; position?: string; url?: string; status: AppStatus; steps: Step[];
+  events?: AppEvent[]; followUps?: FollowUp[];
   /** null : effacer le champ (l'API garde sinon l'ancienne valeur). */
   industry?: Industry | null; companyType?: CompanyType | null; notes?: string;
   /** 法人番号 et adresse du siège : la candidature est reliée à la fiche officielle (gBizINFO). */
@@ -348,6 +354,10 @@ export async function sendTestPush(token: string, fetcher: typeof fetch = fetch)
 /** Le lien privé d'abonnement (Google, Apple, Outlook…), dans la langue choisie. */
 export const getCalendarLink = (token: string, lang: string, f?: typeof fetch) =>
   call<{ url: string }>(token, "GET", `/api/calendar-link?lang=${lang}`, undefined, f);
+
+/** Un nouveau lien privé : l'ancien (partagé par erreur, par exemple) ne marche plus. */
+export const resetCalendarLink = (token: string, lang: string, f?: typeof fetch) =>
+  call<{ url: string }>(token, "POST", `/api/calendar-link?lang=${lang}`, undefined, f);
 
 // ------------------------------------------------------------------ onglet « 情報 » : actualités
 

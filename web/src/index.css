@@ -573,6 +573,8 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .beta-done { text-align: center; padding: 12px 4px; }
 .beta-done .done-icon { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--blue-100); color: var(--blue-700); }
 .beta-done h2 { margin: 12px 0 6px; }
+/* Relance à venir sur une carte du tableau (フォローアップ). */
+.followup-badge { display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--bordeaux-50); color: var(--bordeaux); }
 .footer-beta { font-weight: 600; color: var(--bordeaux) !important; }
 
 

@@ -100,7 +100,7 @@ describe("ApplicationsBoard", () => {
     await userEvent.click(await screen.findByRole("button", { name: /応募を追加/ }));
     const form = screen.getByRole("form", { name: "応募" });
     await userEvent.type(within(form).getByLabelText(/企業名/), "ソニー");
-    await userEvent.click(within(form).getByRole("button", { name: /^追加$/ }));
+    await userEvent.click(within(within(form).getByRole("group", { name: "選考ステップ・締切" })).getByRole("button", { name: /^追加$/ }));
     await userEvent.selectOptions(within(form).getByLabelText(/^選考 \*/), "es");
     await userEvent.type(within(form).getByLabelText(/締切・日程/), "2026-11-01");
     await userEvent.click(within(form).getByRole("button", { name: /保存/ }));
@@ -110,6 +110,30 @@ describe("ApplicationsBoard", () => {
     const sent = JSON.parse(post[1].body as string);
     expect(sent).toMatchObject({ company: "ソニー", status: "interested", steps: [{ type: "es", dueDate: "2026-11-01", done: false }] });
     expect(sent.steps[0].id).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("ajoute une relance (フォローアップ) et un échange (やりとり) ; la relance apparaît sur la carte", async () => {
+    const fetchMock = server([]);
+    renderBoard();
+    await userEvent.click(await screen.findByRole("button", { name: /応募を追加/ }));
+    const form = screen.getByRole("form", { name: "応募" });
+    await userEvent.type(within(form).getByLabelText(/企業名/), "楽天");
+    const follow = within(form).getByRole("group", { name: "フォローアップ" });
+    await userEvent.click(within(follow).getByRole("button", { name: /^追加$/ }));
+    await userEvent.clear(within(follow).getByLabelText(/^日付/));
+    await userEvent.type(within(follow).getByLabelText(/^日付/), "2026-11-05");
+    await userEvent.type(within(follow).getByLabelText(/^やること/), "人事にお礼メール");
+    const history = within(form).getByRole("group", { name: "やりとりの記録" });
+    await userEvent.click(within(history).getByRole("button", { name: /^追加$/ }));
+    await userEvent.selectOptions(within(history).getByLabelText(/^種類/), "seminar");
+    await userEvent.type(within(history).getByLabelText(/^内容/), "社員の話が印象的");
+    await userEvent.click(within(form).getByRole("button", { name: /保存/ }));
+
+    const post = fetchMock.mock.calls.find(([, i]) => i?.method === "POST") as unknown as [string, RequestInit];
+    const sent = JSON.parse(post[1].body as string);
+    expect(sent.followUps).toEqual([expect.objectContaining({ date: "2026-11-05", note: "人事にお礼メール", done: false })]);
+    expect(sent.events).toEqual([expect.objectContaining({ kind: "seminar", note: "社員の話が印象的" })]);
+    expect(await screen.findByText(/フォロー 11\/05/)).toBeInTheDocument();
   });
 
   it("montre l'erreur de l'API sous le champ", async () => {

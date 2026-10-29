@@ -2,7 +2,7 @@ import { useEffect, useState, type DragEvent, type FormEvent } from "react";
 import { Loader } from "../Loader";
 import {
   createApplication, deleteApplication, listApplications, listDrafts, updateApplication,
-  type Application, type ApplicationInput, type AppStatus, type CompanyType, type Draft, type Industry, type Issue, type Step,
+  type AppEvent, type Application, type ApplicationInput, type AppStatus, type CompanyType, type Draft, type FollowUp, type Industry, type Issue, type Step,
 } from "../api";
 import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
@@ -11,7 +11,8 @@ import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, i
 import { apiMessage, useTr } from "../i18n";
 import { CalendarMenu } from "./CalendarMenu";
 import { CompanyFacts } from "./CompanyFacts";
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { ymd } from "../home/agenda";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
@@ -33,6 +34,25 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
     { key: "place", label: tr({ ja: "場所・オンラインのURL", en: "Place or online link", fr: "Lieu ou lien en ligne" }), placeholder: "東京都港区… / https://…" },
     { key: "done", label: tr({ ja: "完了", en: "Done", fr: "Terminé" }), type: "checkbox" },
     { key: "note", label: tr({ ja: "メモ", en: "Note", fr: "Note" }) },
+  ];
+  // フォローアップ : relances datées (rappelées comme des échéances). やりとり : journal des échanges avec l'entreprise.
+  const followUpFields: Field<FollowUp>[] = [
+    { key: "date", label: tr({ ja: "日付", en: "Date", fr: "Date" }), type: "date", required: true },
+    { key: "note", label: tr({ ja: "やること", en: "To do", fr: "À faire" }), required: true,
+      suggestions: () => [tr({ ja: "人事にお礼メール", en: "Thank-you email to HR", fr: "Mail de remerciement aux RH" }), tr({ ja: "選考結果の確認", en: "Ask about the result", fr: "Demander le résultat" }), tr({ ja: "書類を送る", en: "Send documents", fr: "Envoyer les documents" })] },
+    { key: "done", label: tr({ ja: "完了", en: "Done", fr: "Fait" }), type: "checkbox" },
+  ];
+  const eventFields: Field<AppEvent>[] = [
+    { key: "date", label: tr({ ja: "日付", en: "Date", fr: "Date" }), type: "date", required: true },
+    { key: "kind", label: tr({ ja: "種類", en: "Type", fr: "Type" }), type: "select", options: [
+      { value: "email", label: tr({ ja: "メール", en: "Email", fr: "E-mail" }) },
+      { value: "call", label: tr({ ja: "電話", en: "Call", fr: "Appel" }) },
+      { value: "seminar", label: tr({ ja: "説明会", en: "Info session", fr: "Session d'information" }) },
+      { value: "ob", label: tr({ ja: "OB・OG訪問", en: "Alumni visit", fr: "Rencontre avec un ancien" }) },
+      { value: "meeting", label: tr({ ja: "面談", en: "Meeting", fr: "Rendez-vous" }) },
+      { value: "other", label: tr({ ja: "その他", en: "Other", fr: "Autre" }) },
+    ] },
+    { key: "note", label: tr({ ja: "内容", en: "What happened", fr: "Ce qui s'est passé" }), type: "textarea" },
   ];
   const [apps, setApps] = useState<Application[] | null>(null);
   const [editing, setEditing] = useState<{ id: string | null; form: ApplicationInput } | null>(null);
@@ -128,7 +148,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
   const visible = apps.filter((a) => matches(a, query));
   // Les plus récemment modifiées d'abord : c'est là qu'on attend une réponse.
   const applied = visible.filter((a) => isWaiting(a.status)).sort((x, y) => y.updatedAt.localeCompare(x.updatedAt));
-  const open = (a: Application) => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes, corporateNumber: a.corporateNumber, location: a.location } }); };
+  const open = (a: Application) => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes, corporateNumber: a.corporateNumber, location: a.location, events: a.events ?? [], followUps: a.followUps ?? [] } }); };
   const appliedCount = apps.filter((a) => isWaiting(a.status)).length;
 
   return (
@@ -218,6 +238,10 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
                     </button>
                     {days !== null && <p className={days <= 3 ? "due soon" : "due"}><ClockIcon size={13} /> {deadlineLabel(days, lang)}</p>}
                     {esCount(a.id) > 0 && <p className="es-badge">ES {esCount(a.id)}</p>}
+                    {(() => {
+                      const f = (a.followUps ?? []).filter((x) => !x.done).sort((x, y) => x.date.localeCompare(y.date))[0];
+                      return f && <p className="followup-badge" title={f.note}><FlagIcon size={12} /> {tr({ ja: "フォロー", en: "Follow-up", fr: "Relance" })} {f.date.slice(5).replace("-", "/")}</p>;
+                    })()}
                     {!closed && (
                       <div className="moves">
                         <button disabled={!prev} onClick={() => prev && move(a, prev)} aria-label={tr({ ja: `${a.company}：前のステップへ`, en: `${a.company}: previous step`, fr: `${a.company} : étape précédente` })}><ChevronLeftIcon size={14} /></button>
@@ -287,6 +311,12 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
           <ListEditor title={tr({ ja: "選考ステップ・締切", en: "Steps and deadlines", fr: "Étapes et échéances" })} name="steps" items={editing.form.steps} fields={stepFields}
             empty={{ id: crypto.randomUUID(), type: "es", done: false } as Step} errors={errors}
             onChange={(steps) => set({ steps: steps.map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })) })} />
+          <ListEditor title={tr({ ja: "フォローアップ", en: "Follow-ups", fr: "Relances" })} name="followUps" items={editing.form.followUps ?? []} fields={followUpFields}
+            empty={{ id: crypto.randomUUID(), date: ymd(new Date()), note: "", done: false }} errors={errors}
+            onChange={(followUps) => set({ followUps: followUps.map((f) => (f.id ? f : { ...f, id: crypto.randomUUID() })) })} />
+          <ListEditor title={tr({ ja: "やりとりの記録", en: "Contact history", fr: "Historique des échanges" })} name="events" items={editing.form.events ?? []} fields={eventFields}
+            empty={{ id: crypto.randomUUID(), date: ymd(new Date()), kind: "email", note: "" }} errors={errors}
+            onChange={(events) => set({ events: events.map((ev) => (ev.id ? ev : { ...ev, id: crypto.randomUUID() })) })} />
           <div className="actions">
             <button className="primary" type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
             <button type="button" onClick={() => setEditing(null)}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>

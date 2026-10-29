@@ -2,7 +2,8 @@ import type { Application, StepType } from "../api";
 import type { Lang } from "../i18n";
 import { COLUMNS, daysUntil } from "./statuses";
 
-export type Deadline = { applicationId: string; stepId: string; company: string; step: StepType; date: string; days: number; note?: string };
+/** step « followup » : une relance (フォローアップ), avec ce qu'il faut faire dans `note`. */
+export type Deadline = { applicationId: string; stepId: string; company: string; step: StepType | "followup"; date: string; days: number; note?: string };
 
 const CLOSED = new Set(["rejected", "withdrawn"]);
 
@@ -13,14 +14,21 @@ const CLOSED = new Set(["rejected", "withdrawn"]);
 export function upcomingDeadlines(apps: Application[], today = new Date(), withinDays = Infinity): Deadline[] {
   return apps
     .filter((a) => !CLOSED.has(a.status))
-    .flatMap((a) => a.steps
-      .filter((s) => !s.done && s.dueDate)
-      .map((s) => ({ applicationId: a.id, stepId: s.id, company: a.company, step: s.type, date: s.dueDate!, days: daysUntil(s.dueDate!, today), note: s.note })))
+    .flatMap((a): Deadline[] => [
+      ...a.steps
+        .filter((s) => !s.done && s.dueDate)
+        .map((s) => ({ applicationId: a.id, stepId: s.id, company: a.company, step: s.type, date: s.dueDate!, days: daysUntil(s.dueDate!, today), note: s.note })),
+      ...(a.followUps ?? [])
+        .filter((f) => !f.done)
+        .map((f) => ({ applicationId: a.id, stepId: f.id, company: a.company, step: "followup" as const, date: f.date, days: daysUntil(f.date, today), note: f.note })),
+    ])
     .filter((d) => d.days >= 0 && d.days <= withinDays)
     .sort((a, b) => a.date.localeCompare(b.date) || a.company.localeCompare(b.company));
 }
 
-export const stepName = (step: StepType, lang: Lang = "ja") => COLUMNS.find((c) => c.status === step)?.[lang] ?? step;
+const FOLLOW_UP = { ja: "フォローアップ", en: "Follow-up", fr: "Relance" };
+export const stepName = (step: StepType | "followup", lang: Lang = "ja") =>
+  step === "followup" ? FOLLOW_UP[lang] : COLUMNS.find((c) => c.status === step)?.[lang] ?? step;
 
 // ------------------------------------------------------------------ calendrier (.ics, RFC 5545)
 
@@ -69,7 +77,7 @@ export function toICalendar(deadlines: Deadline[], now = new Date()): string {
     "X-WR-CALNAME:就活パイロット 締切",
   ];
   for (const d of deadlines) {
-    const title = `【締切】${d.company} ${stepName(d.step)}`;
+    const title = d.step === "followup" ? `【フォローアップ】${d.company} ${d.note ?? ""}`.trim() : `【締切】${d.company} ${stepName(d.step)}`;
     lines.push(
       "BEGIN:VEVENT",
       `UID:${d.stepId}@shukatsu-pilot`,
@@ -77,7 +85,7 @@ export function toICalendar(deadlines: Deadline[], now = new Date()): string {
       `DTSTART;VALUE=DATE:${ymd(d.date)}`,
       `DTEND;VALUE=DATE:${ymd(nextDay(d.date))}`,
       `SUMMARY:${escape(title)}`,
-      ...(d.note ? [`DESCRIPTION:${escape(d.note)}`] : []),
+      ...(d.note && d.step !== "followup" ? [`DESCRIPTION:${escape(d.note)}`] : []),
       "BEGIN:VALARM",
       "ACTION:DISPLAY",
       `DESCRIPTION:${escape(`明日：${title}`)}`,

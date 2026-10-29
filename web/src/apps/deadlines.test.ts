@@ -79,3 +79,20 @@ describe("fold", () => {
     expect(fold("VERSION:2.0")).toBe("VERSION:2.0");
   });
 });
+
+describe("relances (フォローアップ)", () => {
+  const withFollowUps = app({ id: "f", company: "LINEヤフー", followUps: [
+    { id: "f1", date: "2026-10-25", note: "お礼メール", done: false },
+    { id: "f2", date: "2026-10-23", note: "送った", done: true },
+  ] });
+
+  it("une relance à faire rejoint les échéances, avec ce qu'il faut faire", () => {
+    expect(upcomingDeadlines([withFollowUps], today)).toEqual([
+      expect.objectContaining({ company: "LINEヤフー", step: "followup", date: "2026-10-25", days: 3, note: "お礼メール" }),
+    ]);
+  });
+
+  it("et dans le fichier de calendrier", () => {
+    expect(toICalendar(upcomingDeadlines([withFollowUps], today))).toContain("SUMMARY:【フォローアップ】LINEヤフー お礼メール");
+  });
+});
