@@ -105,6 +105,18 @@ describe("rappels du jour (S26)", () => {
   });
 });
 
+describe("relances (フォローアップ) dans le résumé du matin", () => {
+  it("une relance due aujourd'hui apparaît avec ce qu'il faut faire ; faite, elle disparaît", () => {
+    const app = { ...application("u1", "楽天", []), followUps: [
+      { id: "f1", date: "2026-10-23", note: "お礼メール", done: false },
+      { id: "f2", date: "2026-10-23", note: "もう送った", done: true },
+    ] } as Application;
+    const due = dueSoon([app], "2026-10-23", "2026-10-24");
+    expect(reminderMessage(due, "ja")?.body).toBe("今日：楽天 フォローアップ（お礼メール）");
+    expect(reminderMessage(due, "fr")?.body).toBe("Aujourd'hui : 楽天 Relance（お礼メール）");
+  });
+});
+
 describe("notifications personnalisées", () => {
   const JLPT: JlptSchedule = { url: "https://info.jees-jlpt.jp/", sessions: [{ exam: "2027-07-04", open: "2026-10-23", close: "2026-11-13" }] };
   const profile = (languages: { language: string; level: string }[]) => ({ id: "u1", userId: "u1", languages }) as unknown as Profile;

@@ -5,7 +5,8 @@
  *
  * Le calendrier ne peut pas se connecter avec un compte : le lien porte donc un jeton secret,
  * `<userId>.<signature>`. La signature (HMAC-SHA256 avec CALENDAR_FEED_SECRET) prouve que le
- * lien a été donné par l'app ; rien n'est stocké. Changer le secret invalide tous les liens.
+ * lien a été donné par l'app. « Nouveau lien » (POST /api/calendar-link) passe à la version suivante
+ * et révoque l'ancien lien de cet utilisateur ; changer le secret invalide les liens de tout le monde.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Application, Plan } from "./models";
@@ -14,22 +15,34 @@ export type FeedLang = "ja" | "en" | "fr";
 
 const b64url = (buf: Buffer) => buf.toString("base64url");
 
-function signature(userId: string, secret: string) {
-  return createHmac("sha256", secret).update(`calendar:${userId}`).digest().subarray(0, 18);
+/**
+ * Version 0 : les liens d'origine, `<userId>.<signature>`. À partir de 1 (après « nouveau lien »),
+ * `<userId>.<version>.<signature>` : la version fait partie de ce qui est signé, et seule la
+ * version enregistrée pour l'utilisateur est acceptée. Un lien partagé par erreur se révoque
+ * donc sans toucher aux liens des autres.
+ */
+function signature(userId: string, secret: string, version: number) {
+  const subject = version === 0 ? `calendar:${userId}` : `calendar:${userId}:${version}`;
+  return createHmac("sha256", secret).update(subject).digest().subarray(0, 18);
 }
 
-export function feedToken(userId: string, secret: string) {
-  return `${b64url(Buffer.from(userId))}.${b64url(signature(userId, secret))}`;
+export function feedToken(userId: string, secret: string, version = 0) {
+  const id = b64url(Buffer.from(userId));
+  const sig = b64url(signature(userId, secret, version));
+  return version === 0 ? `${id}.${sig}` : `${id}.${version}.${sig}`;
 }
 
-/** L'utilisateur du lien, ou null si le jeton est faux (comparaison en temps constant). */
-export function verifyFeedToken(token: string, secret: string): string | null {
-  const [id, sig] = token.replace(/\.ics$/, "").split(".");
-  if (!id || !sig) return null;
+/** L'utilisateur et la version du lien, ou null si le jeton est faux (comparaison en temps constant). */
+export function verifyFeedToken(token: string, secret: string): { userId: string; version: number } | null {
+  const parts = token.replace(/\.ics$/, "").split(".");
+  if (parts.length !== 2 && parts.length !== 3) return null;
+  const [id, sig] = [parts[0], parts[parts.length - 1]];
+  const version = parts.length === 3 ? Number(parts[1]) : 0;
+  if (!id || !sig || !Number.isSafeInteger(version) || version < (parts.length === 3 ? 1 : 0)) return null;
   const userId = Buffer.from(id, "base64url").toString("utf8");
-  const expected = signature(userId, secret);
+  const expected = signature(userId, secret, version);
   const given = Buffer.from(sig, "base64url");
-  return given.length === expected.length && timingSafeEqual(given, expected) ? userId : null;
+  return given.length === expected.length && timingSafeEqual(given, expected) ? { userId, version } : null;
 }
 
 // ------------------------------------------------------------------ iCalendar (RFC 5545)
@@ -82,6 +95,8 @@ const plusHour = (time: string) => {
   return h >= 23 ? "2359" : `${String(h + 1).padStart(2, "0")}${String(m).padStart(2, "0")}`;
 };
 
+const FOLLOW_UP: Record<FeedLang, string> = { ja: "フォローアップ", en: "Follow-up", fr: "Relance" };
+
 type Event = { uid: string; date: string; time?: string; title: string; description?: string; done?: boolean; place?: string };
 
 export function buildFeed(apps: Application[], plans: Plan[], lang: FeedLang, now = new Date()): string {
@@ -89,6 +104,10 @@ export function buildFeed(apps: Application[], plans: Plan[], lang: FeedLang, no
     ...apps.filter((a) => !CLOSED.has(a.status)).flatMap((a) => a.steps.filter((s) => s.dueDate).map((s): Event => ({
       uid: `step-${s.id}`, date: s.dueDate!, time: s.time, title: `${a.company} ${STEP_NAMES[s.type]?.[lang] ?? s.type}`, description: s.note, done: s.done,
       place: s.place,
+    }))),
+    // Relances (フォローアップ) : un événement d'une journée, « 楽天 フォローアップ：お礼メール ».
+    ...apps.filter((a) => !CLOSED.has(a.status)).flatMap((a) => (a.followUps ?? []).map((f): Event => ({
+      uid: `followup-${f.id}`, date: f.date, title: `${a.company} ${FOLLOW_UP[lang]}：${f.note}`, done: f.done,
     }))),
     ...plans.map((p): Event => ({
       uid: `plan-${p.id}`, date: p.date, time: p.kind === "event" ? p.time : undefined,

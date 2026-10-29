@@ -19,16 +19,30 @@ const plans: Plan[] = [
   { id: "p2", userId: "u1", kind: "goal", title: "ES 3本提出", date: "2026-10-28", done: true, createdAt: "", updatedAt: "" },
 ];
 
+describe("lien de calendrier : relances", () => {
+  it("chaque relance devient un événement d'une journée, cochée si elle est faite", () => {
+    const app = { ...sony, followUps: [{ id: "f1", date: "2026-10-30", note: "お礼メール", done: false }, { id: "f2", date: "2026-10-31", note: "電話", done: true }] } as Application;
+    const ics = buildFeed([app], [], "ja");
+    expect(ics).toContain("UID:followup-f1@clean-work");
+    expect(ics).toContain("SUMMARY:ソニー フォローアップ：お礼メール");
+    expect(ics).toContain("SUMMARY:✓ ソニー フォローアップ：電話");
+  });
+});
+
 describe("lien de calendrier", () => {
   it("le jeton désigne l'utilisateur, et ne se falsifie pas", () => {
     const token = feedToken("u1", SECRET);
-    expect(verifyFeedToken(token, SECRET)).toBe("u1");
-    expect(verifyFeedToken(`${token}.ics`, SECRET)).toBe("u1");
+    expect(verifyFeedToken(token, SECRET)).toEqual({ userId: "u1", version: 0 });
+    expect(verifyFeedToken(`${token}.ics`, SECRET)).toEqual({ userId: "u1", version: 0 });
+    expect(verifyFeedToken(feedToken("u1", SECRET, 3), SECRET)).toEqual({ userId: "u1", version: 3 });
     expect(verifyFeedToken(token, "autre-secret".repeat(4))).toBeNull();
     // Changer l'utilisateur sans la signature correspondante ne marche pas.
     const [, sig] = token.split(".");
     expect(verifyFeedToken(`${Buffer.from("u2").toString("base64url")}.${sig}`, SECRET)).toBeNull();
     expect(verifyFeedToken("n'importe quoi", SECRET)).toBeNull();
+    // Changer la version sans la signature correspondante ne marche pas non plus.
+    const [id, , sig3] = feedToken("u1", SECRET, 3).split(".");
+    expect(verifyFeedToken(`${id}.4.${sig3}`, SECRET)).toBeNull();
   });
 
   it("iCalendar : étapes en journée entière, événements à l'heure de Tokyo, objectifs marqués", () => {
@@ -82,6 +96,22 @@ describe("/api/calendar-link et /api/calendar/{token}", () => {
     expect(feed.status).toBe(200);
     expect((feed.headers as Record<string, string>)["content-type"]).toContain("text/calendar");
     expect(feed.body as string).toContain("ソニー 1er entretien");
+  });
+
+  it("nouveau lien : l'ancien ne marche plus, le nouveau oui, les autres utilisateurs ne changent pas", async () => {
+    const { h } = await setup();
+    const linkReq = (method: string) => new HttpRequest({ url: "https://app.example/api/calendar-link", method, headers: { "x-shukatsu-token": "ok" } });
+    const tokenOf = async (method: string) => new URL(((await h.link(linkReq(method), ctx)).jsonBody as { url: string }).url).pathname.split("/").pop()!;
+    const feed = (token: string) => h.feed(new HttpRequest({ url: `https://app.example/api/calendar/${token}`, method: "GET", params: { token } }));
+
+    const old = await tokenOf("GET");
+    const fresh = await tokenOf("POST");
+    expect(fresh).not.toBe(old);
+    expect((await feed(old)).status).toBe(404);
+    expect((await feed(fresh)).status).toBe(200);
+    expect(await tokenOf("GET")).toBe(fresh);
+    // Le lien d'origine d'un autre utilisateur (version 0) reste valable.
+    expect((await feed(`${feedToken("u2", SECRET)}.ics`)).status).toBe(200);
   });
 
   it("lien faux → 404 ; lien sans connexion → 401", async () => {

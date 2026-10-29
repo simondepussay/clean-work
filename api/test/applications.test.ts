@@ -16,6 +16,26 @@ function api(store = new MemoryStore()) {
     }), ctx);
 }
 
+describe("/api/applications : やりとり et フォローアップ", () => {
+  it("garde le journal des échanges et les relances ; déplacer la carte ne les efface pas", async () => {
+    const call = api();
+    const created = (await call("u1", "POST", undefined, {
+      company: "ソニー",
+      events: [{ id: "e1", date: "2026-10-20", kind: "seminar", note: "説明会：社員の話が印象的" }, { id: "e2", date: "2026-10-21", kind: "email" }],
+      followUps: [{ id: "f1", date: "2026-10-24", note: "人事にお礼メール" }],
+    })).jsonBody as { id: string; followUps: { done: boolean }[] };
+    expect(created.followUps[0].done).toBe(false);
+    const moved = (await call("u1", "PUT", created.id, { status: "applied" })).jsonBody;
+    expect(moved).toMatchObject({ status: "applied", events: [{ kind: "seminar" }, { kind: "email" }], followUps: [{ note: "人事にお礼メール" }] });
+  });
+
+  it("refuse un type d'échange inconnu ou une relance sans texte", async () => {
+    const call = api();
+    expect((await call("u1", "POST", undefined, { company: "A", events: [{ id: "e", date: "2026-10-20", kind: "fax" }] })).status).toBe(400);
+    expect((await call("u1", "POST", undefined, { company: "A", followUps: [{ id: "f", date: "2026-10-20", note: " " }] })).status).toBe(400);
+  });
+});
+
 describe("/api/applications", () => {
   it("crée une candidature au statut « interested » par défaut", async () => {
     const res = await api()("u1", "POST", undefined, { company: "楽天グループ", position: "エンジニア" });

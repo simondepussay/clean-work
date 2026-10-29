@@ -1,8 +1,8 @@
 import { HttpRequest, InvocationContext } from "@azure/functions";
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWTPayload, type KeyLike } from "jose";
 import { beforeAll, describe, expect, it } from "vitest";
-import { EntraVerifier, TOKEN_HEADER, verifierFromEnv } from "../src/lib/identity";
-import { withUser } from "../src/lib/http";
+import { EntraVerifier, TOKEN_HEADER, verifierFromEnv, type IdentityVerifier } from "../src/lib/identity";
+import { cronSecretFromEnv, CRON_HEADER, MAX_BODY_BYTES, RateLimiter, withCron, withUser } from "../src/lib/http";
 import { z } from "zod";
 
 const TENANT = "11111111-2222-3333-4444-555555555555";
@@ -116,5 +116,63 @@ describe("withUser", () => {
     const failing = withUser(async () => { throw new Error("secret interne"); }, () => verifier);
     const res = await failing(req({ [TOKEN_HEADER]: await token() }), quietCtx);
     expect(res).toEqual({ status: 500, jsonBody: { error: "internal" } });
+  });
+});
+
+describe("limites de withUser", () => {
+  const ctx = new InvocationContext();
+  const ok: IdentityVerifier = { verify: async (t) => (t ? { userId: t } : null) };
+  const req = (method: string, user: string, headers: Record<string, string> = {}) =>
+    new HttpRequest({ url: "https://x/api/drafts", method, headers: { [TOKEN_HEADER]: user, ...headers } });
+
+  it("413 avant toute lecture si le corps annoncé est trop gros", async () => {
+    let called = false;
+    const h = withUser(async () => { called = true; return {}; }, () => ok);
+    const res = await h(req("POST", "u1", { "content-length": String(MAX_BODY_BYTES + 1) }), ctx);
+    expect(res.status).toBe(413);
+    expect(called).toBe(false);
+  });
+
+  it("429 au-delà de la limite d'écritures par minute, pour cet utilisateur seulement", async () => {
+    const limiters = { all: new RateLimiter(100), writes: new RateLimiter(2) };
+    const h = withUser(async () => ({ status: 204 }), () => ok, limiters);
+    expect((await h(req("POST", "u1"), ctx)).status).toBe(204);
+    expect((await h(req("PUT", "u1"), ctx)).status).toBe(204);
+    expect((await h(req("DELETE", "u1"), ctx)).status).toBe(429);
+    // Les lectures et les autres utilisateurs ne sont pas bloqués.
+    expect((await h(req("GET", "u1"), ctx)).status).toBe(204);
+    expect((await h(req("POST", "u2"), ctx)).status).toBe(204);
+  });
+
+  it("la limite se libère après la fenêtre", () => {
+    let t = 0;
+    const limiter = new RateLimiter(1, 60_000, () => t);
+    expect(limiter.take("u")).toBe(true);
+    expect(limiter.take("u")).toBe(false);
+    t = 60_000;
+    expect(limiter.take("u")).toBe(true);
+  });
+});
+
+describe("withCron", () => {
+  const ctx = new InvocationContext();
+  const SECRET = "c".repeat(40);
+  const h = withCron(() => SECRET, async () => ({ jsonBody: "fait" }));
+  const req = (secret?: string) => new HttpRequest({ url: "https://x/api/push/run", method: "POST", headers: secret ? { [CRON_HEADER]: secret } : {} });
+
+  it("401 sans le bon secret, et avec un secret trop court côté serveur", async () => {
+    expect((await h(req(), ctx)).status).toBe(401);
+    expect((await h(req("c".repeat(39)), ctx)).status).toBe(401);
+    expect((await withCron(() => "court", async () => ({}))(req("court"), ctx)).status).toBe(401);
+  });
+
+  it("passe avec le bon secret", async () => {
+    expect((await h(req(SECRET), ctx)).jsonBody).toBe("fait");
+  });
+
+  it("un secret par tâche ; l'ancien secret commun sert tant qu'il n'est pas posé", () => {
+    const env = { PUSH_CRON_SECRET: "ancien", CRON_SECRET_BETA: "beta" };
+    expect(cronSecretFromEnv("BETA", env)).toBe("beta");
+    expect(cronSecretFromEnv("INFO", env)).toBe("ancien");
   });
 });

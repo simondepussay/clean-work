@@ -39,6 +39,7 @@ const STEP_NAMES: Record<string, Text3> = {
   interview2: { ja: "二次面接", en: "2nd interview", fr: "2e entretien" },
   final: { ja: "最終面接", en: "Final interview", fr: "Entretien final" },
   offer: { ja: "内定", en: "Offer", fr: "Offre" },
+  followup: { ja: "フォローアップ", en: "Follow-up", fr: "Relance" },
 };
 const stepName = (step: string, lang: Lang | undefined) => STEP_NAMES[step]?.[lang ?? "ja"] ?? step;
 
@@ -57,14 +58,20 @@ const daysBetween = (from: string, to: string) => Math.floor((Date.parse(to) - D
 
 // ------------------------------------------------------------------ échéances
 
-type Item = { company: string; step: string };
+type Item = { company: string; step: string; note?: string };
 
-/** Échéances d'aujourd'hui et de demain : mêmes règles que le web et l'iOS (étapes non terminées, candidatures en cours). */
+/**
+ * Échéances d'aujourd'hui et de demain : mêmes règles que le web et l'iOS (étapes non terminées, candidatures en cours),
+ * et les relances à faire (フォローアップ) avec leur note.
+ */
 export function dueSoon(apps: Application[], today: string, tomorrow: string) {
   const pick = (date: string): Item[] =>
     apps
       .filter((a) => !CLOSED.has(a.status))
-      .flatMap((a) => a.steps.filter((s) => !s.done && s.dueDate === date).map((s) => ({ company: a.company, step: s.type })))
+      .flatMap((a) => [
+        ...a.steps.filter((s) => !s.done && s.dueDate === date).map((s) => ({ company: a.company, step: s.type })),
+        ...(a.followUps ?? []).filter((f) => !f.done && f.date === date).map((f) => ({ company: a.company, step: "followup", note: f.note })),
+      ])
       .sort((a, b) => a.company.localeCompare(b.company));
   return { today: pick(today), tomorrow: pick(tomorrow) };
 }
@@ -74,9 +81,11 @@ export function reminderMessage(due: { today: Item[]; tomorrow: Item[] }, lang?:
   const today = lang ? { ja: "今日", en: "Today", fr: "Aujourd'hui" }[lang] : "今日";
   const tomorrow = lang ? { ja: "明日", en: "Tomorrow", fr: "Demain" }[lang] : "明日";
   const sep = lang && lang !== "ja" ? " : " : "：";
+  // Une relance s'affiche avec ce qu'il faut faire : « 楽天 フォローアップ（お礼メール） ».
+  const label = (i: Item) => (i.note ? `${stepName(i.step, lang)}（${i.note}）` : stepName(i.step, lang));
   const lines = [
-    ...due.today.map((i) => `${today}${sep}${i.company} ${stepName(i.step, lang)}`),
-    ...due.tomorrow.map((i) => `${tomorrow}${sep}${i.company} ${stepName(i.step, lang)}`),
+    ...due.today.map((i) => `${today}${sep}${i.company} ${label(i)}`),
+    ...due.tomorrow.map((i) => `${tomorrow}${sep}${i.company} ${label(i)}`),
   ];
   if (lines.length === 0) return null;
   const more = lines.length - SHOWN;

@@ -24,9 +24,12 @@ export const messages = {
   number: "1〜5000の数字で入力してください / Enter a number from 1 to 5000",
 } as const;
 
-const isoDate = z.string({ required_error: messages.required }).regex(/^\d{4}-\d{2}-\d{2}$/, messages.date);
-const yearMonth = z.string({ required_error: messages.required }).regex(/^\d{4}-\d{2}$/, messages.month);
-const text = (max: number) => z.string({ required_error: messages.required }).trim().max(max, messages.tooLong(max));
+/** Champ absent → « obligatoire » ; mauvais type → message par défaut de zod. */
+const requiredError = (issue: { input: unknown }) => (issue.input === undefined ? messages.required : undefined);
+
+const isoDate = z.string({ error: requiredError }).regex(/^\d{4}-\d{2}-\d{2}$/, messages.date);
+const yearMonth = z.string({ error: requiredError }).regex(/^\d{4}-\d{2}$/, messages.month);
+const text = (max: number) => z.string({ error: requiredError }).trim().max(max, messages.tooLong(max));
 const required = (max: number) => text(max).min(1, messages.required);
 
 /** Hiragana, katakana (dont « ー » et « ・ ») et espaces, demi- ou pleine largeur. */
@@ -59,7 +62,7 @@ export const languageLevels = ["native", "business", "conversational", "basic"] 
 export const certificationCategories = ["language", "it", "business", "degree", "driving", "other"] as const;
 
 const choice = <T extends readonly [string, ...string[]]>(values: T) =>
-  z.enum(values, { errorMap: () => ({ message: messages.choice }) });
+  z.enum(values, { error: messages.choice });
 
 export const certificationSchema = z.object({
   category: choice(certificationCategories).default("other"),
@@ -122,6 +125,26 @@ export const stepSchema = z.object({
   place: text(300).optional(),
 });
 
+/**
+ * Journal des échanges avec l'entreprise (comme les bases reliées des modèles Notion de 就活) :
+ * mails, appels, 説明会, OB・OG訪問, 面談…, chacun daté avec une note.
+ */
+export const eventKinds = ["email", "call", "seminar", "ob", "meeting", "other"] as const;
+export const eventSchema = z.object({
+  id: z.string().min(1),
+  date: isoDate,
+  kind: choice(eventKinds).default("other"),
+  note: text(500).optional(),
+});
+
+/** Relance à faire (« 人事にお礼メール »), datée : elle rejoint les rappels comme une échéance. */
+export const followUpSchema = z.object({
+  id: z.string().min(1),
+  date: isoDate,
+  note: required(200),
+  done: z.boolean().default(false),
+});
+
 /** 業界 : IT・通信, メーカー, 商社, 金融, コンサル, 小売・流通, サービス・人材, 広告・マスコミ, インフラ・交通, 官公庁・団体, その他. */
 export const industries = ["it", "maker", "trading", "finance", "consulting", "retail", "service", "media", "infrastructure", "public", "other"] as const;
 /** Type d'entreprise : 大手, 中小企業, ベンチャー, 外資系. */
@@ -146,9 +169,13 @@ export const applicationInputSchema = z.object({
   url: z.string().url().optional(),
   status: choice(applicationStatuses).default("interested"),
   steps: z.array(stepSchema).max(20).default([]),
+  events: z.array(eventSchema).max(200).default([]),
+  followUps: z.array(followUpSchema).max(30).default([]),
 });
 
 export type Step = z.infer<typeof stepSchema>;
+export type AppEvent = z.infer<typeof eventSchema>;
+export type FollowUp = z.infer<typeof followUpSchema>;
 export type ApplicationInput = z.infer<typeof applicationInputSchema>;
 export type Application = ApplicationInput & {
   id: string;
@@ -179,11 +206,11 @@ export const draftKinds = ["jikopr", "motivation", "gakuchika", "strengths", "fr
 export const draftInputSchema = z.object({
   kind: choice(draftKinds).default("free"),
   /** Candidature concernée ; absent pour une ES « commune » (自己PR utilisé partout). null = délier. */
-  applicationId: z.string().min(1).nullish().transform((v) => v ?? undefined),
+  applicationId: z.string().min(1).nullish().transform((v) => v ?? undefined).optional(),
   /** L'entreprise, en clair, tant que le suivi des candidatures (S07) n'existe pas. */
   company: text(100).optional(),
   question: required(300),
-  charLimit: z.number({ invalid_type_error: messages.number }).int(messages.number).positive(messages.number).max(5000, messages.number).optional(),
+  charLimit: z.number({ error: messages.number }).int(messages.number).positive(messages.number).max(5000, messages.number).optional(),
   body: z.string().max(5000, messages.tooLong(5000)).default(""),
 });
 
