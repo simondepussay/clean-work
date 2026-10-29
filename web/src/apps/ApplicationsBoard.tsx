@@ -123,6 +123,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   async function save(e: FormEvent) {
     e.preventDefault();
     if (!editing) return;
+    setError(false);
     try {
       const t = await token();
       const r = editing.id ? await updateApplication(t, editing.id, editing.form) : await createApplication(t, editing.form);
@@ -199,7 +200,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
           {tr({ ja: "応募済み", en: "Applied", fr: "Postulées" })} <span>{appliedCount}</span>
         </button>
         <span className="muted">{tr({ ja: `${apps.length}社`, en: `${apps.length} companies`, fr: `${apps.length} entreprises` })}</span>
-        {error && <span role="alert" className="notice">{tr({ ja: "保存できませんでした", en: "Could not save", fr: "Enregistrement impossible" })}</span>}
+        {error && !editing && <span role="alert" className="notice">{tr({ ja: "保存できませんでした", en: "Could not save", fr: "Enregistrement impossible" })}</span>}
       </div>
 
       {browserHelp && <SaveFromBrowser onClose={() => setBrowserHelp(false)} />}
@@ -363,6 +364,8 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
             onChange={(events) => set({ events: events.map((ev) => (ev.id ? ev : { ...ev, id: crypto.randomUUID() })) })} />
           <div className="actions">
             <button className="primary" type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
+            {/* L'erreur s'affiche là où l'on vient de cliquer, pas en haut de la page. */}
+            {error && <span role="alert" className="notice save-error">{tr({ ja: "保存できませんでした。もう一度お試しください。", en: "Could not save. Please try again.", fr: "Enregistrement impossible. Réessayez." })}</span>}
             <button type="button" onClick={() => setEditing(null)}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>
             {editing.id && onWriteEs && (
               <button type="button" onClick={() => onWriteEs({ id: editing.id!, company: editing.form.company })}>
