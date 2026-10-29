@@ -3,12 +3,18 @@
 /** En-tête du jeton : Static Web Apps se réserve `Authorization`. */
 export const TOKEN_HEADER = "x-shukatsu-token";
 
+/**
+ * Où est l'API. En production : la Function App de Séoul, à côté de la base (VITE_API_BASE, posé
+ * par le workflow de déploiement). En local et dans les tests : vide, donc le même site (/api/…).
+ */
+export const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+
 export type Health = { status: "ok" | "error"; version: string; database: "ok" | "error" };
 export type Me = { userId: string; email: string | null; name: string | null; hasProfile: boolean };
 
 export async function fetchHealth(fetcher: typeof fetch = fetch): Promise<Health | null> {
   try {
-    const res = await fetcher("/api/health");
+    const res = await fetcher(API_BASE + "/api/health");
     return (await res.json()) as Health;
   } catch {
     return null;
@@ -16,14 +22,14 @@ export async function fetchHealth(fetcher: typeof fetch = fetch): Promise<Health
 }
 
 export async function fetchMe(token: string, fetcher: typeof fetch = fetch): Promise<Me | null> {
-  const res = await fetcher("/api/me", { headers: { [TOKEN_HEADER]: token } });
+  const res = await fetcher(API_BASE + "/api/me", { headers: { [TOKEN_HEADER]: token } });
   return res.ok ? ((await res.json()) as Me) : null;
 }
 
 /** Supprime le compte et toutes ses données (S25). */
 export async function deleteAccount(token: string, fetcher: typeof fetch = fetch): Promise<boolean> {
   clearApiCache();
-  const res = await fetcher("/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: token } });
+  const res = await fetcher(API_BASE + "/api/me", { method: "DELETE", headers: { [TOKEN_HEADER]: token } });
   return res.ok;
 }
 
@@ -56,7 +62,7 @@ export type SaveResult = { ok: true; profile: ProfileInput } | { ok: false; issu
 
 /** Le profil, ou null s'il n'existe pas encore (404). */
 export async function getProfile(token: string, fetcher: typeof fetch = fetch): Promise<ProfileInput | null> {
-  const res = await fetcher("/api/profile", { headers: { [TOKEN_HEADER]: token } });
+  const res = await fetcher(API_BASE + "/api/profile", { headers: { [TOKEN_HEADER]: token } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`profil : ${res.status}`);
   return (await res.json()) as ProfileInput;
@@ -64,7 +70,7 @@ export async function getProfile(token: string, fetcher: typeof fetch = fetch): 
 
 export async function saveProfile(token: string, profile: ProfileInput, fetcher: typeof fetch = fetch): Promise<SaveResult> {
   clearApiCache();
-  const res = await fetcher("/api/profile", {
+  const res = await fetcher(API_BASE + "/api/profile", {
     method: "PUT",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(withoutEmptyFields(profile)),
@@ -123,7 +129,7 @@ async function call<T>(token: string, method: string, path: string, body?: unkno
 }
 
 async function send<T>(token: string, method: string, path: string, body?: unknown, fetcher: typeof fetch = fetch) {
-  const res = await fetcher(path, {
+  const res = await fetcher(API_BASE + path, {
     method,
     headers: { [TOKEN_HEADER]: token, ...(body === undefined ? {} : { "content-type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(withoutEmptyFields(body)),
@@ -155,7 +161,7 @@ export type ReviewOutcome =
 
 export async function reviewDraft(token: string, id: string, language: string, fetcher: typeof fetch = fetch): Promise<ReviewOutcome> {
   clearApiCache();
-  const res = await fetcher(`/api/drafts/${encodeURIComponent(id)}/review`, {
+  const res = await fetcher(`${API_BASE}/api/drafts/${encodeURIComponent(id)}/review`, {
     method: "POST",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify({ language }),
@@ -185,7 +191,7 @@ export const downloadWorkHistory = (token: string, options: WorkHistoryOptions, 
   downloadPdf(token, "/api/work-history", options, fetcher);
 
 async function downloadPdf(token: string, path: string, options: object, fetcher: typeof fetch): Promise<ResumeOutcome> {
-  const res = await fetcher(path, {
+  const res = await fetcher(API_BASE + path, {
     method: "POST",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(withoutEmptyFields(options)),
@@ -254,7 +260,7 @@ export type InterviewOutcome =
 
 async function interviewCall(token: string, path: string, body: unknown, fetcher: typeof fetch): Promise<InterviewOutcome> {
   clearApiCache();
-  const res = await fetcher(path, {
+  const res = await fetcher(API_BASE + path, {
     method: "POST",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -339,7 +345,7 @@ export const setCheerFrequency = (token: string, cheerFrequency: CheerFrequency,
 /** Notification d'essai vers les iPhone du compte : ok, aucun iPhone relié, limite du jour, ou push non configuré. */
 export async function sendTestPush(token: string, fetcher: typeof fetch = fetch): Promise<"sent" | "no_device" | "limit" | "off" | "failed"> {
   clearApiCache();
-  const res = await fetcher("/api/kokoro/test-push", { method: "POST", headers: { [TOKEN_HEADER]: token } }).catch(() => null);
+  const res = await fetcher(API_BASE + "/api/kokoro/test-push", { method: "POST", headers: { [TOKEN_HEADER]: token } }).catch(() => null);
   if (!res) return "failed";
   if (res.status === 409) return "no_device";
   if (res.status === 429) return "limit";
@@ -390,7 +396,7 @@ export type CvImportOutcome =
 
 /** Le texte du CV rangé dans les champs du profil (rien n'est enregistré). */
 export async function importCv(token: string, text: string, fetcher: typeof fetch = fetch): Promise<CvImportOutcome> {
-  const res = await fetcher("/api/profile/import", {
+  const res = await fetcher(API_BASE + "/api/profile/import", {
     method: "POST",
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify({ text }),
@@ -464,7 +470,7 @@ export type BetaOutcome = { ok: true; status: "ok" | "already" } | { ok: false; 
 
 export async function requestBeta(body: BetaRequest, fetcher: typeof fetch = fetch): Promise<BetaOutcome> {
   try {
-    const res = await fetcher("/api/beta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const res = await fetcher(API_BASE + "/api/beta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
     if (res.ok) return { ok: true, status: data.status === "already" ? "already" : "ok" };
     if (res.status === 400) return { ok: false, issues: data.issues ?? [] };
