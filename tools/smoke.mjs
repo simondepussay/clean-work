@@ -39,7 +39,9 @@ for (const [path, marker] of [["/", '<div id="root">'], ["/privacy.html", "プ�
     expect(res.status === 200, `HTTP ${res.status}`);
     expect((await res.text()).includes(marker), `« ${marker} » introuvable`);
     expect(res.headers.get("x-content-type-options") === "nosniff", "en-tête X-Content-Type-Options absent");
-    expect(res.headers.get("content-security-policy")?.includes("frame-ancestors 'none'"), "en-tête Content-Security-Policy absent");
+    // « 'self' » et pas « 'none' » : MSAL renouvelle le jeton dans un cadre invisible qui revient sur le site.
+    // Seul le site lui-même peut l'intégrer : la protection contre le clickjacking reste entière.
+    expect(res.headers.get("content-security-policy")?.includes("frame-ancestors 'self'"), "en-tête Content-Security-Policy absent ou modifié");
     expect(res.headers.get("strict-transport-security")?.startsWith("max-age="), "en-tête Strict-Transport-Security absent");
   });
 }
