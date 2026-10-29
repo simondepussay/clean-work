@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { eraseKokoro, getKokoro, listApplications, setMood, setValues, type Application, type Kokoro, type MoodWeather } from "../api";
 import { useAuth } from "../auth/auth";
 import { buildAgenda, ymd } from "../home/agenda";
@@ -256,6 +256,13 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   const [veiled, setVeiled] = useState(true);
 
   const [saveError, setSaveError] = useState(false);
+  /** Minuteries du rideau : annulées si l'on quitte l'onglet pendant que les nuages bougent. */
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  useEffect(() => () => { timers.current.forEach(clearTimeout); timers.current.clear(); }, []);
+  const wait = (ms: number) => new Promise<boolean>((resolve) => {
+    const id = setTimeout(() => { timers.current.delete(id); resolve(true); }, ms);
+    timers.current.add(id);
+  });
 
   /** Premier chargement : la page et les candidatures (pour le rituel et les liens des cartes). */
   async function load() {
@@ -278,7 +285,7 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   }
   // Au premier affichage, les nuages s'ouvrent une fois les données arrivées.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load().finally(() => setTimeout(() => setVeiled(false), 250)); }, []);
+  useEffect(() => { load().finally(() => wait(250).then(() => setVeiled(false))); }, []);
 
   /** Le prochain entretien dans les 7 jours : le rituel lui est dédié. */
   const nextInterview = useMemo(() => {
@@ -320,9 +327,9 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
     const before = data.moods;
     const save = saveMood(weather, word, before);
     const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (!calm) { setVeiled(true); await new Promise((r) => setTimeout(r, 620)); }
+    if (!calm) { setVeiled(true); await wait(620); }
     applyMood(weather, word);
-    if (!calm) { await new Promise((r) => setTimeout(r, 120)); setVeiled(false); }
+    if (!calm) { await wait(120); setVeiled(false); }
     await save;
   }
 

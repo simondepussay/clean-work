@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearApiCache, type Kokoro } from "../api";
@@ -169,6 +169,8 @@ describe("KokoroPage : fluidité (l'écran change tout de suite)", () => {
     expect(await screen.findByRole("radio", { name: /晴れ/, checked: true })).toBeInTheDocument();
     expect(document.documentElement.dataset.mood).toBe("sunny");
     server.release();
+    // Après l'enregistrement, la page se met à jour en arrière-plan.
+    await waitFor(() => expect(server.fetchMock.mock.calls.filter(([u]) => u.startsWith("/api/kokoro?")).length).toBeGreaterThan(1));
   });
 
   it("un mot s'allume tout de suite", async () => {
@@ -177,6 +179,7 @@ describe("KokoroPage : fluidité (l'écran change tout de suite)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "焦り" }));
     expect(screen.getByRole("button", { name: "焦り" })).toHaveAttribute("aria-pressed", "true");
     server.release();
+    await waitFor(() => expect(server.fetchMock.mock.calls.filter(([u]) => u.startsWith("/api/kokoro?")).length).toBeGreaterThan(1));
   });
 
   it("si l'enregistrement échoue, l'écran revient en arrière et le dit", async () => {
