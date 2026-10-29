@@ -136,6 +136,24 @@ describe("ApplicationsBoard", () => {
     expect(await screen.findByText(/フォロー 11\/05/)).toBeInTheDocument();
   });
 
+  it("importe un export Huntr : aperçu, doublons sautés, puis ajout", async () => {
+    const fetchMock = server([app({ id: "x", company: "楽天", position: "PM" })]);
+    renderBoard();
+    await userEvent.click(await screen.findByRole("button", { name: "インポート" }));
+    const panel = screen.getByRole("region", { name: "インポート" });
+    const csv = "Company,Job Title,List,URL\nSony,Engineer,Interview,https://sony.jp/job\n楽天,PM,Applied,\nMercari,Backend,Wishlist,\n";
+    await userEvent.upload(within(panel).getByLabelText("CSVファイル"), new File([csv], "huntr.csv", { type: "text/csv" }));
+    expect(await within(panel).findByText(/2件を追加します/)).toHaveTextContent("すでにある1件はスキップ");
+    expect(within(panel).getByRole("cell", { name: "Sony" })).toBeInTheDocument();
+    await userEvent.click(within(panel).getByRole("button", { name: "2件を追加" }));
+    expect(await within(panel).findByText("2件を追加しました。")).toBeInTheDocument();
+    const posts = fetchMock.mock.calls.filter(([, i]) => i?.method === "POST").map(([, i]) => JSON.parse(i!.body as string));
+    expect(posts).toEqual([
+      expect.objectContaining({ company: "Sony", position: "Engineer", status: "interview1", url: "https://sony.jp/job" }),
+      expect.objectContaining({ company: "Mercari", position: "Backend", status: "interested" }),
+    ]);
+  });
+
   it("montre l'erreur de l'API sous le champ", async () => {
     server([]);
     renderBoard();

@@ -15,6 +15,7 @@ import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, FlagIcon, MicI
 import { ymd } from "../home/agenda";
 import type { SavedJob } from "./savedJob";
 import { SaveFromBrowser } from "./SaveFromBrowser";
+import { ImportPanel } from "./ImportPanel";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
@@ -86,6 +87,8 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   const [fromBrowser, setFromBrowser] = useState<string | null>(null);
   /** L'explication « ブラウザから追加 » (bookmarklet et extension). */
   const [browserHelp, setBrowserHelp] = useState(false);
+  /** Import d'un CSV (Notion, Huntr, Excel). */
+  const [importing, setImporting] = useState(false);
   useEffect(() => {
     if (!seed) return;
     setIssues([]);
@@ -180,6 +183,9 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
     <section className="apps">
       <div className="apps-bar">
         <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}><PlusIcon size={16} /> {tr({ ja: "応募を追加", en: "Add an application", fr: "Ajouter une candidature" })}</button>
+        <button type="button" onClick={() => setImporting((v) => !v)} aria-expanded={importing}>
+          {tr({ ja: "インポート", en: "Import", fr: "Importer" })}
+        </button>
         <button type="button" onClick={() => setBrowserHelp((v) => !v)} aria-expanded={browserHelp}>
           {tr({ ja: "ブラウザから追加", en: "Save from the browser", fr: "Depuis le navigateur" })}
         </button>
@@ -197,6 +203,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
       </div>
 
       {browserHelp && <SaveFromBrowser onClose={() => setBrowserHelp(false)} />}
+      {importing && <ImportPanel existing={apps} onClose={() => setImporting(false)} onImported={(created) => created.forEach(replace)} />}
 
       <section className="upcoming" aria-label={tr({ ja: "近い締切", en: "Upcoming deadlines", fr: "Échéances proches" })}>
         <div className="upcoming-head">
