@@ -39,6 +39,8 @@ for (const [path, marker] of [["/", '<div id="root">'], ["/privacy.html", "プ�
     expect(res.status === 200, `HTTP ${res.status}`);
     expect((await res.text()).includes(marker), `« ${marker} » introuvable`);
     expect(res.headers.get("x-content-type-options") === "nosniff", "en-tête X-Content-Type-Options absent");
+    expect(res.headers.get("content-security-policy")?.includes("frame-ancestors 'none'"), "en-tête Content-Security-Policy absent");
+    expect(res.headers.get("strict-transport-security")?.startsWith("max-age="), "en-tête Strict-Transport-Security absent");
   });
 }
 
