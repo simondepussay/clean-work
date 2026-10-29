@@ -60,8 +60,10 @@ export type Issue = { path: string; message: string };
 
 export type SaveResult = { ok: true; profile: ProfileInput } | { ok: false; issues: Issue[] };
 
-/** Le profil, ou null s'il n'existe pas encore (404). */
+/** Le profil, ou null s'il n'existe pas encore (404). Servi tout de suite s'il vient d'arriver avec /api/bootstrap. */
 export async function getProfile(token: string, fetcher: typeof fetch = fetch): Promise<ProfileInput | null> {
+  const primed = primedProfile.get(token);
+  if (primed && Date.now() - primed.at < CACHE_MS) return structuredClone(primed.value);
   const res = await fetcher(API_BASE + "/api/profile", { headers: { [TOKEN_HEADER]: token } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`profil : ${res.status}`);
@@ -103,17 +105,36 @@ export type Draft = DraftInput & { id: string; createdAt: string; updatedAt: str
  * simultanées de la même adresse n'en font qu'une. Toute modification (POST, PUT, DELETE…)
  * vide le cache : on ne montre jamais une donnée périmée après un changement.
  */
-const CACHE_MS = 60_000;
+// Cinq minutes : toute modification vide le cache et relance /api/bootstrap en arrière-plan (data.ts).
+const CACHE_MS = 5 * 60_000;
 const cache = new Map<string, { at: number; value: Promise<unknown> }>();
+const primedProfile = new Map<string, { at: number; value: ProfileInput | null }>();
 
 export function clearApiCache() {
   cache.clear();
+  primedProfile.clear();
+}
+
+/** Remplit le cache avec une réponse déjà connue (/api/bootstrap, ou la copie gardée sur l'appareil). */
+export function primeCache(token: string, path: string, value: unknown) {
+  cache.set(`${token}\u0000${path}`, { at: Date.now(), value: Promise.resolve({ ok: true as const, value }) });
+}
+export function primeProfile(token: string, value: ProfileInput | null) {
+  primedProfile.set(token, { at: Date.now(), value });
+}
+
+/** Prévenu après chaque modification (POST, PUT, DELETE) : data.ts relance /api/bootstrap. */
+let afterChange: ((token: string) => void) | null = null;
+export function onApiChange(listener: ((token: string) => void) | null) {
+  afterChange = listener;
 }
 
 async function call<T>(token: string, method: string, path: string, body?: unknown, fetcher: typeof fetch = fetch) {
   if (method !== "GET") {
     clearApiCache();
-    return send<T>(token, method, path, body, fetcher);
+    const result = await send<T>(token, method, path, body, fetcher);
+    afterChange?.(token);
+    return result;
   }
   // Le jeton fait partie de la clé : un autre compte (ou un jeton renouvelé) ne lit pas ces données.
   const key = `${token}\u0000${path}`;

@@ -6,6 +6,7 @@ import { useAuth } from "../auth/auth";
 import { CalendarIcon, CheckIcon, LinkIcon, PinIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, TrashIcon } from "../icons";
 import { apiMessage, formatDay, useTr, type Lang, type T3, type Tr } from "../i18n";
 import { CalendarMenu } from "../apps/CalendarMenu";
+import { useFreshData } from "../useFreshData";
 import { buildAgenda, monthGrid, ymd, type AgendaItem, type AgendaKind } from "./agenda";
 
 const WEEKDAYS: Record<Lang, string[]> = {
@@ -87,7 +88,7 @@ export function HomePage({ name, onOpenApps, onPractice }: {
     return fn(t);
   };
 
-  useEffect(() => {
+  const load = () =>
     withToken(async (t) => {
       // Jours fériés : à part, pour ne pas retarder le calendrier si le service est lent.
       getHolidays(t).then((h) => h && setHolidays(h));
@@ -96,8 +97,10 @@ export function HomePage({ name, onOpenApps, onPractice }: {
       if (a.ok && Array.isArray(a.value)) setApps(a.value);
       if (p.ok && Array.isArray(p.value)) setPlans(p.value);
     }).catch(() => {}).finally(() => setLoaded(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
+  // Données fraîches arrivées en arrière-plan (data.ts) : relues depuis le cache, sans attente.
+  useFreshData(load);
 
   const agenda = useMemo(() => buildAgenda(apps, plans, lang), [apps, plans, lang]);
   const byDate = useMemo(() => {

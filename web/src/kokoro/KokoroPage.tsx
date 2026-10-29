@@ -6,6 +6,7 @@ import { ChatIcon, CloseIcon, CloudIcon, GlobeIcon, HeartIcon, PhoneIcon, RainIc
 import { formatDay, useTr, type T3, type Tr } from "../i18n";
 import { Charms, Cheers, Notifications, type CheerOpen } from "./KokoroCare";
 import { CloudCurtain, KokoroLoading, KokoroSky } from "./KokoroSky";
+import { useFreshData } from "../useFreshData";
 
 /**
  * Onglet « こころ » : un endroit calme pour prendre soin de soi pendant le 就活.
@@ -283,6 +284,9 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
     const k = await getKokoro(token, today).catch(() => null);
     if (k?.ok) setData((d) => (d ? { ...k.value, moods: d.moods, values: d.values } : k.value));
   }
+  // Données fraîches arrivées en arrière-plan (data.ts) : palier, encouragements, appareils à jour.
+  useFreshData(() => { if (data) refresh(); });
+
   // Au premier affichage, les nuages s'ouvrent une fois les données arrivées.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load().finally(() => wait(250).then(() => setVeiled(false))); }, []);

@@ -8,6 +8,7 @@ import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
 import type { EsSeed } from "./es/EsPage";
 import { HomePage } from "./home/HomePage";
 import { decodeJob, keepPendingJob, takePendingJob, type SavedJob } from "./apps/savedJob";
+import { clearSnapshot, loadBootstrap, primeFromSnapshot, refreshAfterChanges } from "./data";
 import { KokoroLoading } from "./kokoro/KokoroSky";
 
 // Chaque onglet est chargé la première fois qu'on l'ouvre : l'accueil s'affiche sans attendre le reste.
@@ -73,6 +74,7 @@ function Account({ me, onSaved }: { me: Me | null | "error"; onSaved: () => void
     setDeleting("busy");
     const token = await auth.getToken();
     if (token && (await deleteAccount(token).catch(() => false))) {
+      clearSnapshot();
       await auth.signOut();
     } else {
       setDeleting("error");
@@ -91,7 +93,7 @@ function Account({ me, onSaved }: { me: Me | null | "error"; onSaved: () => void
           </p>
         </div>
         <div className="actions">
-          <button onClick={() => { clearApiCache(); auth.signOut(); }}>{tr({ ja: "サインアウト", en: "Sign out", fr: "Se déconnecter" })}</button>
+          <button onClick={() => { clearApiCache(); clearSnapshot(); auth.signOut(); }}>{tr({ ja: "サインアウト", en: "Sign out", fr: "Se déconnecter" })}</button>
           <button className="danger" disabled={deleting === "busy"} onClick={removeAccount}>{tr({ ja: "アカウント削除", en: "Delete account", fr: "Supprimer le compte" })}</button>
         </div>
         {deleting === "error" && <p className="muted">{tr({ ja: "削除できませんでした", en: "Could not delete the account", fr: "Impossible de supprimer le compte" })}</p>}
@@ -146,17 +148,39 @@ export default function App() {
     fetchHealth().then((h) => setHealth(h ? { kind: "ready", health: h } : { kind: "offline" }));
   }, []);
 
+  /** À qui appartient la copie des données gardée sur cet appareil (data.ts). */
+  const owner = signedIn ? (signedIn.email ?? signedIn.name ?? "").toLowerCase() || null : null;
+  /** Les écrans attendent que le cache soit rempli (copie de l'appareil, sinon une seule requête). */
+  const [dataReady, setDataReady] = useState(false);
+
   const refreshMe = () =>
     auth.getToken()
       .then((token) => (token ? fetchMe(token) : null))
       .then((m) => setMe(m ?? "error"))
       .catch(() => setMe("error"));
 
+  // Afficher tout de suite, mettre à jour en arrière-plan (data.ts) : la copie de l'appareil remplit le cache,
+  // puis /api/bootstrap apporte les données fraîches en une requête.
   useEffect(() => {
-    if (auth.state.status === "signedIn") refreshMe();
+    if (auth.state.status !== "signedIn") { setDataReady(false); return; }
+    let alive = true;
+    (async () => {
+      const token = await auth.getToken();
+      if (!alive) return;
+      if (!token) { setMe("error"); setDataReady(true); return; }
+      const cached = primeFromSnapshot(token, owner);
+      if (cached) { setMe(cached); setDataReady(true); }
+      const fresh = await loadBootstrap(token, owner);
+      if (!alive) return;
+      if (fresh) setMe(fresh.me);
+      else if (!cached) await refreshMe();
+      setDataReady(true);
+    })();
+    return () => { alive = false; };
     // On ne relance que quand l'état de connexion change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.state.status]);
+  useEffect(() => refreshAfterChanges(() => owner), [owner]);
 
   // Offre arrivée par l'adresse : on la garde (elle survit à la connexion), puis on remet une adresse propre.
   useEffect(() => {
@@ -227,6 +251,7 @@ export default function App() {
           <PageErrorBoundary key={view}
             message={tr({ ja: "このページを表示できませんでした。新しいバージョンが公開された可能性があります。", en: "This page could not be displayed. A new version may have been published.", fr: "Cette page n'a pas pu s'afficher. Une nouvelle version a peut-être été mise en ligne." })}
             action={tr({ ja: "再読み込み", en: "Reload", fr: "Recharger" })}>
+            {signedIn && !dataReady && view !== "beta" ? (view === "kokoro" ? <KokoroLoading label={tr({ ja: "読み込み中", en: "Loading", fr: "Chargement" })} /> : <Loader />) : (
             <Suspense fallback={view === "kokoro" ? <KokoroLoading label={tr({ ja: "読み込み中", en: "Loading", fr: "Chargement" })} /> : <Loader />}>
               {/* La page de la bêta est ouverte à tous, connecté ou non. */}
               {view === "beta" && <BetaPage />}
@@ -256,6 +281,7 @@ export default function App() {
               )}
               {signedIn && view === "info" && <InfoPage />}
             </Suspense>
+            )}
           </PageErrorBoundary>
         </main>
       </div>

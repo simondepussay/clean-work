@@ -15,6 +15,7 @@ import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, FlagIcon, MicI
 import { ymd } from "../home/agenda";
 import type { SavedJob } from "./savedJob";
 import { SaveFromBrowser } from "./SaveFromBrowser";
+import { useFreshData } from "../useFreshData";
 import { ImportPanel } from "./ImportPanel";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
@@ -74,14 +75,16 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
     return t;
   }
 
-  useEffect(() => {
+  const load = () => {
     token().then(listApplications)
       .then((r) => setApps(r.ok && Array.isArray(r.value) ? r.value : []))
-      .catch(() => setApps([]));
+      .catch(() => setApps((a) => a ?? []));
     token().then(listDrafts).then((r) => r.ok && Array.isArray(r.value) && setDrafts(r.value)).catch(() => {});
-    // Chargé une fois.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
+  // Données fraîches arrivées en arrière-plan (data.ts) : le tableau se relit depuis le cache.
+  useFreshData(load);
 
   // Offre reçue de l'extension : nouveau formulaire rempli, à vérifier puis enregistrer.
   const [fromBrowser, setFromBrowser] = useState<string | null>(null);

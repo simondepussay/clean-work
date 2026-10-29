@@ -108,6 +108,21 @@ describe("App", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/me", { headers: { [TOKEN_HEADER]: "jeton" } });
   });
 
+  it("une seule requête /api/bootstrap remplit tout : compte, et les onglets s'ouvrent depuis le cache", async () => {
+    const saved = new Map<string, string>();
+    vi.stubGlobal("localStorage", { getItem: (k: string) => saved.get(k) ?? null, setItem: (k: string, v: string) => saved.set(k, v), removeItem: (k: string) => saved.delete(k) });
+    const boot = { me: { userId: "u1", email: "simon@example.com", name: "Simon", hasProfile: true }, profile: null,
+      applications: [], plans: [], drafts: [], kokoro: null, holidays: {}, today: "2026-10-30" };
+    const fetchMock = vi.fn(async (url: string) => (url.startsWith("/api/bootstrap") ? json(boot) : json(health)));
+    vi.stubGlobal("fetch", fetchMock);
+    renderWith({ state: { status: "signedIn", email: "simon@example.com", name: "Simon" }, getToken: async () => "jeton" });
+    await userEvent.click(await screen.findByRole("button", { name: "アカウント" }));
+    expect(await screen.findByText(/プロフィール登録済み/)).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([u]) => u === "/api/me")).toBe(false);
+    // La copie est gardée sur l'appareil pour le prochain lancement (même compte seulement).
+    expect(JSON.parse(saved.get("clean-work-snapshot-v1")!).owner).toBe("simon@example.com");
+  });
+
   it("signale une erreur si l'API refuse le jeton", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? json({}, false) : json(health))));
     renderWith({ state: { status: "signedIn", email: "simon@example.com", name: null }, getToken: async () => "jeton" });
