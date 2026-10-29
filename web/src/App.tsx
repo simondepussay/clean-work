@@ -7,6 +7,7 @@ import { useAuth } from "./auth/auth";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "./config";
 import type { EsSeed } from "./es/EsPage";
 import { HomePage } from "./home/HomePage";
+import { decodeJob, keepPendingJob, takePendingJob, type SavedJob } from "./apps/savedJob";
 import { KokoroLoading } from "./kokoro/KokoroSky";
 
 // Chaque onglet est chargé la première fois qu'on l'ouvre : l'accueil s'affiche sans attendre le reste.
@@ -29,6 +30,8 @@ const VIEWS = ["home", "kokoro", "apps", "es", "interview", "documents", "info",
 type View = (typeof VIEWS)[number];
 
 function viewFromHash(): View {
+  // Une offre envoyée par l'extension (« #add=… ») s'ouvre dans 応募.
+  if (location.hash.startsWith("#add=")) return "apps";
   const hash = location.hash.slice(1);
   return (VIEWS as readonly string[]).includes(hash) ? (hash as View) : "home";
 }
@@ -135,6 +138,8 @@ export default function App() {
   const [me, setMe] = useState<Me | null | "error">(null);
   const [esSeed, setEsSeed] = useState<EsSeed | undefined>();
   const [interviewSeed, setInterviewSeed] = useState<InterviewSeed | undefined>();
+  /** Offre reçue de l'extension « Clean Work に追加 » : le formulaire de 応募 s'ouvre déjà rempli. */
+  const [jobSeed, setJobSeed] = useState<(SavedJob & { nonce: number }) | undefined>();
   const signedIn = auth.state.status === "signedIn" ? auth.state : null;
 
   useEffect(() => {
@@ -152,6 +157,25 @@ export default function App() {
     // On ne relance que quand l'état de connexion change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.state.status]);
+
+  // Offre arrivée par l'adresse : on la garde (elle survit à la connexion), puis on remet une adresse propre.
+  useEffect(() => {
+    const receive = () => {
+      const job = decodeJob(location.hash);
+      if (!job) return;
+      keepPendingJob(job);
+      history.replaceState(null, "", "#apps");
+      setView("apps");
+    };
+    receive();
+    window.addEventListener("hashchange", receive);
+    return () => window.removeEventListener("hashchange", receive);
+  }, []);
+  useEffect(() => {
+    if (auth.state.status !== "signedIn") return;
+    const job = takePendingJob();
+    if (job) { setJobSeed({ ...job, nonce: Date.now() }); setView("apps"); }
+  }, [auth.state.status, view]);
 
   // Chaque page a son adresse (#apps, #es…) : le bouton « retour » du navigateur fonctionne,
   // et on peut garder une page en favori.
@@ -213,7 +237,7 @@ export default function App() {
               )}
               {signedIn && view === "account" && <Account me={me} onSaved={refreshMe} />}
               {signedIn && view === "apps" && (
-                <ApplicationsBoard
+                <ApplicationsBoard seed={jobSeed}
                   onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
                   onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
               )}

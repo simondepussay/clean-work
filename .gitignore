@@ -11,3 +11,4 @@ presentation/qa/
 
 # Clés privées (APNs…) : jamais dans le dépôt
 *.p8
+extension/clean-work-extension.zip

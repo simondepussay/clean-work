@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Clean Work に追加",
+  "short_name": "Clean Work",
+  "version": "1.0.0",
+  "description": "求人ページを一クリックで Clean Work の応募に追加します。Save any job page to Clean Work in one click.",
+  "homepage_url": "https://cleanwork.simondepussay.com/",
+  "permissions": ["activeTab", "scripting"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": {
+    "default_title": "Clean Work に追加 / Save to Clean Work",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "commands": {
+    "_execute_action": { "suggested_key": { "default": "Alt+Shift+S" }, "description": "Clean Work に追加" }
+  }
+}

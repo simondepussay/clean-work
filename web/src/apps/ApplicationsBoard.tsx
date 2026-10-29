@@ -13,6 +13,8 @@ import { CalendarMenu } from "./CalendarMenu";
 import { CompanyFacts } from "./CompanyFacts";
 import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
 import { ymd } from "../home/agenda";
+import type { SavedJob } from "./savedJob";
+import { SaveFromBrowser } from "./SaveFromBrowser";
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
@@ -20,9 +22,11 @@ const blank: ApplicationInput = { company: "", status: "interested", steps: [] }
  * Suivi des candidatures (S07) en tableau kanban (S08). `onWriteEs` ouvre l'onglet ES pour une entreprise,
  * `onPractice` l'entraînement aux entretiens (S17–S19).
  */
-export function ApplicationsBoard({ onWriteEs, onPractice }: {
+export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   onWriteEs?: (app: { id: string; company: string }) => void;
   onPractice?: (app: { id: string }) => void;
+  /** Offre envoyée par l'extension « Clean Work に追加 » : le formulaire s'ouvre rempli. */
+  seed?: SavedJob & { nonce: number };
 } = {}) {
   const auth = useAuth();
   const tr = useTr();
@@ -78,6 +82,26 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Offre reçue de l'extension : nouveau formulaire rempli, à vérifier puis enregistrer.
+  const [fromBrowser, setFromBrowser] = useState<string | null>(null);
+  /** L'explication « ブラウザから追加 » (bookmarklet et extension). */
+  const [browserHelp, setBrowserHelp] = useState(false);
+  useEffect(() => {
+    if (!seed) return;
+    setIssues([]);
+    setFromBrowser(seed.source ?? "");
+    setEditing({ id: null, form: {
+      ...blank,
+      company: seed.company ?? "",
+      position: seed.position,
+      url: seed.url,
+      notes: [seed.location && `勤務地：${seed.location}`, seed.notes].filter(Boolean).join("\n\n") || undefined,
+      steps: seed.deadline ? [{ id: crypto.randomUUID(), type: "es", dueDate: seed.deadline, done: false, note: tr({ ja: "募集締切", en: "Application deadline", fr: "Date limite de candidature" }) }] : [],
+    } });
+    // Seulement à l'arrivée d'une nouvelle offre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed?.nonce]);
+
   const replace = (a: Application) => setApps((all) => [a, ...(all ?? []).filter((x) => x.id !== a.id)]
     .sort((x, y) => (x.nextDeadline ?? "9999").localeCompare(y.nextDeadline ?? "9999") || x.company.localeCompare(y.company)));
 
@@ -102,6 +126,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
       if (!r.ok) return setIssues(r.issues);
       replace(r.value);
       setEditing(null);
+      setFromBrowser(null);
       setIssues([]);
     } catch {
       setError(true);
@@ -155,6 +180,9 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
     <section className="apps">
       <div className="apps-bar">
         <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}><PlusIcon size={16} /> {tr({ ja: "応募を追加", en: "Add an application", fr: "Ajouter une candidature" })}</button>
+        <button type="button" onClick={() => setBrowserHelp((v) => !v)} aria-expanded={browserHelp}>
+          {tr({ ja: "ブラウザから追加", en: "Save from the browser", fr: "Depuis le navigateur" })}
+        </button>
         <label className="apps-search">
           <SearchIcon size={15} />
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
@@ -167,6 +195,8 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
         <span className="muted">{tr({ ja: `${apps.length}社`, en: `${apps.length} companies`, fr: `${apps.length} entreprises` })}</span>
         {error && <span role="alert" className="notice">{tr({ ja: "保存できませんでした", en: "Could not save", fr: "Enregistrement impossible" })}</span>}
       </div>
+
+      {browserHelp && <SaveFromBrowser onClose={() => setBrowserHelp(false)} />}
 
       <section className="upcoming" aria-label={tr({ ja: "近い締切", en: "Upcoming deadlines", fr: "Échéances proches" })}>
         <div className="upcoming-head">
@@ -260,6 +290,13 @@ export function ApplicationsBoard({ onWriteEs, onPractice }: {
       {editing && (
         <form className="app-editor" onSubmit={save} noValidate aria-label={tr({ ja: "応募", en: "Application", fr: "Candidature" })}>
           <h3>{editing.id ? editing.form.company : tr({ ja: "新しい応募", en: "New application", fr: "Nouvelle candidature" })}</h3>
+          {!editing.id && fromBrowser !== null && (
+            <p className="from-browser" role="status">{tr({
+              ja: `${fromBrowser ? `${fromBrowser}から` : "ブラウザから"}追加された求人です。内容を確かめて、保存してください。`,
+              en: `Job added from ${fromBrowser || "your browser"}. Check the details, then save.`,
+              fr: `Offre ajoutée depuis ${fromBrowser || "le navigateur"}. Vérifiez puis enregistrez.`,
+            })}</p>
+          )}
           <div className="grid">
             <label className={errors.has("company") ? "invalid" : undefined}>
               <span>{tr({ ja: "企業名", en: "Company", fr: "Entreprise" })} *</span>
