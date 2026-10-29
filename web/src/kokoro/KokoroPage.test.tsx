@@ -146,6 +146,50 @@ describe("KokoroPage (こころ)", () => {
   });
 });
 
+describe("KokoroPage : fluidité (l'écran change tout de suite)", () => {
+  /** Un serveur dont l'enregistrement de la météo ne répond qu'à la demande (ou échoue). */
+  function slowServer(data: Kokoro, fail = false) {
+    let release: () => void = () => {};
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/kokoro/mood" && init?.method === "PUT") {
+        await new Promise<void>((r) => { release = r; });
+        return fail ? { ok: false, status: 500, json: async () => ({}) } : { ok: true, status: 204, json: async () => null };
+      }
+      if (url.startsWith("/api/kokoro")) return { ok: true, status: 200, json: async () => data };
+      return { ok: true, status: 200, json: async () => [] };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return { fetchMock, release: () => release() };
+  }
+
+  it("la météo choisie s'affiche avant la réponse du serveur", async () => {
+    const server = slowServer(kokoro());
+    renderPage();
+    await userEvent.click(await screen.findByRole("radio", { name: /晴れ/ }));
+    expect(await screen.findByRole("radio", { name: /晴れ/, checked: true })).toBeInTheDocument();
+    expect(document.documentElement.dataset.mood).toBe("sunny");
+    server.release();
+  });
+
+  it("un mot s'allume tout de suite", async () => {
+    const server = slowServer(kokoro({ moods: [{ date: today, weather: "cloudy" }] }));
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "焦り" }));
+    expect(screen.getByRole("button", { name: "焦り" })).toHaveAttribute("aria-pressed", "true");
+    server.release();
+  });
+
+  it("si l'enregistrement échoue, l'écran revient en arrière et le dit", async () => {
+    const server = slowServer(kokoro(), true);
+    renderPage();
+    await userEvent.click(await screen.findByRole("radio", { name: /雨/ }));
+    await screen.findByRole("radio", { name: /雨/, checked: true });
+    server.release();
+    expect(await screen.findByRole("alert")).toHaveTextContent("保存できませんでした");
+    expect(screen.getByRole("radio", { name: /雨/ })).toHaveAttribute("aria-checked", "false");
+  });
+});
+
 describe("KokoroPage : liens avec le reste de l'app", () => {
   const word = { id: "word-g1", kind: "word" as const, title: { ja: "今日のひとこと", en: "Today's word", fr: "Le mot du jour" }, body: { ja: "深呼吸を3回。", en: "Three breaths.", fr: "Trois respirations." } };
 

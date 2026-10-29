@@ -603,7 +603,7 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 /* Rideau de nuages : deux moitiés de すやり霞 qui se ferment au centre, puis s'écartent. */
 .cloud-curtain { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .cloud-curtain.closed { pointer-events: auto; }
-.curtain-half { position: absolute; top: 0; bottom: 0; width: 62%; transition: transform .75s cubic-bezier(.65, 0, .35, 1), opacity .75s ease; opacity: 0; }
+.curtain-half { position: absolute; top: 0; bottom: 0; width: 62%; transition: transform .6s cubic-bezier(.65, 0, .35, 1), opacity .6s ease; opacity: 0; }
 .curtain-half svg { width: 100%; height: 100%; display: block; }
 .curtain-half.left { left: 0; transform: translateX(-100%); }
 .curtain-half.right { right: 0; transform: translateX(100%); }
@@ -623,6 +623,9 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .mood[aria-checked="true"].rainy { background: var(--k-rain); }
 .hero-echo { margin: 20px auto 0; max-width: 420px; font-family: var(--k-mincho); font-size: 16px; line-height: 1.8; animation: rise .8s ease both; }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+
+/* Échec d'enregistrement (l'écran est revenu en arrière). */
+.kokoro-save-error { margin: -8px 0 0; padding: 10px 16px; border-radius: 14px; background: #fbf1f0; color: var(--bordeaux); font-size: 14px; text-align: center; }
 
 /* --- Un mot -------------------------------------------------------------------------------------- */
 .mood-word { animation: rise .6s ease both; }

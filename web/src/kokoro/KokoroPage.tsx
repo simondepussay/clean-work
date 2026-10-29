@@ -255,6 +255,9 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   /** Rideau de nuages fermé pendant un chargement (au début, et quand la météo change). */
   const [veiled, setVeiled] = useState(true);
 
+  const [saveError, setSaveError] = useState(false);
+
+  /** Premier chargement : la page et les candidatures (pour le rituel et les liens des cartes). */
   async function load() {
     const token = await auth.getToken();
     if (!token) return;
@@ -264,6 +267,14 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
       else setFailed(true);
       if (a && a.ok) setApps(a.value);
     } catch { setFailed(true); }
+  }
+
+  /** Après un enregistrement, en arrière-plan : palier de soutien et encouragements à jour, sans rien faire clignoter. */
+  async function refresh() {
+    const token = await auth.getToken();
+    if (!token) return;
+    const k = await getKokoro(token, today).catch(() => null);
+    if (k?.ok) setData((d) => (d ? { ...k.value, moods: d.moods, values: d.values } : k.value));
   }
   // Au premier affichage, les nuages s'ouvrent une fois les données arrivées.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,26 +297,55 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
     return () => { delete root.dataset.mood; };
   }, [moodWeather]);
 
-  async function choose(weather: MoodWeather | null, newWord = word, curtain = false) {
+  /**
+   * Fluidité : l'écran change tout de suite (comme Headspace ou Calm), l'enregistrement part en arrière-plan.
+   * Si l'enregistrement échoue, on revient en arrière et on le dit.
+   */
+  const applyMood = (weather: MoodWeather | null, newWord: string) => setData((d) => d && {
+    ...d,
+    moods: [...d.moods.filter((m) => m.date !== today), ...(weather ? [{ date: today, weather, ...(newWord.trim() ? { word: newWord.trim() } : {}) }] : [])],
+  });
+
+  async function saveMood(weather: MoodWeather | null, newWord: string, before: Kokoro["moods"]) {
     const token = await auth.getToken();
-    if (!token || !data) return;
     const trimmed = newWord.trim();
-    // Changer de météo : les nuages se ferment, le ciel change derrière, puis ils s'ouvrent.
-    if (curtain) setVeiled(true);
-    const [res] = await Promise.all([
-      setMood(token, { date: today, weather, ...(trimmed && weather ? { word: trimmed } : {}) }).catch(() => null),
-      curtain ? new Promise((r) => setTimeout(r, 650)) : null,
-    ]);
-    if (res?.ok) await load();
-    if (curtain) setVeiled(false);
+    const res = token ? await setMood(token, { date: today, weather, ...(trimmed && weather ? { word: trimmed } : {}) }).catch(() => null) : null;
+    if (res?.ok) { setSaveError(false); refresh(); }
+    else { setSaveError(true); setData((d) => d && { ...d, moods: before }); }
+  }
+
+  /** Changer de météo : les nuages passent (0,6 s pour se fermer), le ciel change derrière, ils s'ouvrent. */
+  async function chooseWeather(weather: MoodWeather | null) {
+    if (!data) return;
+    const before = data.moods;
+    const save = saveMood(weather, word, before);
+    const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (!calm) { setVeiled(true); await new Promise((r) => setTimeout(r, 620)); }
+    applyMood(weather, word);
+    if (!calm) { await new Promise((r) => setTimeout(r, 120)); setVeiled(false); }
+    await save;
+  }
+
+  /** Un mot : visible tout de suite, enregistré ensuite. */
+  function chooseWord(newWord: string) {
+    if (!data || !todayMood) return;
+    const before = data.moods;
+    setWord(newWord);
+    applyMood(todayMood.weather, newWord);
+    saveMood(todayMood.weather, newWord, before);
   }
 
   async function saveValues(e: FormEvent) {
     e.preventDefault();
+    if (!data) return;
+    const before = data.values;
+    const values = draftValues.map((v) => v.trim()).filter(Boolean);
+    setData({ ...data, values });
+    setEditing(false);
     const token = await auth.getToken();
-    if (!token) return;
-    const res = await setValues(token, draftValues).catch(() => null);
-    if (res?.ok) { setEditing(false); await load(); }
+    const res = token ? await setValues(token, draftValues).catch(() => null) : null;
+    if (res?.ok) { setSaveError(false); refresh(); }
+    else { setSaveError(true); setData((d) => d && { ...d, values: before }); }
   }
 
   async function erase() {
@@ -341,7 +381,7 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
           <div className="mood-choices" role="radiogroup" aria-label={tr({ ja: "天気", en: "Weather", fr: "Météo" })}>
             {WEATHERS.map(({ id, label, Icon }) => (
               <button key={id} role="radio" aria-checked={todayMood?.weather === id} className={`mood ${id}`}
-                onClick={() => choose(todayMood?.weather === id ? null : id, word, true)}>
+                onClick={() => chooseWeather(todayMood?.weather === id ? null : id)}>
                 <span className="mood-icon"><Icon size={30} /></span><span>{tr(label)}</span>
               </button>
             ))}
@@ -350,16 +390,20 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
         </div>
       </section>
 
+      {saveError && (
+        <p className="kokoro-save-error" role="alert">{tr({ ja: "保存できませんでした。通信を確認して、もう一度お試しください。", en: "Could not save. Check your connection and try again.", fr: "Enregistrement impossible. Vérifiez la connexion et réessayez." })}</p>
+      )}
+
       {todayMood && (
         <section className="kokoro-block mood-word">
           <h3>{tr({ ja: "ひとことで言うと？", en: "In one word?", fr: "En un mot ?" })}</h3>
           <div className="word-chips">
             {WORDS.map((w) => {
               const text = tr(w);
-              return <button key={w.ja} aria-pressed={word === text} onClick={() => { const v = word === text ? "" : text; setWord(v); choose(todayMood.weather, v); }}>{text}</button>;
+              return <button key={w.ja} aria-pressed={word === text} onClick={() => chooseWord(word === text ? "" : text)}>{text}</button>;
             })}
           </div>
-          <form className="mood-word-form" onSubmit={(e) => { e.preventDefault(); choose(todayMood.weather); }}>
+          <form className="mood-word-form" onSubmit={(e) => { e.preventDefault(); chooseWord(word); }}>
             <input value={word} maxLength={30} onChange={(e) => setWord(e.target.value)}
               aria-label={tr({ ja: "自分の言葉で", en: "In your own words", fr: "Avec vos mots" })} placeholder={tr({ ja: "自分の言葉で…", en: "In your own words…", fr: "Avec vos mots…" })} />
             <button type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
