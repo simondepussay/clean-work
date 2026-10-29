@@ -10,6 +10,8 @@ struct Deadline: Equatable {
     let step: String
     let date: String
     let days: Int
+    /// Pour une relance (step « followup ») : ce qu'il faut faire.
+    var note: String? = nil
 }
 
 enum Deadlines {
@@ -24,12 +26,17 @@ enum Deadlines {
                           let left = SelectionStage.daysUntil(date, from: today, calendar: calendar), left >= 0, left <= days else { return nil }
                     return Deadline(applicationId: app.id, stepId: step.id, company: app.company, step: step.type, date: date, days: left)
                 }
+                // Les relances (フォローアップ) se rappellent comme des échéances.
+                + (app.followUps ?? []).compactMap { f -> Deadline? in
+                    guard !f.done, let left = SelectionStage.daysUntil(f.date, from: today, calendar: calendar), left >= 0, left <= days else { return nil }
+                    return Deadline(applicationId: app.id, stepId: f.id, company: app.company, step: "followup", date: f.date, days: left, note: f.note)
+                }
             }
             .sorted { ($0.date, $0.company) < ($1.date, $1.company) }
     }
 
     static func stepName(_ step: String) -> String {
-        SelectionStage.name(step)
+        step == "followup" ? tr("フォローアップ", "Follow-up", "Relance") : SelectionStage.name(step)
     }
 }
 
@@ -53,7 +60,7 @@ enum DeadlineReminders {
         Deadlines.upcoming(apps, from: now, calendar: calendar).prefix(maxDeadlines).flatMap { d -> [Reminder] in
             let parts = d.date.split(separator: "-").compactMap { Int($0) }
             guard parts.count == 3, let day = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) else { return [] }
-            let what = "\(d.company)：\(Deadlines.stepName(d.step))"
+            let what = "\(d.company)：\(Deadlines.stepName(d.step))" + (d.note.map { "（\($0)）" } ?? "")
             let candidates: [(String, Date?, String, String)] = [
                 ("eve", calendar.date(byAdding: DateComponents(day: -1, hour: 9), to: day), tr("明日締切", "Due tomorrow", "Échéance demain"), what),
                 ("day", calendar.date(byAdding: DateComponents(hour: 8), to: day), tr("今日締切", "Due today", "Échéance aujourd'hui"), what),

@@ -45,11 +45,18 @@ enum Agenda {
                                   applicationId: app.id, stepId: step.id, place: step.place)
             }
         }
+        // Les relances (フォローアップ), avec ce qu'il faut faire.
+        let followUps = apps.filter { !closed.contains($0.status) }.flatMap { app in
+            (app.followUps ?? []).map { f in
+                AgendaItem(id: "followup-\(app.id)-\(f.id)", date: f.date, time: nil, kind: .step, title: app.company,
+                           detail: tr("フォローアップ", "Follow-up", "Relance") + "：" + f.note, done: f.done, applicationId: app.id)
+            }
+        }
         let own = plans.map { p in
             AgendaItem(id: "plan-\(p.id)", date: p.date, time: p.kind == "event" ? p.time : nil,
                        kind: AgendaItem.Kind(rawValue: p.kind) ?? .event, title: p.title, detail: nil, done: p.done, plan: p)
         }
-        return (steps + own).sorted {
+        return (steps + followUps + own).sorted {
             ($0.date, $0.time ?? "99", order[$0.kind] ?? 9) < ($1.date, $1.time ?? "99", order[$1.kind] ?? 9)
         }
     }

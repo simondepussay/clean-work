@@ -16,6 +16,9 @@ struct JobApplication: Codable, Equatable, Identifiable {
     /// 法人番号 et adresse du siège : la candidature est reliée à la fiche officielle (gBizINFO).
     var corporateNumber: String?
     var location: String?
+    /// やりとり (journal des échanges) et フォローアップ (relances datées) ; absents des anciennes candidatures.
+    var events: [AppEvent]?
+    var followUps: [FollowUp]?
 
     struct Step: Codable, Equatable, Identifiable {
         var id = UUID().uuidString
@@ -34,6 +37,28 @@ struct JobApplication: Codable, Equatable, Identifiable {
 }
 
 /// Ce qu'on envoie pour créer ou modifier une candidature.
+/// Un échange avec l'entreprise : メール, 電話, 説明会, OB・OG訪問, 面談, その他.
+struct AppEvent: Codable, Equatable, Identifiable {
+    var id = UUID().uuidString
+    var date: String
+    var kind = "email"
+    var note: String?
+
+    static let kinds: [(id: String, ja: String, en: String, fr: String)] = [
+        ("email", "メール", "Email", "E-mail"), ("call", "電話", "Call", "Appel"), ("seminar", "説明会", "Info session", "Session d'information"),
+        ("ob", "OB・OG訪問", "Alumni visit", "Rencontre avec un ancien"), ("meeting", "面談", "Meeting", "Rendez-vous"), ("other", "その他", "Other", "Autre"),
+    ]
+    static func kindName(_ id: String) -> String { kinds.first { $0.id == id }.map { tr($0.ja, $0.en, $0.fr) } ?? id }
+}
+
+/// Une relance datée (« 人事にお礼メール »), rappelée comme une échéance.
+struct FollowUp: Codable, Equatable, Identifiable {
+    var id = UUID().uuidString
+    var date: String
+    var note = ""
+    var done = false
+}
+
 struct JobApplicationInput: Encodable, Equatable {
     var company = ""
     var position: String?
@@ -45,15 +70,19 @@ struct JobApplicationInput: Encodable, Equatable {
     var notes: String?
     var corporateNumber: String?
     var location: String?
+    /// Envoyés seulement quand on les modifie (nil : l'API garde ce qu'elle a).
+    var events: [AppEvent]?
+    var followUps: [FollowUp]?
 
     init() {}
     init(_ app: JobApplication) {
         company = app.company; position = app.position; url = app.url; status = app.status; steps = app.steps
         industry = app.industry; companyType = app.companyType; notes = app.notes
         corporateNumber = app.corporateNumber; location = app.location
+        events = app.events ?? []; followUps = app.followUps ?? []
     }
 
-    private enum CodingKeys: String, CodingKey { case company, position, url, status, steps, industry, companyType, notes, corporateNumber, location }
+    private enum CodingKeys: String, CodingKey { case company, position, url, status, steps, industry, companyType, notes, corporateNumber, location, events, followUps }
 
     /// 業界 et type sont toujours envoyés, null compris : null efface le choix côté API
     /// (Swift omet les nil, et l'ancienne valeur resterait).
@@ -70,6 +99,8 @@ struct JobApplicationInput: Encodable, Equatable {
         // Comme 業界 : null défait le lien avec la fiche officielle.
         try c.encode(corporateNumber, forKey: .corporateNumber)
         try c.encode(location, forKey: .location)
+        try c.encodeIfPresent(events, forKey: .events)
+        try c.encodeIfPresent(followUps?.filter { !$0.note.trimmingCharacters(in: .whitespaces).isEmpty }, forKey: .followUps)
     }
 }
 

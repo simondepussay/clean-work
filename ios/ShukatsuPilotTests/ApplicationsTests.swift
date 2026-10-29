@@ -81,3 +81,37 @@ final class ApplicationsModelTests: XCTestCase {
         XCTAssertEqual(SelectionStage.neighbour(of: "es", 1), "applied")
     }
 }
+
+final class FollowUpTests: XCTestCase {
+    override func tearDown() { UserDefaults.standard.removeObject(forKey: HelpLanguage.storageKey) }
+
+    func testOldApplicationsDecode_andNewOnesDoNotSendTheLists() throws {
+        let old = try JSONDecoder().decode(JobApplication.self, from: Data(#"{"id":"a","company":"楽天","status":"es","steps":[]}"#.utf8))
+        XCTAssertNil(old.followUps)
+        let fresh = try JSONSerialization.jsonObject(with: JSONEncoder().encode(JobApplicationInput())) as! [String: Any]
+        XCTAssertNil(fresh["events"], "nouvelle candidature : l'API met des listes vides")
+        XCTAssertNil(fresh["followUps"])
+    }
+
+    func testEditingSendsTheListsBack_withoutEmptyFollowUps() throws {
+        var app = JobApplication(id: "a", company: "楽天", status: "es", steps: [], nextDeadline: nil)
+        app.events = [AppEvent(id: "e", date: "2026-10-20", kind: "seminar", note: "説明会")]
+        app.followUps = [FollowUp(id: "f", date: "2026-11-05", note: "お礼メール"), FollowUp(id: "g", date: "2026-11-06", note: " ")]
+        let sent = try JSONSerialization.jsonObject(with: JSONEncoder().encode(JobApplicationInput(app))) as! [String: Any]
+        XCTAssertEqual((sent["events"] as? [[String: Any]])?.first?["kind"] as? String, "seminar")
+        XCTAssertEqual((sent["followUps"] as? [[String: Any]])?.map { $0["id"] as? String }, ["f"])
+    }
+
+    func testFollowUpsAreRemindedLikeDeadlines() {
+        UserDefaults.standard.set("ja", forKey: HelpLanguage.storageKey)
+        var tokyo = Calendar(identifier: .gregorian)
+        tokyo.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        let now = tokyo.date(from: DateComponents(year: 2026, month: 10, day: 29, hour: 12))!
+        var app = JobApplication(id: "a", company: "楽天", status: "applied", steps: [], nextDeadline: nil)
+        app.followUps = [FollowUp(id: "f", date: "2026-11-02", note: "お礼メール"), FollowUp(id: "g", date: "2026-11-03", note: "済", done: true)]
+        let r = DeadlineReminders.reminders(for: [app], now: now, calendar: tokyo)
+        XCTAssertEqual(r.map(\.id), ["deadline.f.eve", "deadline.f.day"])
+        XCTAssertEqual(r[0].body, "楽天：フォローアップ（お礼メール）")
+        XCTAssertEqual(Agenda.build([app], []).first?.detail, "フォローアップ：お礼メール")
+    }
+}

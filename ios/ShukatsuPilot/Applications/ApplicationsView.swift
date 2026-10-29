@@ -155,6 +155,36 @@ struct ApplicationEditor: View {
                 .onDelete { input.steps.remove(atOffsets: $0) }
                 Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.steps.append(.init()) }
             }
+            Section {
+                ForEach(Binding(get: { input.followUps ?? [] }, set: { input.followUps = $0 })) { $f in
+                    VStack(alignment: .leading) {
+                        DatePicker(tr("日付", "Date", "Date"), selection: day($f.date), displayedComponents: .date)
+                        TextField(tr("やること（例：人事にお礼メール）", "To do (e.g. thank-you email to HR)", "À faire (ex. : mail de remerciement)"), text: $f.note)
+                        Toggle(tr("完了", "Done", "Fait"), isOn: $f.done)
+                    }
+                }
+                .onDelete { input.followUps?.remove(atOffsets: $0) }
+                Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.followUps = (input.followUps ?? []) + [FollowUp(date: today)] }
+            } header: {
+                Text(tr("フォローアップ", "Follow-ups", "Relances"))
+            } footer: {
+                Text(tr("締切と同じように通知とカレンダーに出ます", "Reminded like deadlines, and shown in the calendar", "Rappelées comme les échéances, et visibles dans le calendrier"))
+            }
+            Section(tr("やりとりの記録", "Contact history", "Historique des échanges")) {
+                ForEach(Binding(get: { input.events ?? [] }, set: { input.events = $0 })) { $e in
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Picker(tr("種類", "Type", "Type"), selection: $e.kind) {
+                                ForEach(AppEvent.kinds, id: \.id) { Text(tr($0.ja, $0.en, $0.fr)).tag($0.id) }
+                            }
+                            DatePicker("", selection: day($e.date), displayedComponents: .date).labelsHidden()
+                        }
+                        TextField(tr("内容", "What happened", "Ce qui s'est passé"), text: optional($e.note), axis: .vertical)
+                    }
+                }
+                .onDelete { input.events?.remove(atOffsets: $0) }
+                Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.events = (input.events ?? []) + [AppEvent(date: today)] }
+            }
             if failed { Section { Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).foregroundStyle(.red) } }
             if let app {
                 Section {
@@ -214,6 +244,14 @@ struct ApplicationEditor: View {
     }
 
     /// Date de l'étape au format de l'API (AAAA-MM-JJ) ; aujourd'hui tant qu'elle n'est pas choisie.
+    private var today: String { ISO8601DateFormatter.dayOnly.string(from: .now) }
+
+    /// Une date obligatoire (relance, échange) au format AAAA-MM-JJ.
+    private func day(_ value: Binding<String>) -> Binding<Date> {
+        Binding(get: { ISO8601DateFormatter.dayOnly.date(from: value.wrappedValue) ?? .now },
+                set: { value.wrappedValue = ISO8601DateFormatter.dayOnly.string(from: $0) })
+    }
+
     private func date(_ value: Binding<String?>) -> Binding<Date> {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
