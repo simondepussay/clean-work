@@ -1,7 +1,9 @@
 name: Demandes de bêta TestFlight
 
-# Chaque matin à 9 h (heure du Japon), les nouvelles demandes du formulaire « βテスト » arrivent par e-mail :
-# le workflow crée un « issue » GitHub qui mentionne le propriétaire (dépôt privé : les adresses restent privées).
+# Chaque matin à 9 h (heure du Japon), les nouvelles demandes du formulaire « βテスト » sont signalées par e-mail :
+# le workflow crée un « issue » GitHub qui mentionne le propriétaire, avec le NOMBRE de demandes seulement.
+# Les adresses sont dans un fichier joint à l'exécution (« artifact »), effacé par GitHub au bout de 7 jours :
+# elles ne restent pas dans les issues, alors que la politique de confidentialité promet de les effacer.
 # Il ne se passe rien s'il n'y a pas de nouvelle demande.
 on:
   schedule:
@@ -16,27 +18,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Nouvelles demandes
+        id: fetch
         env:
-          SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+          # Un secret par tâche (infra/cron-secrets.mjs) ; l'ancien secret commun tant qu'il n'est pas posé.
+          SECRET: ${{ secrets.CRON_SECRET_BETA || secrets.PUSH_CRON_SECRET }}
         run: |
           curl -fsS --retry 3 --retry-all-errors --max-time 60 -X POST -H "x-shukatsu-cron: $SECRET" \
             https://cleanwork.simondepussay.com/api/beta/run > signups.json
-          echo "Nouvelles demandes : $(jq '.signups | length' signups.json)"
-      - name: Envoyer la liste (issue GitHub + e-mail)
+          count=$(jq '.signups | length' signups.json)
+          echo "Nouvelles demandes : $count"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          # Le fichier joint : un tableau à ouvrir, et la liste des adresses prête à coller dans App Store Connect.
+          jq -r '.signups[] | [.email, .device, .lang, (.message // "" | gsub("\n"; " ")), .createdAt] | @csv' signups.json > demandes.csv
+          jq -r '.signups[].email' signups.json > adresses.txt
+      - name: Joindre les adresses (effacées dans 7 jours)
+        if: steps.fetch.outputs.count != '0'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: demandes-beta
+          path: |
+            demandes.csv
+            adresses.txt
+          retention-days: 7
+      - name: Prévenir (issue GitHub + e-mail, sans adresse)
+        if: steps.fetch.outputs.count != '0'
         env:
           GH_TOKEN: ${{ github.token }}
           OWNER: ${{ github.repository_owner }}
+          COUNT: ${{ steps.fetch.outputs.count }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          count=$(jq '.signups | length' signups.json)
-          [ "$count" -eq 0 ] && exit 0
           {
-            echo "@$OWNER, $count nouvelle(s) demande(s) pour la bêta TestFlight."
+            echo "@$OWNER, $COUNT nouvelle(s) demande(s) pour la bêta TestFlight."
             echo
-            echo "| E-mail (compte Apple) | Appareil | Langue | Message |"
-            echo "|---|---|---|---|"
-            jq -r '.signups[] | "| \(.email) | \(.device) | \(.lang) | \((.message // "") | gsub("\\|"; "/") | gsub("\n"; " ")) |"' signups.json
+            echo "Les adresses sont dans le fichier **demandes-beta** de [cette exécution]($RUN) (effacé par GitHub dans 7 jours)."
             echo
-            echo "À faire : [App Store Connect](https://appstoreconnect.apple.com) → Clean Work → TestFlight → groupe de testeurs externes → **Ajouter des testeurs** (coller les adresses)."
-            echo "Apple envoie alors l'invitation à chacun. Les adresses sont effacées de la base 180 jours après la demande."
+            echo "À faire : [App Store Connect](https://appstoreconnect.apple.com) → Clean Work → TestFlight → groupe de testeurs externes → **Ajouter des testeurs** (coller le contenu de adresses.txt)."
+            echo "Apple envoie alors l'invitation à chacun. Les demandes sont effacées de la base 180 jours après leur arrivée."
           } > body.md
-          gh issue create --repo "$GITHUB_REPOSITORY" --title "Bêta TestFlight — $count demande(s) — $(date -u +%Y-%m-%d)" --body-file body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "Bêta TestFlight — $COUNT demande(s) — $(date -u +%Y-%m-%d)" --body-file body.md

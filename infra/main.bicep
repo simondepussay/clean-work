@@ -31,9 +31,12 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' = {
     locations: [ { locationName: dataLocation, failoverPriority: 0 } ]
     consistencyPolicy: { defaultConsistencyLevel: 'Session' }
     minimalTlsVersion: 'Tls12'
+    // Restauration à la seconde près sur les 7 derniers jours (gratuit au palier 7 jours) :
+    // une erreur repérée le lendemain reste réparable. L'ancien mode périodique ne gardait que 8 h.
+    // Attention : le passage de « Periodic » à « Continuous » est définitif côté Azure.
     backupPolicy: {
-      type: 'Periodic'
-      periodicModeProperties: { backupIntervalInMinutes: 240, backupRetentionIntervalInHours: 8, backupStorageRedundancy: 'Local' }
+      type: 'Continuous'
+      continuousModeProperties: { tier: 'Continuous7Days' }
     }
   }
 }

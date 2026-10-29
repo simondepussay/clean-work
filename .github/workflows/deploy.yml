@@ -1,19 +1,18 @@
 name: Tests et déploiement
 
 # main         → tests, déploiement en production, vérification que la bonne version est en ligne
-# pull request → tests + environnement de prévisualisation (URL temporaire), supprimé à la fermeture
+# pull request → tests seulement. Pas d'environnement de prévisualisation : sur Static Web Apps,
+#                il partagerait les réglages de production (base Cosmos, secrets) derrière une URL publique.
 on:
   push:
     branches: [main]
     paths-ignore: ["docs/**", "journal/**", "planning/**", "tools/**", "README.md"]
   pull_request:
-    types: [opened, synchronize, reopened, closed]
     branches: [main]
     paths-ignore: ["docs/**", "journal/**", "planning/**", "tools/**", "README.md"]
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: deploy-${{ github.event.pull_request.number || 'prod' }}
@@ -24,15 +23,17 @@ env:
 
 jobs:
   test:
-    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22
       - name: API — installation
         run: npm ci
+        working-directory: api
+      - name: API — failles connues des dépendances
+        run: npm audit --omit=dev --audit-level=high
         working-directory: api
       - name: API — types et tests
         run: npm run typecheck && npm test
@@ -40,19 +41,22 @@ jobs:
       - name: Web — installation
         run: npm ci
         working-directory: web
+      - name: Web — failles connues des dépendances
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: web
       - name: Web — lint, tests et build
         run: npm run lint && npm test && npm run build
         working-directory: web
 
   deploy:
     needs: test
-    if: github.event.action != 'closed'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Version déployée
         run: echo "{\"version\":\"${GITHUB_SHA::7}\"}" > api/version.json
-      - uses: Azure/static-web-apps-deploy@v1
+      - uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1 # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -61,7 +65,6 @@ jobs:
           api_location: api
           output_location: dist
       - name: Attendre la nouvelle version
-        if: github.event_name == 'push'
         run: |
           for i in $(seq 1 20); do
             BODY=$(curl -fsS "$SITE/api/health" || true)
@@ -71,14 +74,5 @@ jobs:
           done
           echo "La version ${GITHUB_SHA::7} n'est pas en ligne"; exit 1
       - name: Test de fumée sur le site en ligne
-        if: github.event_name == 'push'
         run: node tools/smoke.mjs "$SITE" "${GITHUB_SHA::7}"
 
-  close-preview:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: close
