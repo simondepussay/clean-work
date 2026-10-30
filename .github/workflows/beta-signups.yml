@@ -24,7 +24,7 @@ jobs:
           SECRET: ${{ secrets.CRON_SECRET_BETA || secrets.PUSH_CRON_SECRET }}
         run: |
           curl -fsS --retry 3 --retry-all-errors --max-time 60 -X POST -H "x-shukatsu-cron: $SECRET" \
-            https://cleanwork.simondepussay.com/api/beta/run > signups.json
+            https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net/api/beta/run > signups.json
           count=$(jq '.signups | length' signups.json)
           echo "Nouvelles demandes : $count"
           echo "count=$count" >> "$GITHUB_OUTPUT"

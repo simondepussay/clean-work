@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>APIBaseURL</key>
-	<string>https://cleanwork.simondepussay.com</string>
+	<string>https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
