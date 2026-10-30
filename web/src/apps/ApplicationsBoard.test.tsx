@@ -40,7 +40,6 @@ function server(initial: Application[]) {
 }
 
 const renderBoard = () => render(<AuthContext.Provider value={auth}><ApplicationsBoard /></AuthContext.Provider>);
-const column = (name: RegExp) => screen.getByRole("listitem", { name });
 
 describe("statuses", () => {
   it("étape suivante et précédente, sans passer automatiquement à « 終了 »", () => {
@@ -68,20 +67,23 @@ describe("statuses", () => {
 });
 
 describe("ApplicationsBoard", () => {
-  it("range chaque candidature dans sa colonne, les refus dans « 終了 »", async () => {
+  it("liste : « 進行中 » par défaut ; chaque étape a son filtre avec son nombre, les refus dans « 終了 »", async () => {
     server([app({ id: "a1", company: "楽天", status: "es" }), app({ id: "a2", company: "LINEヤフー", status: "rejected" })]);
     renderBoard();
     await screen.findByText("楽天");
-    expect(within(column(/^ES$/)).getByText("楽天")).toBeInTheDocument();
-    expect(within(column(/終了/)).getByText("LINEヤフー")).toBeInTheDocument();
-    expect(within(column(/終了/)).getByText(/不合格/)).toBeInTheDocument();
+    expect(screen.queryByText("LINEヤフー")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /^終了\s*1$/ }));
+    expect(screen.getByText("LINEヤフー")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "LINEヤフーの状況" })).toHaveValue("rejected");
+    await userEvent.click(screen.getByRole("button", { name: /^ES\s*1$/ }));
+    expect(screen.getByText("楽天")).toBeInTheDocument();
   });
 
-  it("▶ fait passer à l'étape suivante (PUT du statut seulement)", async () => {
+  it("change l'étape depuis la ligne (PUT du statut seulement)", async () => {
     const fetchMock = server([app({ id: "a1", company: "楽天", status: "es" })]);
     renderBoard();
-    await userEvent.click(await screen.findByRole("button", { name: /楽天：次のステップへ/ }));
-    expect(within(column(/^応募済み/)).getByText("楽天")).toBeInTheDocument();
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: "楽天の状況" }), "applied");
+    expect(await screen.findByRole("button", { name: /^応募済み\s*1$/ })).toBeInTheDocument();
     const put = fetchMock.mock.calls.find(([, i]) => i?.method === "PUT") as unknown as [string, RequestInit];
     expect(put[0]).toBe("/api/applications/a1");
     expect(JSON.parse(put[1].body as string)).toEqual({ status: "applied" });
@@ -105,14 +107,14 @@ describe("ApplicationsBoard", () => {
     await userEvent.type(within(form).getByLabelText(/締切・日程/), "2026-11-01");
     await userEvent.click(within(form).getByRole("button", { name: /保存/ }));
 
-    expect(await within(column(/^気になる/)).findByText("ソニー")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "ソニー" })).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([, i]) => i?.method === "POST") as unknown as [string, RequestInit];
     const sent = JSON.parse(post[1].body as string);
     expect(sent).toMatchObject({ company: "ソニー", status: "interested", steps: [{ type: "es", dueDate: "2026-11-01", done: false }] });
     expect(sent.steps[0].id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it("ajoute une relance (フォローアップ) et un échange (やりとり) ; la relance apparaît sur la carte", async () => {
+  it("ajoute une relance (フォローアップ) et un échange (やりとり) ; la relance apparaît dans la ligne", async () => {
     const fetchMock = server([]);
     renderBoard();
     await userEvent.click(await screen.findByRole("button", { name: /応募を追加/ }));
@@ -133,13 +135,14 @@ describe("ApplicationsBoard", () => {
     const sent = JSON.parse(post[1].body as string);
     expect(sent.followUps).toEqual([expect.objectContaining({ date: "2026-11-05", note: "人事にお礼メール", done: false })]);
     expect(sent.events).toEqual([expect.objectContaining({ kind: "seminar", note: "社員の話が印象的" })]);
-    expect(await screen.findByText(/フォロー 11\/05/)).toBeInTheDocument();
+    expect(await screen.findByTitle("人事にお礼メール")).toHaveTextContent("11/05");
   });
 
   it("importe un export Huntr : aperçu, doublons sautés, puis ajout", async () => {
     const fetchMock = server([app({ id: "x", company: "楽天", position: "PM" })]);
     renderBoard();
-    await userEvent.click(await screen.findByRole("button", { name: "インポート" }));
+    await userEvent.click(await screen.findByText("…"));
+    await userEvent.click(screen.getByRole("button", { name: /インポート/ }));
     const panel = screen.getByRole("region", { name: "インポート" });
     const csv = "Company,Job Title,List,URL\nSony,Engineer,Interview,https://sony.jp/job\n楽天,PM,Applied,\nMercari,Backend,Wishlist,\n";
     await userEvent.upload(within(panel).getByLabelText("CSVファイル"), new File([csv], "huntr.csv", { type: "text/csv" }));
@@ -162,16 +165,14 @@ describe("ApplicationsBoard", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("入力してください");
   });
 
-  it("liste les échéances des 14 prochains jours et exporte un .ics", async () => {
+  it("exporte les échéances à venir en .ics", async () => {
     server([app({ id: "a1", company: "楽天", steps: [{ id: "s1", type: "es", dueDate: iso(1), done: false }] })]);
     vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() }));
     let file = "";
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) { file = this.download; });
     renderBoard();
-    const upcoming = await screen.findByRole("region", { name: /近い締切/ });
-    expect(within(upcoming).getByText("楽天")).toBeInTheDocument();
-    expect(within(upcoming).getByText(/明日/)).toBeInTheDocument();
-    await userEvent.click(within(upcoming).getByRole("button", { name: /カレンダーに追加/ }));
+    await screen.findByText("楽天");
+    await userEvent.click(screen.getByRole("button", { name: /カレンダーに追加/ }));
     await userEvent.click(screen.getByRole("menuitem", { name: /\.ics/ }));
     expect(file).toBe("shukatsu-deadlines.ics");
     click.mockRestore();
@@ -209,8 +210,8 @@ describe("ES et candidatures", () => {
   });
 });
 
-describe("recherche et fenêtre « 応募済み »", () => {
-  it("filtre les cartes par texte, puis ouvre et ferme la liste des candidatures sans réponse", async () => {
+describe("recherche et tri", () => {
+  it("filtre les lignes par texte ; le filtre « 応募済み » montre les candidatures sans réponse ; tri par entreprise", async () => {
     server([app({ id: "a1", company: "楽天", status: "interested" }), app({ id: "a2", company: "ソニー", status: "applied", notes: "ゲーム事業" }),
       app({ id: "a3", company: "任天堂", status: "interview1" })]);
     renderBoard();
@@ -221,13 +222,13 @@ describe("recherche et fenêtre « 応募済み »", () => {
     expect(screen.getByText("ソニー")).toBeTruthy();
     await userEvent.clear(screen.getByRole("searchbox", { name: "応募を検索" }));
 
-    await userEvent.click(screen.getByRole("button", { name: /応募済み 1/ }));
-    const list = screen.getByRole("region", { name: "応募済み・返事待ち" });
-    expect(within(list).getByText("ソニー")).toBeTruthy();
-    expect(within(list).queryByText("任天堂")).toBeNull();
-    expect(screen.queryByRole("list", { name: "選考状況" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /^応募済み\s*1$/ }));
+    expect(screen.getByText("ソニー")).toBeTruthy();
+    expect(screen.queryByText("任天堂")).toBeNull();
 
-    await userEvent.click(within(list).getByRole("button", { name: "閉じる" }));
-    expect(screen.getByRole("list", { name: "選考状況" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /^進行中\s*3$/ }));
+    await userEvent.click(screen.getByRole("button", { name: "企業" }));
+    const names = screen.getAllByRole("button").filter((b) => b.classList.contains("row-open")).map((b) => b.querySelector("strong")?.textContent);
+    expect(names).toEqual([...names].sort((x, y) => (x ?? "").localeCompare(y ?? "", "ja")));
   });
 });

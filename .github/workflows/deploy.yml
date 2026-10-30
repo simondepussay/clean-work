@@ -109,6 +109,8 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: web
+          # L'ancienne API (Hong Kong) est remplacée par une réponse 410 : l'API est à Séoul.
+          api_location: api-retired
           output_location: dist
       - name: Test de fumée sur le site en ligne
         run: node tools/smoke.mjs "$SITE" "${GITHUB_SHA::7}" "$KOREA_API"

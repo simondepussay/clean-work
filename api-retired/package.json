@@ -1,0 +1,8 @@
+{
+  "name": "clean-work-api-retired",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ancienne API de Static Web Apps (Hong Kong) : répond 410, l'API est à Séoul.",
+  "main": "src/index.js",
+  "dependencies": { "@azure/functions": "^4.6.0" }
+}

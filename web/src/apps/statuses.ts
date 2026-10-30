@@ -85,3 +85,19 @@ export const COMPANY_TYPES: (Named & { value: CompanyType })[] = [
   { value: "startup", ja: "ベンチャー", en: "Startup", fr: "Start-up" },
   { value: "foreign", ja: "外資系", en: "Foreign-owned", fr: "Entreprise étrangère" },
 ];
+
+/**
+ * Filtres de la liste de 応募 : en cours (par défaut), chaque étape, les entretiens ensemble, les candidatures terminées.
+ * Une liste filtrée remplace les colonnes du kanban : lisible même avec plus de cent candidatures.
+ */
+export type GroupId = "active" | "interested" | "es" | "applied" | "test" | "interview" | "offer" | "closed";
+export const GROUPS: (Named & { id: GroupId; statuses: AppStatus[] })[] = [
+  { id: "active", ja: "進行中", en: "In progress", fr: "En cours", statuses: ["interested", "es", "applied", "test", "interview1", "interview2", "final", "offer"] },
+  { id: "interested", ja: "気になる", en: "Interested", fr: "Intéressé", statuses: ["interested"] },
+  { id: "es", ja: "ES", en: "ES", fr: "ES", statuses: ["es"] },
+  { id: "applied", ja: "応募済み", en: "Applied", fr: "Postulé", statuses: ["applied"] },
+  { id: "test", ja: "適性検査", en: "Test", fr: "Test", statuses: ["test"] },
+  { id: "interview", ja: "面接", en: "Interviews", fr: "Entretiens", statuses: ["interview1", "interview2", "final"] },
+  { id: "offer", ja: "内定", en: "Offer", fr: "Offre", statuses: ["offer"] },
+  { id: "closed", ja: "終了", en: "Closed", fr: "Terminées", statuses: ["rejected", "withdrawn"] },
+];

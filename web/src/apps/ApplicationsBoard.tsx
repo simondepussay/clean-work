@@ -1,4 +1,4 @@
-import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Loader } from "../Loader";
 import {
   createApplication, deleteApplication, listApplications, listDrafts, updateApplication,
@@ -6,12 +6,12 @@ import {
 } from "../api";
 import { useAuth } from "../auth/auth";
 import { ListEditor, type Field } from "../profile/ListEditor";
-import { stepName, toICalendar, upcomingDeadlines } from "./deadlines";
-import { CLOSED, COLUMNS, COMPANY_TYPES, INDUSTRIES, daysUntil, deadlineLabel, isWaiting, matches, neighbour, statusLabel, stepTypes } from "./statuses";
+import { toICalendar, upcomingDeadlines } from "./deadlines";
+import { CLOSED, COLUMNS, COMPANY_TYPES, GROUPS, INDUSTRIES, daysUntil, deadlineLabel, matches, stepTypes, type GroupId } from "./statuses";
 import { apiMessage, useTr } from "../i18n";
 import { CalendarMenu } from "./CalendarMenu";
 import { CompanyFacts } from "./CompanyFacts";
-import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { ClockIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
 import { ymd } from "../home/agenda";
 import type { SavedJob } from "./savedJob";
 import { SaveFromBrowser } from "./SaveFromBrowser";
@@ -67,7 +67,9 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [query, setQuery] = useState("");
   /** Liste compacte de toutes les candidatures envoyées (à la place du tableau). */
-  const [appliedList, setAppliedList] = useState(false);
+  /** Filtre d'étape (« 進行中 » par défaut) et tri de la liste. */
+  const [stage, setStage] = useState<GroupId>("active");
+  const [sort, setSort] = useState<"deadline" | "company" | "updated">("deadline");
 
   async function token() {
     const t = await auth.getToken();
@@ -151,15 +153,9 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
     }
   }
 
-  const onDrop = (status: AppStatus) => (e: DragEvent) => {
-    e.preventDefault();
-    const app = apps?.find((a) => a.id === e.dataTransfer.getData("text/plain"));
-    if (app) move(app, status);
-  };
 
   if (apps === null) return <Loader />;
 
-  const soon = upcomingDeadlines(apps, new Date(), 14);
   const allUpcoming = upcomingDeadlines(apps);
 
   /** Toutes les échéances à venir dans un fichier .ics (Google Agenda, Apple Calendar, Outlook). */
@@ -175,129 +171,101 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   const errors = new Map(issues.map((i) => [i.path, apiMessage(i.message, lang)]));
   const esCount = (id: string) => drafts.filter((d) => d.applicationId === id).length;
   const set = (patch: Partial<ApplicationInput>) => setEditing((ed) => (ed ? { ...ed, form: { ...ed.form, ...patch } } : ed));
-  const closedHint = { ja: "不合格・辞退", en: "Rejected or withdrawn", fr: "Refusé ou désisté" };
-  const columns = [...COLUMNS.map((c) => ({ ...c, statuses: [c.status] })), { status: "rejected" as AppStatus, ja: "終了", en: "Closed", fr: "Terminé", hint: closedHint, statuses: CLOSED.map((c) => c.status) }];
   const visible = apps.filter((a) => matches(a, query));
-  // Les plus récemment modifiées d'abord : c'est là qu'on attend une réponse.
-  const applied = visible.filter((a) => isWaiting(a.status)).sort((x, y) => y.updatedAt.localeCompare(x.updatedAt));
   const open = (a: Application) => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes, corporateNumber: a.corporateNumber, location: a.location, events: a.events ?? [], followUps: a.followUps ?? [] } }); };
-  const appliedCount = apps.filter((a) => isWaiting(a.status)).length;
+  const counts = new Map(GROUPS.map((g) => [g.id, visible.filter((a) => g.statuses.includes(a.status)).length]));
+  const group = GROUPS.find((g) => g.id === stage) ?? GROUPS[0];
+  const nextFollowUp = (a: Application) => (a.followUps ?? []).filter((x) => !x.done).sort((x, y) => x.date.localeCompare(y.date))[0];
+  // Tri : l'échéance la plus proche d'abord (les candidatures sans échéance à la fin), l'entreprise, ou la dernière mise à jour.
+  const rows = visible.filter((a) => group.statuses.includes(a.status)).sort((x, y) =>
+    sort === "company" ? x.company.localeCompare(y.company, lang)
+      : sort === "updated" ? y.updatedAt.localeCompare(x.updatedAt)
+      : (x.nextDeadline ?? "9999").localeCompare(y.nextDeadline ?? "9999") || x.company.localeCompare(y.company, lang));
+  const sortButton = (key: typeof sort, label: string) => (
+    <button type="button" className={`sort${sort === key ? " active" : ""}`} aria-pressed={sort === key} onClick={() => setSort(key)}>{label}</button>
+  );
 
   return (
     <section className="apps">
       <div className="apps-bar">
         <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}><PlusIcon size={16} /> {tr({ ja: "応募を追加", en: "Add an application", fr: "Ajouter une candidature" })}</button>
-        <button type="button" onClick={() => setImporting((v) => !v)} aria-expanded={importing}>
-          {tr({ ja: "インポート", en: "Import", fr: "Importer" })}
-        </button>
-        <button type="button" onClick={() => setBrowserHelp((v) => !v)} aria-expanded={browserHelp}>
-          {tr({ ja: "ブラウザから追加", en: "Save from the browser", fr: "Depuis le navigateur" })}
-        </button>
         <label className="apps-search">
           <SearchIcon size={15} />
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={tr({ ja: "企業名・職種・メモで検索", en: "Search company, position, notes", fr: "Chercher entreprise, poste, notes" })}
             aria-label={tr({ ja: "応募を検索", en: "Search applications", fr: "Chercher une candidature" })} />
         </label>
-        <button type="button" className="filter-toggle" aria-pressed={appliedList} onClick={() => setAppliedList((v) => !v)}>
-          {tr({ ja: "応募済み", en: "Applied", fr: "Postulées" })} <span>{appliedCount}</span>
-        </button>
-        <span className="muted">{tr({ ja: `${apps.length}社`, en: `${apps.length} companies`, fr: `${apps.length} entreprises` })}</span>
+        <CalendarMenu onDownload={exportCalendar} canDownload={allUpcoming.length > 0} />
+        <details className="more-menu">
+          <summary aria-label={tr({ ja: "その他", en: "More", fr: "Plus" })}>…</summary>
+          <div className="menu">
+            <button type="button" onClick={(e) => { setImporting(true); (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; }}>{tr({ ja: "インポート（Notion・Huntr・Excel）", en: "Import (Notion, Huntr, Excel)", fr: "Importer (Notion, Huntr, Excel)" })}</button>
+            <button type="button" onClick={(e) => { setBrowserHelp(true); (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; }}>{tr({ ja: "ブラウザから追加", en: "Save from the browser", fr: "Ajouter depuis le navigateur" })}</button>
+          </div>
+        </details>
         {error && !editing && <span role="alert" className="notice">{tr({ ja: "保存できませんでした", en: "Could not save", fr: "Enregistrement impossible" })}</span>}
       </div>
 
       {browserHelp && <SaveFromBrowser onClose={() => setBrowserHelp(false)} />}
       {importing && <ImportPanel existing={apps} onClose={() => setImporting(false)} onImported={(created) => created.forEach(replace)} />}
 
-      <section className="upcoming" aria-label={tr({ ja: "近い締切", en: "Upcoming deadlines", fr: "Échéances proches" })}>
-        <div className="upcoming-head">
-          <h3>{tr({ ja: "近い締切", en: "Upcoming deadlines", fr: "Échéances proches" })} <span>{tr({ ja: "14日以内", en: "next 14 days", fr: "14 prochains jours" })}</span></h3>
-          <CalendarMenu onDownload={exportCalendar} canDownload={allUpcoming.length > 0} />
-        </div>
-        {soon.length === 0 ? (
-          <p className="muted">{tr({ ja: "14日以内の締切はありません", en: "No deadlines in the next 14 days", fr: "Aucune échéance dans les 14 prochains jours" })}</p>
-        ) : (
-          <ul>
-            {soon.map((d) => (
-              <li key={d.stepId} className={d.days <= 3 ? "soon" : undefined}>
-                <span className="when">{deadlineLabel(d.days, lang)}</span>
-                <span><strong>{d.company}</strong> {stepName(d.step, lang)}<span className="muted"> · {d.date}{d.note ? ` · ${d.note}` : ""}</span></span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Une liste dense plutôt que des colonnes : lisible avec plus de cent candidatures. */}
+      <nav className="stage-tabs" aria-label={tr({ ja: "選考状況", en: "Selection stage", fr: "Étape" })}>
+        {GROUPS.map((g) => (
+          <button key={g.id} type="button" aria-pressed={stage === g.id} onClick={() => setStage(g.id)}>
+            {tr(g)}<span>{counts.get(g.id)}</span>
+          </button>
+        ))}
+      </nav>
 
-      {appliedList ? (
-        <section className="applied-list" aria-label={tr({ ja: "応募済み・返事待ち", en: "Applied, awaiting a reply", fr: "Postulées, en attente de réponse" })}>
-          <div className="applied-head">
-            <h3>{tr({ ja: "応募済み・返事待ち", en: "Applied, awaiting a reply", fr: "Postulées, en attente de réponse" })} <span>{applied.length}</span></h3>
-            <button type="button" className="icon-button" onClick={() => setAppliedList(false)} aria-label={tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}><CloseIcon size={16} /></button>
-          </div>
-          {applied.length === 0 ? (
-            <p className="muted">{tr({ ja: "該当する応募はありません", en: "No matching applications", fr: "Aucune candidature correspondante" })}</p>
-          ) : (
-            <ul>
-              {applied.map((a) => {
-                const days = a.nextDeadline ? daysUntil(a.nextDeadline) : null;
-                return (
-                  <li key={a.id}>
-                    <button type="button" onClick={() => open(a)}>
-                      <strong>{a.company}</strong>
-                      <span className="muted">{a.position ?? ""}</span>
-                      <span className={days !== null && days <= 3 ? "due soon" : "due"}>{days !== null && days >= 0 ? deadlineLabel(days, lang) : ""}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+      {rows.length === 0 ? (
+        <p className="muted apps-empty">{apps.length === 0
+          ? tr({ ja: "まだ応募がありません。「応募を追加」から始めましょう。", en: "No applications yet. Start with “Add an application”.", fr: "Aucune candidature. Commencez par « Ajouter une candidature »." })
+          : tr({ ja: "該当する応募はありません", en: "No matching applications", fr: "Aucune candidature correspondante" })}</p>
       ) : (
-      <div className="board" role="list" aria-label={tr({ ja: "選考状況", en: "Selection board", fr: "Suivi des candidatures" })}>
-        {columns.map((col) => {
-          const cards = visible.filter((a) => col.statuses.includes(a.status));
-          const closed = col.ja === "終了";
-          return (
-            <div key={col.ja} className="column" role="listitem" aria-label={col[lang]}
-              onDragOver={closed ? undefined : (e) => e.preventDefault()} onDrop={closed ? undefined : onDrop(col.status)}>
-              {col.status === "applied" ? (
-                <h3 title={col.hint[lang]}><button type="button" className="column-link" onClick={() => setAppliedList(true)}>{col[lang]}</button><span>{cards.length}</span></h3>
-              ) : (
-                <h3 title={col.hint[lang]}>{col[lang]}<span>{cards.length}</span></h3>
-              )}
-              {cards.map((a) => {
-                const days = a.nextDeadline ? daysUntil(a.nextDeadline) : null;
-                const prev = neighbour(a.status, -1);
-                const next = neighbour(a.status, 1);
-                return (
-                  <article key={a.id} className="app-card" draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", a.id)}>
-                    <button className="app-open" onClick={() => open(a)}>
+        <table className="apps-table" aria-label={tr({ ja: "応募一覧", en: "Applications", fr: "Candidatures" })}>
+          <thead>
+            <tr>
+              <th>{sortButton("company", tr({ ja: "企業", en: "Company", fr: "Entreprise" }))}</th>
+              <th>{tr({ ja: "状況", en: "Stage", fr: "Étape" })}</th>
+              <th>{sortButton("deadline", tr({ ja: "次の締切", en: "Next deadline", fr: "Prochaine échéance" }))}</th>
+              <th className="col-extra">{tr({ ja: "フォロー・ES", en: "Follow-up · ES", fr: "Relance · ES" })}</th>
+              <th className="col-updated">{sortButton("updated", tr({ ja: "更新", en: "Updated", fr: "Modifiée" }))}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((a) => {
+              const days = a.nextDeadline ? daysUntil(a.nextDeadline) : null;
+              const f = nextFollowUp(a);
+              return (
+                <tr key={a.id}>
+                  <td className="col-company">
+                    <button type="button" className="row-open" onClick={() => open(a)}>
                       <strong>{a.company}</strong>
                       {a.position && <span>{a.position}</span>}
-                      {closed && <span className="muted">{statusLabel(a.status, lang)}</span>}
                     </button>
-                    {days !== null && <p className={days <= 3 ? "due soon" : "due"}><ClockIcon size={13} /> {deadlineLabel(days, lang)}</p>}
-                    {esCount(a.id) > 0 && <p className="es-badge">ES {esCount(a.id)}</p>}
-                    {(() => {
-                      const f = (a.followUps ?? []).filter((x) => !x.done).sort((x, y) => x.date.localeCompare(y.date))[0];
-                      return f && <p className="followup-badge" title={f.note}><FlagIcon size={12} /> {tr({ ja: "フォロー", en: "Follow-up", fr: "Relance" })} {f.date.slice(5).replace("-", "/")}</p>;
-                    })()}
-                    {!closed && (
-                      <div className="moves">
-                        <button disabled={!prev} onClick={() => prev && move(a, prev)} aria-label={tr({ ja: `${a.company}：前のステップへ`, en: `${a.company}: previous step`, fr: `${a.company} : étape précédente` })}><ChevronLeftIcon size={14} /></button>
-                        <button disabled={!next} onClick={() => next && move(a, next)} aria-label={tr({ ja: `${a.company}：次のステップへ`, en: `${a.company}: next step`, fr: `${a.company} : étape suivante` })}><ChevronRightIcon size={14} /></button>
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-
+                  </td>
+                  <td>
+                    <select value={a.status} onChange={(e) => move(a, e.target.value as AppStatus)}
+                      aria-label={tr({ ja: `${a.company}の状況`, en: `${a.company}: stage`, fr: `${a.company} : étape` })}>
+                      {[...COLUMNS, ...CLOSED].map((c) => <option key={c.status} value={c.status}>{c[lang]}</option>)}
+                    </select>
+                  </td>
+                  <td className={days !== null && days >= 0 && days <= 3 ? "due soon" : "due"}>
+                    {days !== null && days >= 0 ? <><ClockIcon size={13} /> {deadlineLabel(days, lang)}</> : <span className="muted">—</span>}
+                  </td>
+                  <td className="col-extra">
+                    {f && <span className="followup-badge" title={f.note}><FlagIcon size={12} /> {f.date.slice(5).replace("-", "/")}</span>}
+                    {esCount(a.id) > 0 && <span className="es-badge">ES {esCount(a.id)}</span>}
+                  </td>
+                  <td className="col-updated muted">{a.updatedAt ? a.updatedAt.slice(5, 10).replace("-", "/") : ""}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
+
       {editing && (
         <form className="app-editor" onSubmit={save} noValidate aria-label={tr({ ja: "応募", en: "Application", fr: "Candidature" })}>
           <h3>{editing.id ? editing.form.company : tr({ ja: "新しい応募", en: "New application", fr: "Nouvelle candidature" })}</h3>
