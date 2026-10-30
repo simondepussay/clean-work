@@ -172,7 +172,8 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   const esCount = (id: string) => drafts.filter((d) => d.applicationId === id).length;
   const set = (patch: Partial<ApplicationInput>) => setEditing((ed) => (ed ? { ...ed, form: { ...ed.form, ...patch } } : ed));
   const visible = apps.filter((a) => matches(a, query));
-  const open = (a: Application) => { setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes, corporateNumber: a.corporateNumber, location: a.location, events: a.events ?? [], followUps: a.followUps ?? [] } }); };
+  // Un second clic sur la même candidature referme sa fiche.
+  const open = (a: Application) => { if (editing?.id === a.id) { setEditing(null); return; } setIssues([]); setEditing({ id: a.id, form: { company: a.company, position: a.position, url: a.url, status: a.status, steps: a.steps, industry: a.industry, companyType: a.companyType, notes: a.notes, corporateNumber: a.corporateNumber, location: a.location, events: a.events ?? [], followUps: a.followUps ?? [] } }); };
   const counts = new Map(GROUPS.map((g) => [g.id, visible.filter((a) => g.statuses.includes(a.status)).length]));
   const group = GROUPS.find((g) => g.id === stage) ?? GROUPS[0];
   const nextFollowUp = (a: Application) => (a.followUps ?? []).filter((x) => !x.done).sort((x, y) => x.date.localeCompare(y.date))[0];
@@ -240,7 +241,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
               return (
                 <tr key={a.id}>
                   <td className="col-company">
-                    <button type="button" className="row-open" onClick={() => open(a)}>
+                    <button type="button" className="row-open" onClick={() => open(a)} aria-expanded={editing?.id === a.id}>
                       <strong>{a.company}</strong>
                       {a.position && <span>{a.position}</span>}
                     </button>

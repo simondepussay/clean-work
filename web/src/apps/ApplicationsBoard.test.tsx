@@ -210,6 +210,19 @@ describe("ES et candidatures", () => {
   });
 });
 
+describe("fiche d'une candidature", () => {
+  it("un clic ouvre la fiche, un second clic sur la même ligne la referme", async () => {
+    server([app({ id: "a1", company: "楽天" })]);
+    renderBoard();
+    const row = await screen.findByRole("button", { name: /楽天/, expanded: false });
+    await userEvent.click(row);
+    expect(screen.getByRole("form", { name: "応募" })).toBeInTheDocument();
+    expect(row).toHaveAttribute("aria-expanded", "true");
+    await userEvent.click(row);
+    expect(screen.queryByRole("form", { name: "応募" })).toBeNull();
+  });
+});
+
 describe("recherche et tri", () => {
   it("filtre les lignes par texte ; le filtre « 応募済み » montre les candidatures sans réponse ; tri par entreprise", async () => {
     server([app({ id: "a1", company: "楽天", status: "interested" }), app({ id: "a2", company: "ソニー", status: "applied", notes: "ゲーム事業" }),
