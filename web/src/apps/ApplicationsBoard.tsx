@@ -269,6 +269,21 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
       {editing && (
         <form className="app-editor" onSubmit={save} noValidate aria-label={tr({ ja: "応募", en: "Application", fr: "Candidature" })}>
           <h3>{editing.id ? editing.form.company : tr({ ja: "新しい応募", en: "New application", fr: "Nouvelle candidature" })}</h3>
+          <div className="actions editor-top">
+            <button className="primary" type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
+            {/* L'erreur s'affiche là où l'on vient de cliquer, pas en haut de la page. */}
+            {error && <span role="alert" className="notice save-error">{tr({ ja: "保存できませんでした。もう一度お試しください。", en: "Could not save. Please try again.", fr: "Enregistrement impossible. Réessayez." })}</span>}
+            <button type="button" onClick={() => setEditing(null)}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>
+            {editing.id && onWriteEs && (
+              <button type="button" onClick={() => onWriteEs({ id: editing.id!, company: editing.form.company })}>
+                <PenIcon size={16} /> {tr({ ja: "この企業のESを書く", en: "Write an ES for this company", fr: "Écrire une ES pour cette entreprise" })}
+              </button>
+            )}
+            {editing.id && onPractice && (
+              <button type="button" onClick={() => onPractice({ id: editing.id! })}><MicIcon size={16} /> {tr({ ja: "面接を練習する", en: "Practise the interview", fr: "S'entraîner à l'entretien" })}</button>
+            )}
+            {editing.id && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
+          </div>
           {!editing.id && fromBrowser !== null && (
             <p className="from-browser" role="status">{tr({
               ja: `${fromBrowser ? `${fromBrowser}から` : "ブラウザから"}追加された求人です。内容を確かめて、保存してください。`,
@@ -333,21 +348,6 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
           <ListEditor title={tr({ ja: "やりとりの記録", en: "Contact history", fr: "Historique des échanges" })} name="events" items={editing.form.events ?? []} fields={eventFields}
             empty={{ id: crypto.randomUUID(), date: ymd(new Date()), kind: "email", note: "" }} errors={errors}
             onChange={(events) => set({ events: events.map((ev) => (ev.id ? ev : { ...ev, id: crypto.randomUUID() })) })} />
-          <div className="actions">
-            <button className="primary" type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
-            {/* L'erreur s'affiche là où l'on vient de cliquer, pas en haut de la page. */}
-            {error && <span role="alert" className="notice save-error">{tr({ ja: "保存できませんでした。もう一度お試しください。", en: "Could not save. Please try again.", fr: "Enregistrement impossible. Réessayez." })}</span>}
-            <button type="button" onClick={() => setEditing(null)}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>
-            {editing.id && onWriteEs && (
-              <button type="button" onClick={() => onWriteEs({ id: editing.id!, company: editing.form.company })}>
-                <PenIcon size={16} /> {tr({ ja: "この企業のESを書く", en: "Write an ES for this company", fr: "Écrire une ES pour cette entreprise" })}
-              </button>
-            )}
-            {editing.id && onPractice && (
-              <button type="button" onClick={() => onPractice({ id: editing.id! })}><MicIcon size={16} /> {tr({ ja: "面接を練習する", en: "Practise the interview", fr: "S'entraîner à l'entretien" })}</button>
-            )}
-            {editing.id && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
-          </div>
         </form>
       )}
     </section>

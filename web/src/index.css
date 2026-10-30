@@ -859,3 +859,6 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
   .apps-table .col-company { grid-column: 1 / -1; }
   .apps-table .col-updated { display: none; }
 }
+
+/* Fiche d'une candidature : les actions en haut, sous le nom de l'entreprise. */
+.app-editor .editor-top { margin: 4px 0 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
