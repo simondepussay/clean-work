@@ -7,10 +7,13 @@
 //
 // Lancé après chaque déploiement (deploy.yml) et toutes les heures (monitor.yml).
 //
-//   node tools/smoke.mjs https://cleanwork.simondepussay.com [version-attendue]
+//   node tools/smoke.mjs https://cleanwork.simondepussay.com [version-attendue] [adresse-de-l-API]
+//
+// Les pages viennent du site (Static Web Apps) ; l'API, de la Function App de Séoul quand on la donne.
 
 const site = (process.argv[2] ?? "").replace(/\/$/, "");
-const expectedVersion = process.argv[3];
+const expectedVersion = process.argv[3] || undefined;
+const api = (process.argv[4] || process.env.API_BASE || site).replace(/\/$/, "");
 if (!site.startsWith("https://")) {
   console.error("Usage : node tools/smoke.mjs https://… [version]");
   process.exit(2);
@@ -29,7 +32,7 @@ const check = async (name, fn) => {
 const expect = (cond, message) => {
   if (!cond) throw new Error(message);
 };
-const get = (path, init) => fetch(site + path, { redirect: "manual", signal: AbortSignal.timeout(30_000), ...init });
+const get = (path, init) => fetch((path.startsWith("/api/") ? api : site) + path, { redirect: "manual", signal: AbortSignal.timeout(30_000), ...init });
 
 // ------------------------------------------------------------------ pages
 

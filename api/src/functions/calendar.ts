@@ -34,9 +34,8 @@ export function calendarHandlers(deps: Deps = {}) {
     const version = req.method === "POST"
       ? (await store().increment(containers.profiles, user.userId, LINK_DOC, { version: 1 })).version
       : await versionOf(store(), user.userId);
-    // L'adresse publique du site (PUBLIC_SITE_URL) : le lien reste sur cleanwork.simondepussay.com,
-    // même quand l'API qui répond est la Function App de Séoul.
-    const origin = (process.env.PUBLIC_SITE_URL || new URL(req.url).origin).replace(/\/$/, "");
+    // L'API qui répond (Séoul) sert aussi le fichier du calendrier : le lien pointe vers elle.
+    const origin = new URL(req.url).origin;
     return { jsonBody: { url: `${origin}/api/calendar/${feedToken(user.userId, s, version)}.ics?lang=${langOf(req)}` } };
   }, deps.verifier);
 

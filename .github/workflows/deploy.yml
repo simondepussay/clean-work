@@ -63,39 +63,35 @@ jobs:
       - name: Version déployée
         run: echo "{\"version\":\"${GITHUB_SHA::7}\"}" > api/version.json
 
-      # API de Séoul (infra/api-korea.bicep), à côté de la base : déployée d'abord, pour que le site
-      # ne parle jamais à une API plus ancienne que lui. Tant que l'identité de déploiement n'existe pas
-      # (infra/github-deploy-identity.sh), ces étapes sont sautées et le site garde l'API intégrée.
-      - name: API de Séoul — configurée ?
-        id: korea
+      # L'API est à Séoul (infra/api-korea.bicep), à côté de la base et de l'IA : déployée d'abord, pour
+      # que le site ne parle jamais à une API plus ancienne que lui. Static Web Apps ne sert plus que les pages.
+      - name: API de Séoul — identité de déploiement présente ?
         env:
           CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        run: echo "enabled=$([ -n "$CLIENT_ID" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        run: |
+          [ -n "$CLIENT_ID" ] && exit 0
+          echo "::error::Identité de déploiement absente : lancer « sh infra/github-deploy-identity.sh » (une fois)."
+          exit 1
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-        if: steps.korea.outputs.enabled == 'true'
         with:
           node-version: 22
       - name: API de Séoul — paquet
-        if: steps.korea.outputs.enabled == 'true'
         run: |
           cd api && npm ci && npm run build
           mkdir -p ../api-korea
           cp -R dist host.json package.json package-lock.json content assets version.json ../api-korea/
           cd ../api-korea && npm ci --omit=dev
       - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
-        if: steps.korea.outputs.enabled == 'true'
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - uses: Azure/functions-action@c5060b3b8bb1ebbcb531abd00c822ecbaa8ea656 # v1.5.7
-        if: steps.korea.outputs.enabled == 'true'
         with:
           app-name: func-shukatsu-ijdqobb4nlsxu
           package: api-korea
           sku: flexconsumption
       - name: API de Séoul — attendre la nouvelle version
-        if: steps.korea.outputs.enabled == 'true'
         run: |
           for i in $(seq 1 20); do
             BODY=$(curl -fsS "$KOREA_API/api/health" || true)
@@ -105,25 +101,15 @@ jobs:
           echo "L'API de Séoul n'a pas la version ${GITHUB_SHA::7}"; exit 1
 
       - uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1 # v1
-        # Le site appelle l'API de Séoul quand elle est déployée ; sinon l'API intégrée (même site).
+        # Les pages seulement ; elles appellent l'API de Séoul.
         env:
-          VITE_API_BASE: ${{ steps.korea.outputs.enabled == 'true' && env.KOREA_API || '' }}
+          VITE_API_BASE: ${{ env.KOREA_API }}
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: web
-          api_location: api
           output_location: dist
-      - name: Attendre la nouvelle version
-        run: |
-          for i in $(seq 1 20); do
-            BODY=$(curl -fsS "$SITE/api/health" || true)
-            echo "essai $i : $BODY"
-            echo "$BODY" | grep -q "\"version\":\"${GITHUB_SHA::7}\"" && exit 0
-            sleep 15
-          done
-          echo "La version ${GITHUB_SHA::7} n'est pas en ligne"; exit 1
       - name: Test de fumée sur le site en ligne
-        run: node tools/smoke.mjs "$SITE" "${GITHUB_SHA::7}"
+        run: node tools/smoke.mjs "$SITE" "${GITHUB_SHA::7}" "$KOREA_API"
 
