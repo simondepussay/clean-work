@@ -19,6 +19,13 @@ cat > "$FIC" <<EOF
 {"name":"github-main","issuer":"https://token.actions.githubusercontent.com","subject":"repo:$REPO:ref:refs/heads/main","audiences":["api://AzureADTokenExchange"],"description":"Déploiement de l'API de Séoul depuis main"}
 EOF
 az ad app federated-credential create --id "$APP" --parameters "@$FIC" -o none
+# Ce dépôt reçoit de GitHub le format « avec identifiants » (repo:compte@id/dépôt@id:…) : on l'accepte aussi.
+OWNER_ID=$(gh api "repos/$REPO" -q .owner.id)
+REPO_ID=$(gh api "repos/$REPO" -q .id)
+cat > "$FIC" <<EOF
+{"name":"github-main-ids","issuer":"https://token.actions.githubusercontent.com","subject":"repo:${REPO%%/*}@$OWNER_ID/${REPO##*/}@$REPO_ID:ref:refs/heads/main","audiences":["api://AzureADTokenExchange"],"description":"GitHub (format avec identifiants) : main seulement"}
+EOF
+az ad app federated-credential create --id "$APP" --parameters "@$FIC" -o none
 rm -f "$FIC"
 
 # L'identité met quelques secondes à être visible pour l'attribution du rôle.
