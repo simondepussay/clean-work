@@ -749,6 +749,50 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
   background-image: repeating-linear-gradient(transparent 0 27px, var(--k-sand) 27px 28px); background-attachment: local; }
 .journal-page textarea:focus { outline: none; }
 .journal-page:focus-within { border-color: var(--blue-300); }
+.journal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.journal-read { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+
+/* --- 日記を読む : le journal en livre ------------------------------------------------------------- */
+.book-overlay { --paper: #fffdf8; --sand: #efe6d9; --mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  padding: 72px 16px 24px; background: radial-gradient(ellipse at center, #3b3a46 0%, #1f2130 75%); animation: fade-in .3s ease both; }
+@keyframes fade-in { from { opacity: 0; } }
+.book { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: min(920px, 100%); height: min(600px, calc(100vh - 170px));
+  perspective: 2200px; border-radius: 6px; box-shadow: 0 30px 60px rgba(0, 0, 0, .45); }
+.book.single { grid-template-columns: 1fr; width: min(460px, 100%); }
+.book-page, .leaf .face { position: relative; overflow: hidden; background: var(--paper); }
+.book-page.left, .leaf.prev .face:not(.back), .leaf.next .face.back { border-radius: 6px 0 0 6px; }
+.book-page.right, .leaf.next .face:not(.back), .leaf.prev .face.back { border-radius: 0 6px 6px 0; }
+.book.single .book-page, .book.single .leaf .face { border-radius: 4px 6px 6px 4px; }
+/* Ombre de la reliure, au centre de la double page. */
+.book-page.left::after, .book-page.right::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40px; pointer-events: none; }
+.book-page.left::after { right: 0; background: linear-gradient(to left, rgba(60, 40, 20, .14), transparent); }
+.book-page.right::after { left: 0; background: linear-gradient(to right, rgba(60, 40, 20, .14), transparent); }
+.book-sheet { height: 100%; overflow-y: auto; padding: 34px 38px 40px; box-sizing: border-box; color: #2a2a35;
+  background-image: repeating-linear-gradient(transparent 0 31px, var(--sand) 31px 32px); background-position: 0 70px; background-origin: content-box; }
+.book-sheet.empty { background-image: none; }
+.book-date { margin: 0 0 12px; font-family: var(--mincho); font-size: 14px; color: #8a7a66; letter-spacing: .05em; }
+.book-text { margin: 0; white-space: pre-wrap; font-family: var(--mincho); font-size: 16px; line-height: 32px; }
+.book-folio { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-family: var(--mincho); font-size: 12px; color: #a99a86; }
+/* La feuille qui tourne : recto et verso, pivot sur la reliure. */
+.leaf { position: absolute; top: 0; bottom: 0; width: 50%; transform-style: preserve-3d; z-index: 2; }
+.leaf .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.leaf .face.back { transform: rotateY(180deg); }
+.leaf.next { right: 0; transform-origin: left center; animation: turn-next .65s cubic-bezier(.45, .05, .35, 1) both; }
+.leaf.prev { left: 0; transform-origin: right center; animation: turn-prev .65s cubic-bezier(.45, .05, .35, 1) both; }
+.book.single .leaf { width: 100%; }
+.leaf.prev-single { left: 0; width: 100%; transform-origin: left center; animation: turn-back-single .65s cubic-bezier(.45, .05, .35, 1) both; }
+@keyframes turn-next { from { transform: rotateY(0); } to { transform: rotateY(-180deg); } }
+@keyframes turn-prev { from { transform: rotateY(0); } to { transform: rotateY(180deg); } }
+@keyframes turn-back-single { from { transform: rotateY(-180deg); } to { transform: rotateY(0); } }
+/* Un peu d'ombre sur la feuille pendant qu'elle tourne. */
+.leaf .face::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: leaf-shade .65s ease both; }
+@keyframes leaf-shade { 0%, 100% { background: transparent; } 50% { background: rgba(40, 30, 20, .12); } }
+.book-nav { display: flex; align-items: center; gap: 16px; color: rgba(255, 255, 255, .8); font-size: 13px; font-variant-numeric: tabular-nums; }
+.book-nav .icon-button { color: #fff; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .25); width: 42px; height: 42px; }
+.book-nav .icon-button:disabled { opacity: .3; }
+@media (max-width: 600px) { .book-sheet { padding: 26px 22px 36px; } }
+
 .journal-actions .primary { display: inline-flex; align-items: center; gap: 6px; transition: background .25s, color .25s; }
 /* Enregistré : le bouton devient une coche verte, le temps de le voir. */
 .journal-actions .primary.done, .journal-actions .primary.done:disabled { background: #e4f1e8; border-color: #e4f1e8; color: #2f7a4b; opacity: 1; animation: saved-pop .35s ease; }

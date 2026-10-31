@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { getJournal, writeJournal, type JournalEntry } from "../api";
 import { useAuth } from "../auth/auth";
-import { CheckIcon } from "../icons";
+import { BookIcon, CheckIcon } from "../icons";
 import { formatDay, type Tr } from "../i18n";
+import { JournalBook } from "./KokoroBook";
 
 /**
  * 日記 : le journal intime de « こころ ». Une page par jour ; on écrit celle d'aujourd'hui, on relit les
@@ -18,6 +19,7 @@ export function Journal({ today, tr }: { today: string; tr: Tr }) {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [shown, setShown] = useState(5);
   const [open, setOpen] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
 
   useEffect(() => {
     auth.getToken()
@@ -54,7 +56,14 @@ export function Journal({ today, tr }: { today: string; tr: Tr }) {
 
   return (
     <section className="kokoro-block journal" aria-label={tr({ ja: "日記", en: "Journal", fr: "Journal intime" })}>
-      <h3>{tr({ ja: "日記", en: "Journal", fr: "Journal intime" })}</h3>
+      <div className="journal-head">
+        <h3>{tr({ ja: "日記", en: "Journal", fr: "Journal intime" })}</h3>
+        {(entries?.length ?? 0) > 0 && (
+          <button className="link journal-read" onClick={() => setReading(true)}>
+            <BookIcon size={16} /> {tr({ ja: "日記を読む", en: "Read as a book", fr: "Feuilleter" })}
+          </button>
+        )}
+      </div>
       <p className="kokoro-sub">{tr({ ja: "あなただけのページ。AIには送りません。", en: "Pages for you alone. Never sent to the AI.", fr: "Des pages rien que pour toi. Jamais envoyées à l'IA." })}</p>
       <div className="journal-page">
         <p className="journal-date">{formatDay(today, tr.lang)}</p>
@@ -89,6 +98,7 @@ export function Journal({ today, tr }: { today: string; tr: Tr }) {
       {past.length > shown && (
         <button className="link" onClick={() => setShown((n) => n + 10)}>{tr({ ja: "もっと見る", en: "Show more", fr: "Voir plus" })}</button>
       )}
+      {reading && entries && <JournalBook entries={entries} tr={tr} onClose={() => setReading(false)} />}
     </section>
   );
 }

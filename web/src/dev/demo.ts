@@ -87,7 +87,18 @@ const kokoro = {
   devices: { count: 1, lastSeen: today.toISOString() },
 };
 
+/** 日記 : quelques pages d'exemple, pour feuilleter le livre. */
+const journal = { entries: [
+  [-1, "説明会で話した社員さんが優しかった。少し安心した。帰りに駅前のパン屋でメロンパンを買った。"],
+  [-2, "ESを2本出した。志望動機を書きなおすたびに、自分が何をしたいのか少しずつはっきりしてくる。"],
+  [-4, "面接の練習。声が小さいと言われた。明日は少し大きな声で話してみる。"],
+  [-5, "雨。何もしたくない日だった。それでもいい、と自分に言ってみる。"],
+  [-7, "OB訪問。先輩の話を聞いて、働くイメージがはじめて湧いた。\n質問を準備しておいてよかった。"],
+  [-9, "就活を始めて一ヶ月。カレンダーを見返すと、思っていたより前に進んでいた。"],
+].map(([d, text]) => ({ date: inDays(d as number), text: text as string, updatedAt: "" })) };
+
 const routes: Record<string, unknown> = {
+  "GET /api/kokoro/journal": journal,
   "GET /api/kokoro*": kokoro,
   "GET /api/plans": plans,
   "GET /api/info?page=1": {
@@ -163,6 +174,11 @@ export function installDemoApi() {
     // こころ : la météo choisie reste affichée pendant la démo.
     if (key === "PUT /api/kokoro/mood") {
       kokoro.moods = [...kokoro.moods.filter((m) => m.date !== sent.date), ...(sent.weather ? [{ date: sent.date, weather: sent.weather, ...(sent.word ? { word: sent.word } : {}) }] : [])];
+    }
+    if (key === "PUT /api/kokoro/journal") {
+      const entry = sent.text ? { date: sent.date, text: String(sent.text).trimEnd(), updatedAt: new Date().toISOString() } : null;
+      journal.entries = [...(entry ? [entry] : []), ...journal.entries.filter((e) => e.date !== sent.date)];
+      return new Response(JSON.stringify({ entry }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (key === "PUT /api/kokoro/values") kokoro.values = (sent.values as string[]).filter(Boolean);
     const echo = { id: crypto.randomUUID(), done: false, createdAt: "", updatedAt: "", ...plans.find((p) => url.endsWith(p.id)), ...sent };
