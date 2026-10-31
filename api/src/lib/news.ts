@@ -10,13 +10,18 @@
 export type NewsSource = { id: string; name: string; url: string; site: string; lang: "ja" | "en" };
 export type NewsItem = { source: string; title: string; link: string; date: string | null; excerpt: string };
 
-/** Sources vérifiées le 2026-10-23 (flux publics, prévus pour être lus par d'autres sites). */
+/**
+ * Sources vérifiées le 2026-10-23 (flux publics, prévus pour être lus par d'autres sites).
+ * Le 厚生労働省 n'en fait plus partie : l'onglet renvoie simplement à ses nouveautés (MHLW_NEWS).
+ */
 export const NEWS_SOURCES: NewsSource[] = [
-  { id: "mhlw", name: "厚生労働省", url: "https://www.mhlw.go.jp/stf/news.rdf", site: "https://www.mhlw.go.jp/", lang: "ja" },
   { id: "nhk", name: "NHK 経済", url: "https://www3.nhk.or.jp/rss/news/cat5.xml", site: "https://www3.nhk.or.jp/news/", lang: "ja" },
   { id: "jetro", name: "JETRO", url: "https://www.jetro.go.jp/rss/biznews.xml", site: "https://www.jetro.go.jp/", lang: "ja" },
   { id: "japantimes", name: "The Japan Times", url: "https://www.japantimes.co.jp/business/feed/", site: "https://www.japantimes.co.jp/", lang: "en" },
 ];
+
+/** Les nouveautés du 厚生労働省, en lien direct depuis l'onglet « 情報 ». */
+export const MHLW_NEWS = "https://www.mhlw.go.jp/stf/new-info/index.html";
 
 const PER_SOURCE = 8;
 const EXCERPT = 140;

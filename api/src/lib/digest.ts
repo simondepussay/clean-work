@@ -1,8 +1,8 @@
 /**
  * Sélection quotidienne de l'onglet « 情報 » : chaque matin, 5 actualités choisies parmi les
  * titres récents (RSS), utiles pour le 就活 d'un étudiant étranger, avec un titre et un court
- * résumé en japonais, anglais et français. Elles sont gardées : l'onglet devient une archive,
- * affichée 7 par page, avec les articles de Clean Work.
+ * résumé en japonais, anglais et français : 1 du Japan Times, 2 de NHK et 2 de JETRO.
+ * Elles sont gardées 5 pages (7 par page) ; au-delà, les plus anciennes sont effacées.
  *
  * L'IA ne voit que le titre et l'extrait du flux : elle ne lit pas l'article et ne doit rien
  * ajouter. Chaque carte renvoie à l'article chez son éditeur.
@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { containers } from "./models";
-import { latestNews, NEWS_SOURCES, type NewsItem } from "./news";
+import { latestNews, MHLW_NEWS, NEWS_SOURCES, type NewsItem } from "./news";
 import { costJpy, type ChatMessage, type StructuredModel } from "./review";
 import type { DocStore } from "./store";
 
@@ -33,8 +33,13 @@ type StoredPick = InfoCard & { userId: string; createdAt: string };
 
 /** Partition des contenus partagés (aucun utilisateur n'a cet identifiant). */
 export const GLOBAL = "_global";
-export const PER_DAY = 5;
+/** Chaque jour : combien d'actualités de chaque source (5 en tout). */
+export const QUOTA: Record<string, number> = { japantimes: 1, nhk: 2, jetro: 2 };
+export const PER_DAY = Object.values(QUOTA).reduce((a, b) => a + b, 0);
 export const PAGE_SIZE = 7;
+/** Au plus 5 pages : les actualités plus anciennes sont oubliées. */
+export const MAX_PAGES = 5;
+export const KEEP = PAGE_SIZE * MAX_PAGES;
 /** Au plus 40 titres proposés à l'IA : assez pour choisir, peu de jetons. */
 const CANDIDATES = 40;
 
@@ -53,6 +58,7 @@ export function readArticles(path = join(__dirname, "../../../content/articles.j
 
 export function digestMessages(candidates: NewsItem[]): ChatMessage[] {
   const system = `あなたは日本で就職活動をする留学生のための編集者です。ニュースの見出しの中から、留学生の就活に役立つものを${PER_DAY}つ選びます。
+情報源ごとの数を守ってください：${Object.entries(QUOTA).map(([s, n]) => `[${s}] ${n}つ`).join("、")}。
 
 ## 選ぶ基準（重要な順）
 1. 新卒採用・就活の動き、外国人の雇用・在留資格（ビザ）、労働の制度やルール
@@ -108,15 +114,23 @@ export async function runDigest(store: DocStore, model: StructuredModel, now = n
 
   const seen = new Set(existing.map((p) => p.link));
   const recent = new Date(now.getTime() - 3 * 86400_000).toISOString();
-  const candidates = (await news())
-    .filter((n) => !seen.has(n.link) && (!n.date || n.date >= recent))
-    .slice(0, CANDIDATES);
+  // Des candidats de chaque source (le Japan Times publie beaucoup : il ne doit pas cacher les autres).
+  const perSource = Math.floor(CANDIDATES / Object.keys(QUOTA).length);
+  const fresh = (await news()).filter((n) => n.source in QUOTA && !seen.has(n.link) && (!n.date || n.date >= recent));
+  const candidates = Object.keys(QUOTA).flatMap((s) => fresh.filter((n) => n.source === s).slice(0, perSource));
   if (candidates.length === 0) return { added: 0, costJpy: 0, skipped: false };
 
   const { result, usage } = await model.complete<DigestReply>(digestMessages(candidates), "info_digest", digestSchema);
   const byLink = new Map(candidates.map((c) => [c.link, c]));
   // Garde-fou : seulement des liens qui étaient vraiment parmi les candidats, sans doublon.
-  const picks = result.picks.filter((p, i, all) => byLink.has(p.link) && all.findIndex((q) => q.link === p.link) === i).slice(0, PER_DAY);
+  // Et pas plus que le quota de chaque source.
+  const taken: Record<string, number> = {};
+  const picks = result.picks.filter((p, i, all) => {
+    const source = byLink.get(p.link)?.source;
+    if (!source || all.findIndex((q) => q.link === p.link) !== i) return false;
+    taken[source] = (taken[source] ?? 0) + 1;
+    return taken[source] <= (QUOTA[source] ?? 0);
+  }).slice(0, PER_DAY);
   const at = now.toISOString();
   for (const [i, p] of picks.entries()) {
     const item = byLink.get(p.link)!;
@@ -125,7 +139,17 @@ export async function runDigest(store: DocStore, model: StructuredModel, now = n
       title: short(p.title, 160), summary: short(p.summary, 400), createdAt: at,
     });
   }
+  await forgetOld(store);
   return { added: picks.length, costJpy: costJpy(usage), skipped: false };
+}
+
+/** Garde les KEEP actualités les plus récentes (et seulement des sources suivies) ; efface les autres. */
+async function forgetOld(store: DocStore) {
+  const news = (await store.list<StoredPick>(containers.content, GLOBAL))
+    .filter((p) => p.kind === "news")
+    .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  const kept = news.filter((p) => p.source && p.source in QUOTA).slice(0, KEEP);
+  for (const p of news) if (!kept.includes(p)) await store.remove(containers.content, GLOBAL, p.id);
 }
 
 /**
@@ -135,15 +159,17 @@ export async function runDigest(store: DocStore, model: StructuredModel, now = n
  */
 export async function infoPage(store: DocStore, page: number, source?: string, articles = readArticles()) {
   const picks = (await store.list<StoredPick>(containers.content, GLOBAL))
-    .filter((p) => p.kind === "news" && (!source || p.source === source))
+    .filter((p) => p.kind === "news" && p.source && p.source in QUOTA && (!source || p.source === source))
     .map(({ userId: _u, createdAt: _c, ...card }) => card as InfoCard)
-    .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+    .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
+    .slice(0, KEEP);
   const pages = Math.max(1, Math.ceil(picks.length / PAGE_SIZE));
   const current = Math.min(Math.max(1, page), pages);
   return {
     items: picks.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE),
     page: current, pages, total: picks.length,
     sources: NEWS_SOURCES.map(({ id, name }) => ({ id, name })),
+    mhlw: MHLW_NEWS,
     articles: [...articles].sort((a, b) => b.date.localeCompare(a.date)),
   };
 }

@@ -25,7 +25,7 @@ function LinkList({ links }: { links: InfoLink[] }) {
 /**
  * Onglet « 情報 » : à gauche, en hauteur, les partenaires, les sites d'offres et les ressources
  * officielles. Au centre, « 最新の見出し » : 5 actualités choisies chaque matin, gardées jour après
- * jour (7 par page) ; dessous, les nouvelles du site (articles et interviews de Clean Work).
+ * jour (7 par page, 5 pages au plus) ; dessous, les nouvelles du site (articles et interviews de Clean Work).
  */
 export function InfoPage() {
   const auth = useAuth();
@@ -85,6 +85,12 @@ export function InfoPage() {
               </div>
             )}
           </div>
+          {ready?.mhlw && (
+            <p className="muted news-official">
+              {tr({ ja: "制度やルールの新着は", en: "For new rules and policies, see", fr: "Pour les nouvelles règles et lois, voir" })}{" "}
+              <a href={ready.mhlw} target="_blank" rel="noreferrer">{tr({ ja: "厚生労働省の新着情報", en: "the Ministry of Health, Labour and Welfare", fr: "le ministère japonais de la Santé et du Travail (厚生労働省)" })}</a>
+            </p>
+          )}
           {data === null && <Loader />}
           {data === "error" && <p className="muted">{tr({ ja: "読み込めませんでした", en: "Could not load", fr: "Chargement impossible" })}</p>}
           {ready && ready.items.length === 0 && <p className="muted">{tr({ ja: "まだありません", en: "Nothing yet", fr: "Rien pour l'instant" })}</p>}
@@ -114,7 +120,7 @@ export function InfoPage() {
           <h2>{tr({ ja: "Clean Work からのお知らせ", en: "News from Clean Work", fr: "Nouvelles de Clean Work" })}</h2>
           <div className="articles">
             {ready?.articles.map((a) => (
-              <article key={a.id} className="card article">
+              <article key={a.id} className={`card article${open === a.id ? " open" : ""}`}>
                 <p className="article-meta">
                   <span className="tag">{a.kind === "interview" ? tr({ ja: "インタビュー", en: "Interview", fr: "Interview" }) : tr({ ja: "記事", en: "Article", fr: "Article" })}</span>
                   {formatDay(a.date, lang, false)}
@@ -122,7 +128,10 @@ export function InfoPage() {
                 <h3>{tr(a.title)}</h3>
                 <p>{tr(a.summary)}</p>
                 {open === a.id ? (
-                  <div className="article-body" lang={a.lang}>{(a.body ?? "").split("\n\n").map((p, i) => <p key={i}>{p}</p>)}</div>
+                  <>
+                    <div className="article-body" lang={a.lang}>{(a.body ?? "").split("\n\n").map((p, i) => <p key={i}>{p}</p>)}</div>
+                    <button className="link" onClick={() => setOpen(null)}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>
+                  </>
                 ) : (
                   <button className="link" onClick={() => setOpen(a.id)}>
                     {tr({ ja: "続きを読む", en: "Read more", fr: "Lire la suite" })} <ArrowRightIcon size={14} />

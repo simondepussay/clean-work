@@ -9,6 +9,44 @@ type Kind = "resume" | "workHistory";
 type Era = "western" | "japanese";
 type Status = "idle" | "busy" | "done" | Extract<ResumeOutcome, { ok: false }>["error"];
 
+/**
+ * Les deux feuilles, au trait comme les icônes du site : 履歴書 (cadre photo, tableau des dates)
+ * et 職務経歴書 (titres et paragraphes). Celle qu'on prépare passe devant.
+ */
+function Sheets({ front }: { front: Kind }) {
+  const resume = (
+    <g className="sheet">
+      <rect x="0" y="0" width="96" height="128" rx="4" />
+      <text x="10" y="18">履歴書</text>
+      <path d="M10 28h44M10 38h44M10 48h44" />
+      <rect className="photo" x="62" y="12" width="24" height="32" rx="1.5" />
+      <path className="grid" d="M10 60h76M10 70h76M10 80h76M10 90h76M10 100h76M10 110h76M30 60v50" />
+    </g>
+  );
+  const history = (
+    <g className="sheet">
+      <rect x="0" y="0" width="96" height="128" rx="4" />
+      <text x="10" y="18">職務経歴書</text>
+      <path className="accent" d="M10 30h30" />
+      <path d="M10 38h76M10 45h70M10 52h74" />
+      <path className="accent" d="M10 66h30" />
+      <path d="M10 74h76M10 81h66M10 88h72M10 95h60" />
+      <path className="accent" d="M10 108h22" />
+      <path d="M10 116h56" />
+    </g>
+  );
+  return (
+    <svg className="resume-sheets" viewBox="0 0 150 150" aria-hidden="true">
+      <g transform={`translate(${front === "resume" ? 44 : 8} 6) rotate(${front === "resume" ? 5 : -5} 48 64)`} className="behind">
+        {front === "resume" ? history : resume}
+      </g>
+      <g transform={`translate(${front === "resume" ? 10 : 42} 14) rotate(${front === "resume" ? -3 : 3} 48 64)`}>
+        {front === "resume" ? resume : history}
+      </g>
+    </svg>
+  );
+}
+
 /** 履歴書 (S11) et 職務経歴書 (S12) en PDF, à partir du profil enregistré. */
 export function ResumePanel() {
   const auth = useAuth();
@@ -86,11 +124,27 @@ export function ResumePanel() {
           </select>
         </label>
       </div>
+      <div className="resume-intro">
+        <Sheets front={kind} />
+        <div>
       <p className="muted">
         {kind === "resume"
           ? tr({ ja: "厚生労働省の様式で作成します。", en: "Created in the Ministry of Health, Labour and Welfare format.", fr: "Au format du ministère japonais de la Santé et du Travail." })
           : tr({ ja: "職歴（アルバイト・インターン含む）を時系列でまとめます。", en: "Your work experience (part-time jobs and internships included), in chronological order.", fr: "Votre expérience (petits boulots et stages compris), par ordre chronologique." })}
       </p>
+          <details className="hint">
+            <summary aria-label={tr({ ja: "どこから情報を取るの？", en: "Where does the information come from?", fr: "D'où viennent les informations ?" })}>?</summary>
+            <p>
+              {tr({
+                ja: "氏名・連絡先・学歴・職歴・資格・語学は、プロフィールに保存した内容がそのまま入ります。ここで書くのは、この書類だけの欄です。直したいときはプロフィールを更新してください。",
+                en: "Your name, contact details, education, work, certifications and languages come straight from your saved profile. Here you only write the parts specific to this document. To change the rest, update your profile.",
+                fr: "Le nom, les coordonnées, les études, les expériences, les certifications et les langues sont repris de ton profil enregistré. Ici, tu n'écris que les cases propres à ce document. Pour changer le reste, modifie ton profil.",
+              })}
+              {kind === "resume" && (tr.lang === "ja" ? "" : " ") + tr({ ja: "写真の枠は空けてあるので、印刷して貼ってください。", en: "The photo box is left empty: print and paste your photo.", fr: "Le cadre photo reste vide : imprime et colle ta photo." })}
+            </p>
+          </details>
+        </div>
+      </div>
 
       {kind === "resume" ? (
         <>

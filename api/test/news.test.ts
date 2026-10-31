@@ -34,12 +34,13 @@ describe("actualités (RSS)", () => {
     let calls = 0;
     const fetcher = async (url: string) => {
       calls++;
-      if (url === NEWS_SOURCES[0].url) return rdf;
-      if (url === NEWS_SOURCES[3].url) return rss2;
+      if (url === NEWS_SOURCES[1].url) return rdf;
+      if (url === NEWS_SOURCES[2].url) return rss2;
       throw new Error("panne");
     };
     const items = await latestNews(fetcher, 0);
-    expect(items.map((i) => i.source)).toEqual(["mhlw", "japantimes"]);
+    expect(items.map((i) => i.source)).toEqual(["jetro", "japantimes"]);
+    expect(NEWS_SOURCES.map((s) => s.id), "le 厚生労働省 n'est plus qu'un lien").toEqual(["nhk", "jetro", "japantimes"]);
     await latestNews(fetcher, 10 * 60 * 1000);
     expect(calls, "relu au plus toutes les 30 minutes").toBe(NEWS_SOURCES.length);
     await latestNews(fetcher, 31 * 60 * 1000);

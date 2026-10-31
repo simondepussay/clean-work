@@ -176,6 +176,23 @@ ins { background: color-mix(in srgb, var(--blue-700) 25%, transparent); text-dec
 del { background: color-mix(in srgb, var(--bordeaux) 25%, transparent); }
 .resume { margin-top: 8px; }
 .resume h2 { font-size: 22px; margin: 0 0 4px; }
+.resume-intro { display: flex; gap: 16px; align-items: center; margin: 4px 0 8px; }
+.resume-intro .muted { margin: 0; }
+.resume-sheets { width: 140px; flex: none; }
+.resume-sheets .sheet rect { fill: var(--white); stroke: var(--blue-700); stroke-width: 1.6; }
+.resume-sheets .sheet path { fill: none; stroke: var(--blue-300); stroke-width: 1.6; stroke-linecap: round; }
+.resume-sheets .sheet path.grid { stroke: var(--line); stroke-width: 1.2; }
+.resume-sheets .sheet path.accent { stroke: var(--bordeaux); }
+.resume-sheets .sheet rect.photo { fill: var(--blue-50); stroke: var(--blue-300); stroke-dasharray: 3 2; stroke-width: 1.2; }
+.resume-sheets .sheet text { font-size: 9px; font-weight: 700; fill: var(--blue-800); }
+.resume-sheets .behind { opacity: .55; }
+.resume-sheets g { transition: transform .25s ease; }
+.hint { position: relative; display: inline-block; margin-top: 4px; }
+.hint summary { list-style: none; cursor: pointer; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--blue-300); color: var(--blue-700); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+.hint summary::-webkit-details-marker { display: none; }
+.hint[open] summary { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
+.hint p { margin: 8px 0 0; padding: 10px 14px; max-width: 520px; background: var(--blue-50); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; line-height: 1.6; }
+@media (max-width: 560px) { .resume-sheets { width: 80px; } }
 .apps { margin-top: 24px; }
 .apps-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .apps-search { display: flex; flex-direction: row; margin: 0; align-items: center; gap: 6px; flex: 1 1 220px; max-width: 340px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--muted); }
@@ -459,6 +476,9 @@ button .icon { vertical-align: -3px; }
 .article-meta { margin: 0; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
 .article-meta .tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--bordeaux-50); color: var(--bordeaux); }
 .article-body p { white-space: pre-wrap; }
+/* Ouverte, l'actualité prend toute la largeur de la grille et se lit de haut en bas. */
+.article.open { grid-column: 1 / -1; }
+.news-official { margin: 0 0 10px; font-size: 13px; }
 .news-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .news-head h2 { margin: 0; }
 .chips-filter { display: flex; gap: 6px; flex-wrap: wrap; }
