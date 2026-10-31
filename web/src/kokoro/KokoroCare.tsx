@@ -30,7 +30,6 @@ export function Cheers({ cheers, tr, onOpen, onBreathe, onValues }: {
   const t = (x: T3) => tr(x);
   return (
     <section className="kokoro-block cheers" aria-label={tr({ ja: "今日のあなたへ", en: "For you today", fr: "Pour vous aujourd'hui" })}>
-      <h3>{tr({ ja: "今日のあなたへ", en: "For you today", fr: "Pour vous aujourd'hui" })}</h3>
       {cards.length > 0 && (
         <ul className="cheer-cards">
           {cards.map((c) => (
