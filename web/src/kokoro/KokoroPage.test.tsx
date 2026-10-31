@@ -132,11 +132,13 @@ describe("KokoroPage (こころ)", () => {
     const past = await within(journal).findByRole("button", { name: /面接で緊張した/ });
     await userEvent.click(past);
     expect(past).toHaveAttribute("aria-expanded", "true");
-    await userEvent.type(within(journal).getByLabelText("今日の日記"), "少し落ち着いた");
+    // Un retour à la ligne final (que le serveur retire) ne doit pas empêcher la confirmation.
+    await userEvent.type(within(journal).getByLabelText("今日の日記"), "少し落ち着いた{enter}");
     await userEvent.click(within(journal).getByRole("button", { name: "保存" }));
-    expect(await within(journal).findByText("保存しました")).toBeInTheDocument();
+    expect(await within(journal).findByRole("button", { name: /保存しました/ })).toBeDisabled();
+    expect(within(journal).getByRole("status")).toHaveTextContent(/\d{2}:\d{2}に保存/);
     const put = fetchMock.mock.calls.find(([url, init]) => url === "/api/kokoro/journal" && init?.method === "PUT")!;
-    expect(JSON.parse(put[1]!.body as string)).toEqual({ date: today, text: "少し落ち着いた" });
+    expect(JSON.parse(put[1]!.body as string)).toEqual({ date: today, text: "少し落ち着いた\n" });
     expect(screen.queryByText(/大切にしていること/)).not.toBeInTheDocument();
   });
 

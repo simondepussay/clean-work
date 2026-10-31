@@ -749,6 +749,12 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
   background-image: repeating-linear-gradient(transparent 0 27px, var(--k-sand) 27px 28px); background-attachment: local; }
 .journal-page textarea:focus { outline: none; }
 .journal-page:focus-within { border-color: var(--blue-300); }
+.journal-actions .primary { display: inline-flex; align-items: center; gap: 6px; transition: background .25s, color .25s; }
+/* Enregistré : le bouton devient une coche verte, le temps de le voir. */
+.journal-actions .primary.done, .journal-actions .primary.done:disabled { background: #e4f1e8; border-color: #e4f1e8; color: #2f7a4b; opacity: 1; animation: saved-pop .35s ease; }
+@keyframes saved-pop { 40% { transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .journal-actions .primary.done { animation: none; } }
+.journal-error { color: var(--bordeaux); }
 .journal-date { font-size: 12px; color: var(--muted); font-family: var(--k-mincho); }
 .journal-past { list-style: none; margin: 14px 0 6px; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--k-sand); }
 .journal-entry { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 10px 2px; border-bottom: 1px solid var(--k-sand); }
