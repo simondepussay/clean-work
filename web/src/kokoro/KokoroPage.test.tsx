@@ -98,16 +98,16 @@ describe("KokoroPage (こころ)", () => {
     expect(within(box).getByRole("link", { name: /こころもメンテしよう/ })).toBeInTheDocument();
   });
 
-  it("le rituel est dédié au prochain entretien, et relit les valeurs de l'utilisateur", async () => {
-    server(kokoro({ values: ["家族を安心させたい"] }), [
+  it("« ひと休み » : dédiée au prochain entretien ; respirer, puis le trac ; la source en bas", async () => {
+    server(kokoro(), [
       { id: "a1", company: "ソニー", status: "interview1", steps: [{ id: "s1", type: "interview1", dueDate: tomorrow, done: false }], nextDeadline: null, createdAt: "", updatedAt: "" },
     ]);
     renderPage();
     expect(await screen.findByText(/、ソニーの面接の前に/)).toBeInTheDocument();
+    expect(screen.getByText("ひと休みしましょう")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "はじめる" }));
-    const ritual = screen.getByRole("dialog", { name: "面接前の3分" });
-    await userEvent.click(within(ritual).getByRole("button", { name: "次へ" }));
-    expect(within(ritual).getByText("家族を安心させたい")).toBeInTheDocument();
+    const ritual = screen.getByRole("dialog", { name: "ひと休みしましょう" });
+    expect(within(ritual).getByRole("link", { name: /出典 : こころの耳/ })).toBeInTheDocument();
     await userEvent.click(within(ritual).getByRole("button", { name: "次へ" }));
     expect(within(ritual).getByText(/ワクワクしてる/)).toBeInTheDocument();
     await userEvent.click(within(ritual).getByRole("button", { name: "終わる" }));
@@ -127,14 +127,27 @@ describe("KokoroPage (こころ)", () => {
     expect(document.documentElement.dataset.mood).toBeUndefined();
   });
 
-  it("écrit ses valeurs (3 lignes au plus)", async () => {
+  it("日記 : écrit la page du jour, relit les précédentes", async () => {
     const fetchMock = server(kokoro());
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === "/api/kokoro/journal" && (!init?.method || init.method === "GET")) {
+        return { ok: true, status: 200, json: async () => ({ entries: [{ date: "2026-10-01", text: "面接で緊張した\nでも話せた", updatedAt: "" }] }) };
+      }
+      if (url === "/api/kokoro/journal") return { ok: true, status: 200, json: async () => ({ entry: { date: today, text: "少し落ち着いた", updatedAt: "" } }) };
+      return base(url, init);
+    });
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: "書く" }));
-    await userEvent.type(screen.getByLabelText("大切なこと 1"), "誠実でいること");
-    await userEvent.click(screen.getByRole("button", { name: "保存" }));
-    const put = fetchMock.mock.calls.find(([url]) => url === "/api/kokoro/values")!;
-    expect(JSON.parse(put[1]!.body as string)).toEqual({ values: ["誠実でいること", "", ""] });
+    const journal = await screen.findByRole("region", { name: "日記" });
+    const past = await within(journal).findByRole("button", { name: /面接で緊張した/ });
+    await userEvent.click(past);
+    expect(past).toHaveAttribute("aria-expanded", "true");
+    await userEvent.type(within(journal).getByLabelText("今日の日記"), "少し落ち着いた");
+    await userEvent.click(within(journal).getByRole("button", { name: "保存" }));
+    expect(await within(journal).findByText("保存しました")).toBeInTheDocument();
+    const put = fetchMock.mock.calls.find(([url, init]) => url === "/api/kokoro/journal" && init?.method === "PUT")!;
+    expect(JSON.parse(put[1]!.body as string)).toEqual({ date: today, text: "少し落ち着いた" });
+    expect(screen.queryByText(/大切にしていること/)).not.toBeInTheDocument();
   });
 
   it("efface tout après confirmation", async () => {
@@ -226,7 +239,10 @@ describe("KokoroPage : liens avec le reste de l'app", () => {
     renderPage();
     const box = await screen.findByRole("region", { name: "通知" });
     expect(within(box).getByText("iPhone 1台とつながっています")).toBeInTheDocument();
-    await userEvent.click(within(box).getByRole("radio", { name: "週に1回" }));
+    const rhythm = screen.getByRole("radiogroup", { name: "はげましの通知" });
+    expect(within(rhythm).getAllByRole("radio")).toHaveLength(3);
+    expect(within(rhythm).getByRole("radio", { name: "毎日" })).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(within(rhythm).getByRole("radio", { name: "週に1回" }));
     const put = fetchMock.mock.calls.find(([url]) => url === "/api/kokoro/settings")!;
     expect(JSON.parse(put[1]!.body as string)).toEqual({ cheerFrequency: "weekly" });
     await userEvent.click(within(box).getByRole("button", { name: "テスト通知を送る" }));

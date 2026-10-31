@@ -363,6 +363,13 @@ export const setMood = (token: string, mood: { date: string; weather: MoodWeathe
   call<null>(token, "PUT", "/api/kokoro/mood", mood, f);
 export const setValues = (token: string, values: string[], f?: typeof fetch) =>
   call<{ values: string[] }>(token, "PUT", "/api/kokoro/values", { values }, f);
+/** 日記 : une page par jour, jamais envoyée à l'IA ; lue seulement quand on l'ouvre (pas dans la copie de l'appareil). */
+export type JournalEntry = { date: string; text: string; updatedAt: string };
+export const getJournal = (token: string, f?: typeof fetch) =>
+  call<{ entries: JournalEntry[] }>(token, "GET", "/api/kokoro/journal", undefined, f);
+/** Texte vide : la page du jour est effacée. */
+export const writeJournal = (token: string, date: string, text: string, f?: typeof fetch) =>
+  call<{ entry: JournalEntry | null }>(token, "PUT", "/api/kokoro/journal", { date, text }, f);
 export const eraseKokoro = (token: string, f?: typeof fetch) => call<null>(token, "DELETE", "/api/kokoro", undefined, f);
 export const setCharms = (token: string, charms: Charm[], f?: typeof fetch) =>
   call<{ charms: Charm[] }>(token, "PUT", "/api/kokoro/charms", { charms }, f);

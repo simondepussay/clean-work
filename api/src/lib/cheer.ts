@@ -88,7 +88,7 @@ export type CheerInput = {
 };
 
 export function cheersFor(input: CheerInput): Cheer[] {
-  const { apps, drafts, interviews, moods, values, today, now } = input;
+  const { apps, drafts, interviews, moods, today, now } = input;
   const since = (iso?: string, hours = 24) => !!iso && now.getTime() - Date.parse(iso) <= hours * 3_600_000;
   const out: Cheer[] = [];
 
@@ -203,18 +203,20 @@ export function cheersFor(input: CheerInput): Cheer[] {
     }
   }
   const interviewThisWeek = open.some((a) => a.steps.some((s) => INTERVIEWS.has(s.type) && !s.done && s.dueDate && s.dueDate >= today && s.dueDate <= shift(today, 7)));
-  if (interviewThisWeek && values.length === 0) {
+  // Avant un entretien : quelques lignes dans le journal (écrire ce qu'on ressent aide à le poser).
+  if (interviewThisWeek) {
     out.push({
-      id: `nudge-values-${today}`, kind: "nudge",
-      title: { ja: "大切にしていることを3行で", en: "Three lines on what matters to you", fr: "Trois lignes sur ce qui compte" },
+      id: `nudge-journal-${today}`, kind: "nudge",
+      title: { ja: "面接の前に、日記を少しだけ", en: "A few lines in your journal", fr: "Quelques lignes dans ton journal" },
       body: {
-        ja: "面接の前に読み返す、自分のための言葉。こころタブで書けます。",
-        en: "Words for yourself, to reread before your interview. Write them in the Mind tab.",
-        fr: "Des mots pour vous, à relire avant l'entretien. À écrire dans l'onglet こころ.",
+        ja: "今の気持ちを書き出すと、頭が少し軽くなります。こころタブの日記はあなただけのものです。",
+        en: "Writing down how you feel lightens your mind. The journal in the Mind tab is yours only.",
+        fr: "Écrire ce que l'on ressent allège l'esprit. Le journal de l'onglet こころ n'appartient qu'à toi.",
       },
       action: { tab: "kokoro" },
     });
   }
+
 
   // Le mot du jour.
   const last = [...moods].filter((m) => m.date <= today).sort((a, b) => b.date.localeCompare(a.date))[0];

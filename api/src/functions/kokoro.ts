@@ -14,6 +14,8 @@ export const TEST_PUSH_PER_DAY = 3;
  *   GET    /api/kokoro?today=YYYY-MM-DD   humeurs, valeurs, palier de soutien, encouragements, phrases, réglages, iPhone reliés
  *   PUT    /api/kokoro/mood               { date, weather: "sunny"|"cloudy"|"rainy"|null, word? } → 204
  *   PUT    /api/kokoro/values             { values: string[] (3 max) } → { values }
+ *   GET    /api/kokoro/journal            les pages du journal intime, la plus récente d'abord → { entries }
+ *   PUT    /api/kokoro/journal            { date, text } (texte vide : efface la page) → { entry }
  *   PUT    /api/kokoro/charms             { charms: { text, when: "eve"|"morning"|"hour"|"tenmin" }[] (6 max) } → { charms }
  *   PUT    /api/kokoro/settings           { cheerFrequency: "daily"|"every2"|"weekly"|"off" } → { cheerFrequency }
  *   POST   /api/kokoro/test-push          envoie une notification d'essai aux iPhone du compte → { sent }
@@ -39,6 +41,8 @@ export function kokoroHandler(deps: { verifier?: () => IdentityVerifier | null; 
       return { status: 204 };
     }
     if (part === "values" && req.method === "PUT") return { jsonBody: { values: await kokoro.setValues(user.userId, await body()) } };
+    if (part === "journal" && req.method === "GET") return { jsonBody: { entries: await kokoro.journal(user.userId) } };
+    if (part === "journal" && req.method === "PUT") return { jsonBody: { entry: await kokoro.writeJournal(user.userId, await body()) } };
     if (part === "charms" && req.method === "PUT") return { jsonBody: { charms: await kokoro.setCharms(user.userId, await body()) } };
     if (part === "settings" && req.method === "PUT") return { jsonBody: await kokoro.setSettings(user.userId, await body()) };
     if (part === "test-push" && req.method === "POST") {

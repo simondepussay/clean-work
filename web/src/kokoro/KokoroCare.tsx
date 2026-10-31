@@ -8,7 +8,8 @@ import { formatDay, type T3, type Tr } from "../i18n";
  * Ce qui relie « こころ » au reste de l'app :
  *  - 今日のあなたへ : félicitations, réconfort, petites poussées vers 面接・書類・応募, mot du jour (api/src/lib/cheer.ts) ;
  *  - お守りの言葉 : des phrases à soi, reçues sur l'iPhone avant chaque entretien ;
- *  - 通知 : l'iPhone relié au compte, une notification d'essai, et le rythme des encouragements.
+ *  - はげましの通知 : le rythme des encouragements (trois petits points) ;
+ *  - 通知 : l'iPhone relié au compte et une notification d'essai.
  */
 
 export type CheerOpen = (action: NonNullable<Cheer["action"]>) => void;
@@ -17,12 +18,12 @@ const ACTION_LABEL: Record<NonNullable<Cheer["action"]>["tab"], T3> = {
   interview: { ja: "面接の練習へ", en: "Practice now", fr: "S'entraîner" },
   documents: { ja: "ESを書く", en: "Write the ES", fr: "Écrire l'ES" },
   apps: { ja: "応募を見る", en: "See applications", fr: "Voir les candidatures" },
-  kokoro: { ja: "書いてみる", en: "Write them", fr: "Les écrire" },
+  kokoro: { ja: "日記を書く", en: "Write in the journal", fr: "Écrire dans le journal" },
 };
 
 /** 今日のあなたへ : les cartes du jour, puis le mot du jour en citation. */
-export function Cheers({ cheers, tr, onOpen, onBreathe, onValues }: {
-  cheers: Cheer[]; tr: Tr; onOpen: CheerOpen; onBreathe: () => void; onValues: () => void;
+export function Cheers({ cheers, tr, onOpen, onBreathe, onJournal }: {
+  cheers: Cheer[]; tr: Tr; onOpen: CheerOpen; onBreathe: () => void; onJournal: () => void;
 }) {
   const cards = cheers.filter((c) => c.kind !== "word").slice(0, 3);
   const word = cheers.find((c) => c.kind === "word");
@@ -40,7 +41,7 @@ export function Cheers({ cheers, tr, onOpen, onBreathe, onValues }: {
               {c.action && c.kind !== "care" && c.action.tab !== "kokoro" && (
                 <button className="kokoro-soft-button" onClick={() => onOpen(c.action!)}>{tr(ACTION_LABEL[c.action.tab])} →</button>
               )}
-              {c.action?.tab === "kokoro" && c.kind === "nudge" && <button className="kokoro-soft-button" onClick={onValues}>{tr(ACTION_LABEL.kokoro)}</button>}
+              {c.action?.tab === "kokoro" && c.kind === "nudge" && <button className="kokoro-soft-button" onClick={onJournal}>{tr(ACTION_LABEL.kokoro)}</button>}
             </li>
           ))}
         </ul>
@@ -126,25 +127,45 @@ export function Charms({ initial, tr, hasDevice }: { initial: Charm[]; tr: Tr; h
   );
 }
 
-const FREQUENCIES: { id: CheerFrequency; label: T3 }[] = [
+/**
+ * はげましの通知 : le rythme des encouragements du matin, en trois petits points
+ * (chaque jour par défaut, tous les 2 jours, chaque semaine).
+ */
+const RHYTHMS: { id: Exclude<CheerFrequency, "off">; label: T3 }[] = [
   { id: "daily", label: { ja: "毎日", en: "Every day", fr: "Chaque jour" } },
   { id: "every2", label: { ja: "2日に1回", en: "Every 2 days", fr: "Tous les 2 jours" } },
-  { id: "weekly", label: { ja: "週に1回", en: "Once a week", fr: "Une fois par semaine" } },
-  { id: "off", label: { ja: "オフ", en: "Off", fr: "Désactivé" } },
+  { id: "weekly", label: { ja: "週に1回", en: "Once a week", fr: "Chaque semaine" } },
 ];
 
-/** 通知 : l'iPhone relié au compte, l'essai, le rythme. */
-export function Notifications({ data, tr, onOpenBeta }: { data: Kokoro; tr: Tr; onOpenBeta: () => void }) {
+export function CheerRhythm({ initial, tr }: { initial: CheerFrequency; tr: Tr }) {
   const auth = useAuth();
-  const [frequency, setFrequency] = useState<CheerFrequency>(data.cheerFrequency);
-  const [test, setTest] = useState<"idle" | "sending" | Awaited<ReturnType<typeof sendTestPush>>>("idle");
-  const linked = data.devices.count > 0;
-
+  const [frequency, setFrequency] = useState<CheerFrequency>(initial);
   async function choose(f: CheerFrequency) {
     setFrequency(f);
     const token = await auth.getToken();
     if (token) await setCheerFrequency(token, f).catch(() => null);
   }
+  return (
+    <section className="kokoro-block rhythm" aria-label={tr({ ja: "はげましの通知", en: "Encouragement", fr: "Encouragements" })}>
+      <p className="rhythm-title">{tr({ ja: "はげましの通知（朝8時）", en: "Encouragement (8 am)", fr: "Encouragements (8 h)" })}</p>
+      <div className="rhythm-dots" role="radiogroup" aria-label={tr({ ja: "はげましの通知", en: "Encouragement", fr: "Encouragements" })}>
+        {RHYTHMS.map((r) => (
+          <button key={r.id} role="radio" aria-checked={frequency === r.id} onClick={() => choose(r.id)}>
+            <i aria-hidden="true" />
+            <span>{tr(r.label)}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** 通知 : l'iPhone relié au compte, l'essai. */
+export function Notifications({ data, tr, onOpenBeta }: { data: Kokoro; tr: Tr; onOpenBeta: () => void }) {
+  const auth = useAuth();
+  const [test, setTest] = useState<"idle" | "sending" | Awaited<ReturnType<typeof sendTestPush>>>("idle");
+  const linked = data.devices.count > 0;
+
   async function tryPush() {
     const token = await auth.getToken();
     if (!token) return;
@@ -185,17 +206,6 @@ export function Notifications({ data, tr, onOpenBeta }: { data: Kokoro; tr: Tr; 
           failed: tr({ ja: "送れませんでした。iPhoneで通知が許可されているか確認してください。", en: "Could not send. Check that notifications are allowed on the iPhone.", fr: "Envoi impossible. Vérifiez que les notifications sont autorisées sur l'iPhone." }),
         }[test]}</p>
       )}
-      <p className="kokoro-sub notify-label">{tr({ ja: "はげましの通知（朝8時）", en: "Encouragement (8 am)", fr: "Encouragements (8 h)" })}</p>
-      <div className="word-chips" role="radiogroup" aria-label={tr({ ja: "はげましの通知", en: "Encouragement", fr: "Encouragements" })}>
-        {FREQUENCIES.map((f) => (
-          <button key={f.id} role="radio" aria-checked={frequency === f.id} aria-pressed={frequency === f.id} onClick={() => choose(f.id)}>{tr(f.label)}</button>
-        ))}
-      </div>
-      <p className="muted small">{tr({
-        ja: "締切のお知らせは別に届きます。不採用や内定の日のことばは、オフ以外ならいつでも届きます。",
-        en: "Deadline reminders arrive separately. Words on the day of a rejection or an offer arrive unless you choose Off.",
-        fr: "Les rappels d'échéance arrivent à part. Les mots d'un jour de refus ou d'offre arrivent sauf si vous choisissez « Désactivé ».",
-      })}</p>
     </section>
   );
 }

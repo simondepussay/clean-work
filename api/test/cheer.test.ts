@@ -61,13 +61,13 @@ describe("encouragements (cheer)", () => {
     expect(cheersFor(input({ apps: [sony], interviews: [practiced] })).some((x) => x.action?.tab === "interview")).toBe(false);
   });
 
-  it("une ES due bientôt sans brouillon, et des valeurs à écrire avant un entretien", () => {
+  it("une ES due bientôt sans brouillon, et le journal avant un entretien", () => {
     const c = cheersFor(input({ apps: [
       app({ company: "LINEヤフー", status: "es", steps: [{ id: "e", type: "es", dueDate: "2026-10-29", done: false }] }),
       app({ company: "メルカリ", status: "interview2", steps: [{ id: "i", type: "interview2", dueDate: "2026-11-03", done: false }] }),
     ] }));
     expect(c.find((x) => x.action?.tab === "documents")?.action).toEqual({ tab: "documents", applicationId: "LINEヤフー" });
-    expect(c.some((x) => x.id.startsWith("nudge-values"))).toBe(true);
+    expect(c.some((x) => x.id.startsWith("nudge-journal"))).toBe(true);
   });
 
   it("série de jours notés : 3, 7, 14, 30", () => {

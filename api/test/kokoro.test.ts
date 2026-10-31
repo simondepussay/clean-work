@@ -111,3 +111,26 @@ describe("/api/kokoro", () => {
     expect(await new Repository(store, () => NOW).scheduleDeletion("u1", 30)).toBe(1);
   });
 });
+
+describe("こころ — journal intime", () => {
+  it("une page par jour, la plus récente d'abord ; une page vide s'efface ; pas de page dans le futur", async () => {
+    const call = api();
+    expect((await call("u1", "PUT", "journal", { date: "2026-10-27", text: "面接が不安。\n\n" })).jsonBody).toMatchObject({ entry: { date: "2026-10-27", text: "面接が不安。" } });
+    await call("u1", "PUT", "journal", { date: "2026-10-28", text: "少し落ち着いた" });
+    await call("u1", "PUT", "journal", { date: "2026-10-28", text: "思ったより話せた" });
+    expect((await call("u1", "GET", "journal")).jsonBody).toMatchObject({ entries: [{ date: "2026-10-28", text: "思ったより話せた" }, { date: "2026-10-27" }] });
+    expect((await call("u2", "GET", "journal")).jsonBody, "chacun son journal").toEqual({ entries: [] });
+    await call("u1", "PUT", "journal", { date: "2026-10-27", text: "  " });
+    expect((await call("u1", "GET", "journal")).jsonBody).toMatchObject({ entries: [{ date: "2026-10-28" }] });
+    expect((await call("u1", "PUT", "journal", { date: "2026-11-05", text: "未来" })).status).toBe(400);
+    expect((await call("u1", "PUT", "journal", { date: "2026-10-28", text: "あ".repeat(4001) })).status).toBe(400);
+  });
+
+  it("n'apparaît pas dans /api/kokoro, et « tout effacer » efface aussi le journal", async () => {
+    const call = api();
+    await call("u1", "PUT", "journal", { date: "2026-10-28", text: "秘密" });
+    expect(JSON.stringify((await call("u1", "GET")).jsonBody)).not.toContain("秘密");
+    await call("u1", "DELETE");
+    expect((await call("u1", "GET", "journal")).jsonBody).toEqual({ entries: [] });
+  });
+});

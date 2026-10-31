@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { eraseKokoro, getKokoro, listApplications, setMood, setValues, type Application, type Kokoro, type MoodWeather } from "../api";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { eraseKokoro, getKokoro, listApplications, setMood, type Application, type Kokoro, type MoodWeather } from "../api";
 import { useAuth } from "../auth/auth";
 import { buildAgenda, ymd } from "../home/agenda";
 import { ChatIcon, CloseIcon, CloudIcon, GlobeIcon, HeartIcon, PhoneIcon, RainIcon, SunIcon } from "../icons";
 import { formatDay, useTr, type T3, type Tr } from "../i18n";
-import { Charms, Cheers, Notifications, type CheerOpen } from "./KokoroCare";
+import { Charms, CheerRhythm, Cheers, Notifications, type CheerOpen } from "./KokoroCare";
+import { Journal } from "./KokoroJournal";
 import { CloudCurtain, KokoroLoading, KokoroSky } from "./KokoroSky";
 import { useFreshData } from "../useFreshData";
 
@@ -42,7 +43,8 @@ const WORDS: T3[] = [
 ];
 
 type Source = { name: string; url: string; text: T3 };
-const SOURCES: Record<"labeling" | "breathing" | "values" | "excited" | "who" | "twoWeeks", Source> = {
+const PAUSE: T3 = { ja: "ひと休みしましょう", en: "Take a break", fr: "Faites une pause" };
+const SOURCES: Record<"labeling" | "breathing" | "journal" | "excited" | "who" | "twoWeeks", Source> = {
   labeling: {
     name: "Lieberman et al., Psychological Science (2007)", url: "https://doi.org/10.1111/j.1467-9280.2007.01916.x",
     text: { ja: "感情に名前をつけると、気持ちの反応がやわらぐ。", en: "Putting feelings into words dampens emotional reactions.", fr: "Mettre un mot sur une émotion en atténue la réaction." },
@@ -51,9 +53,9 @@ const SOURCES: Record<"labeling" | "breathing" | "values" | "excited" | "who" | 
     name: "こころの耳（厚生労働省）", url: "https://kokoro.mhlw.go.jp/fivemin/",
     text: { ja: "ゆっくりした呼吸はリラクセーションの基本。", en: "Slow breathing is a basic relaxation method.", fr: "La respiration lente est une méthode de relaxation de base." },
   },
-  values: {
-    name: "Creswell et al., Psychological Science (2005)", url: "https://doi.org/10.1111/j.1467-9280.2005.01624.x",
-    text: { ja: "大切な価値を思い出すと、ストレスへの反応が小さくなった。", en: "Recalling personal values lowered stress responses.", fr: "Se rappeler ses valeurs a réduit la réaction au stress." },
+  journal: {
+    name: "APA Monitor — Writing to heal (2002)", url: "https://www.apa.org/monitor/jun02/writing",
+    text: { ja: "気持ちを書き出すことで、心と体の調子がよくなるという研究。", en: "Research on how writing about feelings improves well-being.", fr: "Les recherches sur l'écriture de ses émotions et le bien-être." },
   },
   excited: {
     name: "Brooks, J. Exp. Psychology: General (2014)", url: "https://doi.org/10.1037/a0035325",
@@ -119,47 +121,34 @@ function Calm({ label, onClose, children }: { label: string; onClose: () => void
   );
 }
 
-/** « 面接前の3分 » : respirer → relire ce qui compte → requalifier le trac. */
-function Ritual({ values, company, onEditValues, onClose }: { values: string[]; company?: string; onEditValues: () => void; onClose: () => void }) {
+/** « ひと休み » : respirer une minute → requalifier le trac → bonne chance. */
+function Ritual({ company, onClose }: { company?: string; onClose: () => void }) {
   const tr = useTr();
   const [step, setStep] = useState(0);
   const next = () => setStep((s) => s + 1);
   return (
-    <Calm label={tr({ ja: "面接前の3分", en: "3 minutes before the interview", fr: "3 minutes avant l'entretien" })} onClose={onClose}>
+    <Calm label={tr(PAUSE)} onClose={onClose}>
       <ol className="ritual-steps" aria-hidden="true">
-        {[0, 1, 2].map((i) => <li key={i} className={i === step ? "current" : i < step ? "done" : ""} />)}
+        {[0, 1].map((i) => <li key={i} className={i === step ? "current" : i < step ? "done" : ""} />)}
       </ol>
       {step === 0 && (
         <>
           <h2>{tr({ ja: "まず、1分だけ呼吸を。", en: "First, one minute of breathing.", fr: "D'abord, une minute pour respirer." })}</h2>
           <Breathing onDone={next} />
-          <SourceLink source={SOURCES.breathing} tr={tr} />
           <button className="calm-skip" onClick={next}>{tr({ ja: "次へ", en: "Next", fr: "Suivant" })}</button>
+          <SourceLink source={SOURCES.breathing} tr={tr} />
         </>
       )}
       {step === 1 && (
         <>
-          <h2>{tr({ ja: "あなたが大切にしていること", en: "What matters to you", fr: "Ce qui compte pour vous" })}</h2>
-          {values.length > 0 ? (
-            <ul className="ritual-values">{values.map((v) => <li key={v}>{v}</li>)}</ul>
-          ) : (
-            <p>{tr({ ja: "まだ書かれていません。", en: "Nothing written yet.", fr: "Rien d'écrit pour l'instant." })} <button className="link" onClick={onEditValues}>{tr({ ja: "書く", en: "Write them", fr: "Les écrire" })}</button></p>
-          )}
-          <p className="calm-hint">{tr({ ja: "ゆっくり読んで、どうしてそれが大切か思い出してください。", en: "Read slowly and recall why each one matters.", fr: "Lisez lentement et rappelez-vous pourquoi chacune compte." })}</p>
-          <SourceLink source={SOURCES.values} tr={tr} />
-          <button className="calm-next" onClick={next}>{tr({ ja: "次へ", en: "Next", fr: "Suivant" })}</button>
-        </>
-      )}
-      {step === 2 && (
-        <>
           <h2>{tr({ ja: "ドキドキは、準備ができたしるし", en: "Nerves mean you are ready", fr: "Le trac, signe que vous êtes prêt" })}</h2>
           <p className="ritual-phrase">{tr({ ja: "「落ち着かなきゃ」ではなく、「ワクワクしてる」。", en: "Not “I must calm down” — “I am excited.”", fr: "Pas « je dois me calmer », mais « je suis enthousiaste »." })}</p>
           <p className="calm-hint">{tr({ ja: "声に出して一度だけ言ってみましょう。", en: "Say it out loud, once.", fr: "Dites-le une fois à voix haute." })}</p>
-          <SourceLink source={SOURCES.excited} tr={tr} />
           <button className="calm-next" onClick={next}>{tr({ ja: "終わる", en: "Finish", fr: "Terminer" })}</button>
+          <SourceLink source={SOURCES.excited} tr={tr} />
         </>
       )}
-      {step >= 3 && (
+      {step >= 2 && (
         <>
           <h2 className="ritual-end">{company ? tr({ ja: `${company}、いってらっしゃい。`, en: `Good luck at ${company}.`, fr: `Bonne chance chez ${company}.` }) : tr({ ja: "いってらっしゃい。", en: "Good luck.", fr: "Bonne chance." })}</h2>
           <button className="calm-next" onClick={onClose}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>
@@ -251,8 +240,6 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   const [apps, setApps] = useState<Application[]>([]);
   const [word, setWord] = useState("");
   const [mode, setMode] = useState<"none" | "breathe" | "ritual">("none");
-  const [editing, setEditing] = useState(false);
-  const [draftValues, setDraftValues] = useState(["", "", ""]);
   /** Rideau de nuages fermé pendant un chargement (au début, et quand la météo change). */
   const [veiled, setVeiled] = useState(true);
 
@@ -346,26 +333,18 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
     saveMood(todayMood.weather, newWord, before);
   }
 
-  async function saveValues(e: FormEvent) {
-    e.preventDefault();
-    if (!data) return;
-    const before = data.values;
-    const values = draftValues.map((v) => v.trim()).filter(Boolean);
-    setData({ ...data, values });
-    setEditing(false);
-    const token = await auth.getToken();
-    const res = token ? await setValues(token, draftValues).catch(() => null) : null;
-    if (res?.ok) { setSaveError(false); refresh(); }
-    else { setSaveError(true); setData((d) => d && { ...d, values: before }); }
-  }
-
   async function erase() {
-    if (!window.confirm(tr({ ja: "こころの記録（天気と大切なこと）をすべて消しますか？元に戻せません。", en: "Erase all your Mind records (weather and values)? This cannot be undone.", fr: "Effacer tout votre journal (météo et valeurs) ? C'est définitif." }))) return;
+    if (!window.confirm(tr({ ja: "こころの記録（天気と日記）をすべて消しますか？元に戻せません。", en: "Erase all your Mind records (weather and journal)? This cannot be undone.", fr: "Tout effacer (météo et journal intime) ? C'est définitif." }))) return;
     const token = await auth.getToken();
     if (token && (await eraseKokoro(token).catch(() => null))?.ok) await load();
   }
 
-  const editValues = () => { setDraftValues([...(data?.values ?? []), "", "", ""].slice(0, 3)); setEditing(true); };
+  // « 日記を書く » (encouragement du jour) : on descend jusqu'à la page du jour.
+  const goToJournal = () => {
+    const area = document.querySelector<HTMLTextAreaElement>(".journal textarea");
+    area?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    area?.focus({ preventScroll: true });
+  };
   const openCheer: CheerOpen = (action) => {
     if (action.tab === "kokoro") return;
     onOpen?.({ tab: action.tab, applicationId: action.applicationId, company: apps.find((a) => a.id === action.applicationId)?.company });
@@ -425,18 +404,20 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
 
       <Letter data={data} name={name} tr={tr} onBreathe={() => setMode("breathe")} />
 
-      <Cheers cheers={data.cheers} tr={tr} onOpen={openCheer} onBreathe={() => setMode("breathe")} onValues={editValues} />
+      <Cheers cheers={data.cheers} tr={tr} onOpen={openCheer} onBreathe={() => setMode("breathe")} onJournal={goToJournal} />
 
       <section className="kokoro-ritual">
         <div className="ritual-art" aria-hidden="true"><span /><span /><span /></div>
         <div className="ritual-text">
-          <p className="eyebrow">{tr({ ja: "面接前の3分", en: "3 minutes before the interview", fr: "3 minutes avant l'entretien" })}</p>
+          <p className="eyebrow">{tr(PAUSE)}</p>
           <h3>{nextInterview
             ? tr({ ja: `${formatDay(nextInterview.date, "ja")}、${nextInterview.title}の面接の前に`, en: `Before your interview at ${nextInterview.title}, ${formatDay(nextInterview.date, "en")}`, fr: `Avant votre entretien chez ${nextInterview.title}, ${formatDay(nextInterview.date, "fr")}` })
-            : tr({ ja: "呼吸して、大切なことを思い出して、ひとこと。", en: "Breathe, remember what matters, one sentence.", fr: "Respirer, se rappeler l'essentiel, une phrase." })}</h3>
+            : tr({ ja: "1分呼吸して、ひとこと。", en: "One minute of breathing, then one sentence.", fr: "Une minute pour respirer, puis une phrase." })}</h3>
         </div>
         <button className="primary" onClick={() => setMode("ritual")}>{tr({ ja: "はじめる", en: "Start", fr: "Commencer" })}</button>
       </section>
+
+      <CheerRhythm initial={data.cheerFrequency} tr={tr} />
 
       <section className="kokoro-block garden" aria-label={tr({ ja: "この4週間の天気", en: "The last 4 weeks", fr: "Les 4 dernières semaines" })}>
         <h3>{tr({ ja: "この4週間", en: "The last 4 weeks", fr: "Ces 4 semaines" })}</h3>
@@ -452,32 +433,7 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
         </p>
       </section>
 
-      <section className="kokoro-block values" aria-label={tr({ ja: "大切にしていること", en: "What matters to me", fr: "Ce qui compte pour moi" })}>
-        <h3>{tr({ ja: "大切にしていること", en: "What matters to me", fr: "Ce qui compte pour moi" })}</h3>
-        {editing ? (
-          <form onSubmit={saveValues} className="values-form">
-            {draftValues.map((v, i) => (
-              <input key={i} value={v} maxLength={60} onChange={(e) => setDraftValues(draftValues.map((x, j) => (j === i ? e.target.value : x)))}
-                aria-label={`${tr({ ja: "大切なこと", en: "Value", fr: "Valeur" })} ${i + 1}`}
-                placeholder={[tr({ ja: "例：家族を安心させたい", en: "e.g. Reassure my family", fr: "Ex. : rassurer ma famille" }), tr({ ja: "例：誠実でいること", en: "e.g. Stay honest", fr: "Ex. : rester honnête" }), ""][i]} />
-            ))}
-            <div className="actions">
-              <button type="submit" className="primary">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
-              <button type="button" onClick={() => setEditing(false)}>{tr({ ja: "やめる", en: "Cancel", fr: "Annuler" })}</button>
-            </div>
-          </form>
-        ) : data.values.length > 0 ? (
-          <>
-            <ul className="values-notes">{data.values.map((v) => <li key={v}>{v}</li>)}</ul>
-            <button className="link" onClick={editValues}>{tr({ ja: "書きなおす", en: "Edit", fr: "Modifier" })}</button>
-          </>
-        ) : (
-          <div className="values-empty">
-            <p>{tr({ ja: "面接の前に読み返す、自分のための3行。", en: "Three lines for yourself, to reread before interviews.", fr: "Trois lignes pour vous, à relire avant les entretiens." })}</p>
-            <button onClick={editValues}>{tr({ ja: "書く", en: "Write", fr: "Écrire" })}</button>
-          </div>
-        )}
-      </section>
+      <Journal today={today} tr={tr} source={<SourceLink source={SOURCES.journal} tr={tr} />} />
 
       <Charms initial={data.charms} tr={tr} hasDevice={data.devices.count > 0} />
 
@@ -506,8 +462,7 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
         </Calm>
       )}
       {mode === "ritual" && (
-        <Ritual values={data.values} company={nextInterview?.title} onClose={() => setMode("none")}
-          onEditValues={() => { setMode("none"); editValues(); }} />
+        <Ritual company={nextInterview?.title} onClose={() => setMode("none")} />
       )}
     </div>
   );

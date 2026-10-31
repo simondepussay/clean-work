@@ -51,6 +51,22 @@ export type Charm = z.infer<typeof charmsInputSchema>["charms"][number];
 
 export const settingsInputSchema = z.object({ cheerFrequency: z.enum(cheerFrequencies) });
 
+/**
+ * 日記 : le journal intime, une page par jour. Chaque page est un document à part (« journal-AAAA-MM-JJ ») :
+ * un journal tenu des années ne fait pas grossir le document « kokoro » (limite de 2 Mo par document).
+ * Il n'est jamais envoyé à l'IA, ni inclus dans /api/kokoro et /api/bootstrap (donc pas dans la copie
+ * gardée sur l'appareil) : on le lit seulement quand on l'ouvre.
+ */
+export const JOURNAL_MAX = 4000;
+export const journalInputSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, messages.date),
+  // Absent = vide (le web retire les champs vides) : la page est effacée.
+  text: z.string().max(JOURNAL_MAX, messages.tooLong(JOURNAL_MAX)).default(""),
+});
+export type JournalEntry = { date: string; text: string; updatedAt: string };
+type JournalDoc = JournalEntry & { id: string; userId: string };
+const JOURNAL_PREFIX = "journal-";
+
 export type Mood = { date: string; weather: MoodWeather; word?: string };
 export type KokoroDoc = {
   id: "kokoro"; userId: string; moods: Mood[]; values: string[];
@@ -166,8 +182,34 @@ export class KokoroService {
     return { cheerFrequency };
   }
 
-  /** Efface tout (humeurs, valeurs, phrases), tout de suite : rien à garder pour une restauration. */
-  erase(userId: string) {
+  /** Les pages du journal, la plus récente d'abord. */
+  async journal(userId: string): Promise<JournalEntry[]> {
+    return (await this.store.list<JournalDoc>(containers.profiles, userId))
+      .filter((d) => d.id.startsWith(JOURNAL_PREFIX))
+      .map(({ date, text, updatedAt }) => ({ date, text, updatedAt }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  /** Écrit la page d'un jour (une page vide l'efface). Pas de page dans le futur (un jour d'avance toléré : fuseau). */
+  async writeJournal(userId: string, input: unknown): Promise<JournalEntry | null> {
+    const { date, text } = journalInputSchema.parse(input);
+    if (date > shift(this.now().toISOString().slice(0, 10), 1)) {
+      throw new z.ZodError([{ code: "custom", path: ["date"], message: messages.date }]);
+    }
+    const id = `${JOURNAL_PREFIX}${date}`;
+    if (!text.trim()) {
+      await this.store.remove(containers.profiles, userId, id);
+      return null;
+    }
+    const entry = { date, text: text.replace(/\s+$/, ""), updatedAt: this.now().toISOString() };
+    await this.store.put<JournalDoc>(containers.profiles, { id, userId, ...entry });
+    return entry;
+  }
+
+  /** Efface tout (humeurs, valeurs, phrases, journal), tout de suite : rien à garder pour une restauration. */
+  async erase(userId: string) {
+    const pages = (await this.store.list<JournalDoc>(containers.profiles, userId)).filter((d) => d.id.startsWith(JOURNAL_PREFIX));
+    for (const p of pages) await this.store.remove(containers.profiles, userId, p.id);
     return this.store.remove(containers.profiles, userId, DOC_ID);
   }
 }
