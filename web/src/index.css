@@ -351,6 +351,23 @@ button.link:hover { color: var(--bordeaux); background: none; }
 .calendar { padding: 18px 20px 20px; }
 .calendar-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
 .calendar-bar h2 { margin: 0; font-size: 24px; display: flex; align-items: center; gap: 8px; }
+/* En-tête du mois : grand chiffre en bordeaux, nom du mois et année empilés, un trait fin entre les deux. */
+.month-title { gap: 12px !important; }
+.mt-num { font-size: 46px; line-height: .9; font-weight: 800; color: var(--bordeaux); font-variant-numeric: tabular-nums; letter-spacing: -.03em;
+  padding-right: 12px; border-right: 1px solid var(--line); min-width: 1.3em; text-align: right; }
+.mt-text { display: flex; flex-direction: column; line-height: 1.1; }
+.mt-text b { font-size: 20px; color: var(--blue-800); }
+.mt-text small { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .14em; margin-top: 3px; }
+/* ‹ 今日 › : une seule pastille segmentée au lieu de trois boutons séparés. */
+.month-nav { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 999px; background: var(--blue-50); overflow: hidden; }
+.month-nav button { border: 0; border-radius: 0; background: transparent; padding: 6px 12px; font-size: 13px; }
+.month-nav .icon-button { padding: 6px 10px; }
+.month-nav button + button { border-left: 1px solid var(--line); }
+.month-nav button:hover { background: var(--white); }
+/* « Ajouter au calendrier » : action secondaire, en lien discret plutôt qu'en gros bouton. */
+.calendar-bar .calendar-menu > button { border: 0; background: none; padding: 6px 4px; font-size: 13px; color: var(--blue-700);
+  text-decoration: underline; text-decoration-color: var(--blue-300); text-underline-offset: 4px; }
+.calendar-bar .calendar-menu > button:hover { text-decoration-color: currentColor; }
 .legend { list-style: none; display: flex; gap: 14px; margin: 0 0 0 auto; padding: 0; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
 .legend li { display: flex; align-items: center; gap: 5px; }
 .icon-button { padding: 6px; border-radius: 50%; display: inline-grid; place-items: center; }

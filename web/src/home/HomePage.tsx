@@ -31,6 +31,14 @@ function monthTitle(y: number, m: number, lang: Lang) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+/** Le mois seul, pour l'en-tête : en japonais, son nom traditionnel (神無月…), le chiffre est déjà à côté. */
+const WAFU = ["睦月", "如月", "弥生", "卯月", "皐月", "水無月", "文月", "葉月", "長月", "神無月", "霜月", "師走"];
+function monthName(y: number, m: number, lang: Lang) {
+  if (lang === "ja") return WAFU[m];
+  const name = new Date(y, m, 1).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { month: "long" });
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 function Chip({ item, tr }: { item: AgendaItem; tr: Tr }) {
   return (
     <span className={`chip ${item.kind}${item.done ? " done" : ""}`} title={`${tr(KIND_LABEL[item.kind])} · ${item.title}${item.detail ? ` ${item.detail}` : ""}`}>
@@ -248,8 +256,14 @@ export function HomePage({ name, onOpenApps, onPractice }: {
 
       <section className="calendar card" aria-label={tr({ ja: "カレンダー", en: "Calendar", fr: "Calendrier" })}>
         <div className="calendar-bar">
-          <h2><CalendarIcon size={22} /> {monthTitle(month.y, month.m, lang)}</h2>
-          <div className="actions">
+          <h2 className="month-title" aria-label={monthTitle(month.y, month.m, lang)}>
+            <span className="mt-num" aria-hidden="true">{month.m + 1}</span>
+            <span className="mt-text" aria-hidden="true">
+              <b>{monthName(month.y, month.m, lang)}</b>
+              <small>{lang === "ja" ? `${month.y}年` : month.y}</small>
+            </span>
+          </h2>
+          <div className="month-nav">
             <button className="icon-button" onClick={() => shift(-1)} aria-label={tr({ ja: "前の月", en: "Previous month", fr: "Mois précédent" })}><ChevronLeftIcon /></button>
             <button onClick={goToday}>{tr({ ja: "今日", en: "Today", fr: "Aujourd'hui" })}</button>
             <button className="icon-button" onClick={() => shift(1)} aria-label={tr({ ja: "次の月", en: "Next month", fr: "Mois suivant" })}><ChevronRightIcon /></button>
