@@ -6,7 +6,7 @@ const pick = (lang: Lang, t: { ja: string; en: string; fr: string }) => t[lang];
 /** Encadré « ES とは ? » : ce qu'est une ES et les 4 étapes. */
 export function Intro({ guide, lang }: { guide: Guide; lang: Lang }) {
   return (
-    <details className="intro" open>
+    <details className="intro">
       <summary>{pick(lang, { ja: "ESとは？", en: "What is an ES?", fr: "Qu'est-ce qu'une ES ?" })}</summary>
       <p>{guide.intro[lang]}</p>
       <ol>{guide.steps.map((s) => <li key={s.ja}>{s[lang]}</li>)}</ol>
