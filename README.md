@@ -10,7 +10,6 @@
 **Sprint 1 en cours** (développement commencé le 16 octobre 2026). Objectif : MVP publiée avant le 31 mars 2027, date où ouvrent les candidatures aux stages d'été.
 
 - Site : https://cleanwork.simondepussay.com (adresse d’origine d’Azure, toujours active : https://blue-rock-008b52800.2.azurestaticapps.net)
-- Journal de développement (JA / EN) : `docs/journal.html`
 
 ## Contenu
 
@@ -23,8 +22,6 @@ infra/identity.mjs        ← annuaire External ID (apps, parcours, app de suppr
 infra/settings.mjs        ← réglages de l'API, ajoutés sans écraser le secret
 infra/restore-account.mjs ← corbeille (--list) et restauration d'un compte supprimé depuis moins de 30 jours
 .github/workflows/        ← tests, déploiement, vérification de la version en ligne
-journal/day-NN.md         ← journal de chaque journée de travail (japonais + anglais dans le même fichier)
-tools/build_journal.py    ← génère docs/journal.html (bouton 日本語 / English)
 tools/otf2ttf.py          ← convertit la police du 履歴書 en TrueType (voir api/assets/fonts/README.md)
 web/public/privacy.html   ← politique de confidentialité et conditions d'utilisation (terms.html), JA + EN
 planning/plan.json        ← source unique : stories, points, dépendances
@@ -59,13 +56,12 @@ node infra/settings.mjs                                                # réglag
 
 L'annuaire External ID (`shukatsupilot`) est dans un autre tenant : `node infra/identity.mjs <tenant>` s'exécute connecté à ce tenant.
 
-## Régénérer le plan et le journal
+## Régénérer le plan
 
 Après avoir modifié `planning/plan.json` (une story, des points, une dépendance) :
 
 ```bash
 python3 tools/build_plan.py
-python3 tools/build_journal.py
 ```
 
 ## Comment l'estimation est construite
