@@ -4,7 +4,7 @@ import { useAuth } from "../auth/auth";
 import { buildAgenda, ymd } from "../home/agenda";
 import { ChatIcon, CloseIcon, CloudIcon, GlobeIcon, HeartIcon, PhoneIcon, RainIcon, SunIcon } from "../icons";
 import { formatDay, useTr, type T3, type Tr } from "../i18n";
-import { Charms, CheerRhythm, Cheers, Notifications, type CheerOpen } from "./KokoroCare";
+import { Charms, CheerRhythm, Cheers, type CheerOpen } from "./KokoroCare";
 import { Journal } from "./KokoroJournal";
 import { CloudCurtain, KokoroLoading, KokoroSky } from "./KokoroSky";
 import { useFreshData } from "../useFreshData";
@@ -436,8 +436,6 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
       <Journal today={today} tr={tr} source={<SourceLink source={SOURCES.journal} tr={tr} />} />
 
       <Charms initial={data.charms} tr={tr} hasDevice={data.devices.count > 0} />
-
-      <Notifications data={data} tr={tr} onOpenBeta={() => onOpen?.({ tab: "beta" })} />
 
       <Helplines data={data} tr={tr} />
 

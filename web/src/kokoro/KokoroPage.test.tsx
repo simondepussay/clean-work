@@ -234,30 +234,19 @@ describe("KokoroPage : liens avec le reste de l'app", () => {
     expect(await within(box).findByText(/iPhoneアプリにサインインすると届きます/)).toBeInTheDocument();
   });
 
-  it("通知 : sans iPhone, explique comment le relier ; avec, propose un essai et le rythme", async () => {
-    const fetchMock = server(kokoro({ devices: { count: 1, lastSeen: "2026-10-20T00:00:00Z" } }));
+  it("はげましの通知 : un petit bouton ouvre le choix du rythme ; plus de section « 通知 »", async () => {
+    const fetchMock = server(kokoro());
     renderPage();
-    const box = await screen.findByRole("region", { name: "通知" });
-    expect(within(box).getByText("iPhone 1台とつながっています")).toBeInTheDocument();
+    const toggle = await screen.findByRole("button", { name: /はげましの通知/ });
+    expect(screen.queryByRole("region", { name: "通知" })).not.toBeInTheDocument();
+    await userEvent.click(toggle);
     const rhythm = screen.getByRole("radiogroup", { name: "はげましの通知" });
-    expect(within(rhythm).getAllByRole("radio")).toHaveLength(3);
+    expect(within(rhythm).getAllByRole("radio")).toHaveLength(4);
     expect(within(rhythm).getByRole("radio", { name: "毎日" })).toHaveAttribute("aria-checked", "true");
     await userEvent.click(within(rhythm).getByRole("radio", { name: "週に1回" }));
     const put = fetchMock.mock.calls.find(([url]) => url === "/api/kokoro/settings")!;
     expect(JSON.parse(put[1]!.body as string)).toEqual({ cheerFrequency: "weekly" });
-    await userEvent.click(within(box).getByRole("button", { name: "テスト通知を送る" }));
-    expect(fetchMock.mock.calls.some(([url, init]) => url === "/api/kokoro/test-push" && init?.method === "POST")).toBe(true);
-    expect(await within(box).findByText("送りました。iPhoneを見てみてください。")).toBeInTheDocument();
-  });
-
-  it("通知 : aucun iPhone relié → lien vers l'app iPhone (bêta)", async () => {
-    server(kokoro());
-    const onOpen = vi.fn();
-    renderPage(onOpen);
-    const box = await screen.findByRole("region", { name: "通知" });
-    expect(within(box).getByText("まだiPhoneがつながっていません")).toBeInTheDocument();
-    await userEvent.click(within(box).getByRole("button", { name: /iPhoneアプリ/ }));
-    expect(onOpen).toHaveBeenCalledWith({ tab: "beta" });
+    expect(screen.getByRole("button", { name: /週に1回/ })).toBeInTheDocument();
   });
 });
 

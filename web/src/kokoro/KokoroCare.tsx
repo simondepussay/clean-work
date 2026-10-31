@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { sendTestPush, setCharms, setCheerFrequency, type Charm, type CharmTiming, type Cheer, type CheerFrequency, type Kokoro } from "../api";
+import { setCharms, setCheerFrequency, type Charm, type CharmTiming, type Cheer, type CheerFrequency } from "../api";
 import { useAuth } from "../auth/auth";
-import { CloseIcon, PhoneIcon, PlusIcon } from "../icons";
-import { formatDay, type T3, type Tr } from "../i18n";
+import { BellIcon, CloseIcon, PlusIcon } from "../icons";
+import { type T3, type Tr } from "../i18n";
 
 /**
  * Ce qui relie « こころ » au reste de l'app :
  *  - 今日のあなたへ : félicitations, réconfort, petites poussées vers 面接・書類・応募, mot du jour (api/src/lib/cheer.ts) ;
  *  - お守りの言葉 : des phrases à soi, reçues sur l'iPhone avant chaque entretien ;
- *  - はげましの通知 : le rythme des encouragements (trois petits points) ;
- *  - 通知 : l'iPhone relié au compte et une notification d'essai.
+ *  - はげましの通知 : un petit bouton (téléphone et tablette seulement) qui ouvre le choix du rythme.
  */
 
 export type CheerOpen = (action: NonNullable<Cheer["action"]>) => void;
@@ -128,84 +127,44 @@ export function Charms({ initial, tr, hasDevice }: { initial: Charm[]; tr: Tr; h
 }
 
 /**
- * はげましの通知 : le rythme des encouragements du matin, en trois petits points
- * (chaque jour par défaut, tous les 2 jours, chaque semaine).
+ * はげましの通知 : un petit bouton « 🔔 毎日 » ; un clic ouvre le choix du rythme (ou l'arrêt).
+ * Les encouragements arrivent en notification : le bouton ne s'affiche que sur téléphone et tablette (CSS).
  */
-const RHYTHMS: { id: Exclude<CheerFrequency, "off">; label: T3 }[] = [
+const RHYTHMS: { id: CheerFrequency; label: T3 }[] = [
   { id: "daily", label: { ja: "毎日", en: "Every day", fr: "Chaque jour" } },
   { id: "every2", label: { ja: "2日に1回", en: "Every 2 days", fr: "Tous les 2 jours" } },
   { id: "weekly", label: { ja: "週に1回", en: "Once a week", fr: "Chaque semaine" } },
+  { id: "off", label: { ja: "オフ", en: "Off", fr: "Désactivés" } },
 ];
 
 export function CheerRhythm({ initial, tr }: { initial: CheerFrequency; tr: Tr }) {
   const auth = useAuth();
   const [frequency, setFrequency] = useState<CheerFrequency>(initial);
+  const [open, setOpen] = useState(false);
   async function choose(f: CheerFrequency) {
     setFrequency(f);
+    setOpen(false);
     const token = await auth.getToken();
     if (token) await setCheerFrequency(token, f).catch(() => null);
   }
+  const on = frequency !== "off";
+  const name = tr({ ja: "はげましの通知", en: "Encouragement", fr: "Encouragements" });
   return (
-    <section className="kokoro-block rhythm" aria-label={tr({ ja: "はげましの通知", en: "Encouragement", fr: "Encouragements" })}>
-      <p className="rhythm-title">{tr({ ja: "はげましの通知（朝8時）", en: "Encouragement (8 am)", fr: "Encouragements (8 h)" })}</p>
-      <div className="rhythm-dots" role="radiogroup" aria-label={tr({ ja: "はげましの通知", en: "Encouragement", fr: "Encouragements" })}>
-        {RHYTHMS.map((r) => (
-          <button key={r.id} role="radio" aria-checked={frequency === r.id} onClick={() => choose(r.id)}>
-            <i aria-hidden="true" />
-            <span>{tr(r.label)}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/** 通知 : l'iPhone relié au compte, l'essai. */
-export function Notifications({ data, tr, onOpenBeta }: { data: Kokoro; tr: Tr; onOpenBeta: () => void }) {
-  const auth = useAuth();
-  const [test, setTest] = useState<"idle" | "sending" | Awaited<ReturnType<typeof sendTestPush>>>("idle");
-  const linked = data.devices.count > 0;
-
-  async function tryPush() {
-    const token = await auth.getToken();
-    if (!token) return;
-    setTest("sending");
-    setTest(await sendTestPush(token));
-  }
-
-  return (
-    <section className="kokoro-block notify" aria-label={tr({ ja: "通知", en: "Notifications", fr: "Notifications" })}>
-      <h3>{tr({ ja: "通知", en: "Notifications", fr: "Notifications" })}</h3>
-      <div className={`device-status${linked ? " linked" : ""}`}>
-        <span className="help-icon"><PhoneIcon size={20} /></span>
-        {linked ? (
-          <div>
-            <strong>{tr({ ja: `iPhone ${data.devices.count}台とつながっています`, en: `Connected to ${data.devices.count} iPhone(s)`, fr: `Relié à ${data.devices.count} iPhone` })}</strong>
-            {data.devices.lastSeen && <small>{tr({ ja: "最終確認：", en: "Last seen: ", fr: "Vu le " })}{formatDay(data.devices.lastSeen.slice(0, 10), tr.lang, false)}</small>}
-          </div>
-        ) : (
-          <div>
-            <strong>{tr({ ja: "まだiPhoneがつながっていません", en: "No iPhone connected yet", fr: "Aucun iPhone relié pour l'instant" })}</strong>
-            <small>{tr({
-              ja: "iPhoneアプリにこのアカウントでサインインし、通知を許可すると、自動でつながります。",
-              en: "Sign in to the iPhone app with this account and allow notifications: it connects automatically.",
-              fr: "Connectez-vous à l'app iPhone avec ce compte et autorisez les notifications : le lien se fait tout seul.",
-            })}</small>
-          </div>
-        )}
-        {linked
-          ? <button onClick={tryPush} disabled={test === "sending"}>{tr({ ja: "テスト通知を送る", en: "Send a test", fr: "Envoyer un essai" })}</button>
-          : <button onClick={onOpenBeta}>{tr({ ja: "iPhoneアプリ（β）", en: "iPhone app (beta)", fr: "App iPhone (bêta)" })}</button>}
-      </div>
-      {test !== "idle" && test !== "sending" && (
-        <p className="muted small" role="status">{{
-          sent: tr({ ja: "送りました。iPhoneを見てみてください。", en: "Sent. Check your iPhone.", fr: "Envoyé. Regardez votre iPhone." }),
-          no_device: tr({ ja: "iPhoneがつながっていません。", en: "No iPhone connected.", fr: "Aucun iPhone relié." }),
-          limit: tr({ ja: "今日のテストは3回までです。", en: "Up to 3 tests a day.", fr: "3 essais par jour au maximum." }),
-          off: tr({ ja: "通知は準備中です。", en: "Notifications are not set up yet.", fr: "Les notifications ne sont pas encore configurées." }),
-          failed: tr({ ja: "送れませんでした。iPhoneで通知が許可されているか確認してください。", en: "Could not send. Check that notifications are allowed on the iPhone.", fr: "Envoi impossible. Vérifiez que les notifications sont autorisées sur l'iPhone." }),
-        }[test]}</p>
+    <div className="cheer-toggle">
+      <button className={on ? "on" : ""} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <BellIcon size={14} />
+        {on
+          ? <>{name}<b>{tr(RHYTHMS.find((r) => r.id === frequency)!.label)}</b></>
+          : tr({ ja: "はげましを受け取る", en: "Get encouragement", fr: "Activer les encouragements" })}
+      </button>
+      {open && (
+        <div className="cheer-options" role="radiogroup" aria-label={name}>
+          {RHYTHMS.map((r) => (
+            <button key={r.id} role="radio" aria-checked={frequency === r.id} onClick={() => choose(r.id)}>{tr(r.label)}</button>
+          ))}
+          <small>{tr({ ja: "朝8時に届きます", en: "Arrives at 8 am", fr: "Arrive à 8 h" })}</small>
+        </div>
       )}
-    </section>
+    </div>
   );
 }
