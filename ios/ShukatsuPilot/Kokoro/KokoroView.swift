@@ -363,7 +363,7 @@ struct KokoroView: View {
                 case "rain": heading(tr("雨の日もあります。", "Some days are rainy.", "Il y a des jours de pluie."))
                 case "often":
                     heading(tr("就活のストレス、ひとりで抱えなくて大丈夫。", "You don't have to carry job-hunting stress alone.", "Vous n'avez pas à porter seul le stress du 就活."))
-                    Text(tr("新卒応援ハローワークでは、就活の不安を臨床心理士に無料で相談できる地域があります。学校の学生相談室も頼れます。", "Many Hello Work offices for new graduates offer free sessions with a clinical psychologist. Your school's counseling office can help too.", "Beaucoup de Hello Work pour jeunes diplômés proposent un psychologue gratuit. Le service de conseil de l'école peut aussi aider."))
+                    Text(tr("新卒応援ハローワークでは、就活の不安を臨床心理士に無料で相談できる地域があります。学校の学生相談室も頼れます。", "The 新卒応援ハローワーク (public job centers for students) often offer free sessions with a clinical psychologist. Your school's counseling office can help too.", "Les 新卒応援ハローワーク (agences publiques pour l'emploi des étudiants) proposent souvent un psychologue gratuit. Le service de conseil de l'école peut aussi aider."))
                 default:
                     heading(tr("2週間近く、雨の日が続いています。", "It has been rainy for almost two weeks.", "Cela fait près de deux semaines de pluie."))
                     Text(tr("つらい気分が2週間以上続くときは、早めに誰かに相談することがすすめられています。下の窓口は無料です。", "When low mood lasts over two weeks, talking to someone early is recommended. The services below are free.", "Quand le mal-être dure plus de deux semaines, il est conseillé d'en parler tôt. Les services ci-dessous sont gratuits."))

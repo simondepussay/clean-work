@@ -162,7 +162,7 @@ function Letter({ data, name, tr, onBreathe }: { data: Kokoro; name: string | nu
       {level === "often" && (
         <>
           <p className="letter-lead">{tr({ ja: "就活のストレス、ひとりで抱えなくて大丈夫。", en: "You don't have to carry job-hunting stress alone.", fr: "Vous n'avez pas à porter seul le stress du 就活." })}</p>
-          <p>{tr({ ja: "この一週間、雨の日が続きましたね。新卒応援ハローワークでは、就活の不安を臨床心理士に無料で相談できる地域があります。学校の学生相談室も、あなたの味方です。", en: "It's been a rainy week. Many Hello Work offices for new graduates offer free sessions with a clinical psychologist, and your school's counseling office is on your side too.", fr: "La semaine a été pluvieuse. Beaucoup de Hello Work pour jeunes diplômés proposent un psychologue gratuit, et le service de conseil de votre école est aussi là pour vous." })}</p>
+          <p>{tr({ ja: "この一週間、雨の日が続きましたね。新卒応援ハローワークでは、就活の不安を臨床心理士に無料で相談できる地域があります。学校の学生相談室も、あなたの味方です。", en: "It's been a rainy week. The 新卒応援ハローワーク (public job centers for students) often offer free sessions with a clinical psychologist, and your school's counseling office is on your side too.", fr: "La semaine a été pluvieuse. Les 新卒応援ハローワーク (agences publiques pour l'emploi des étudiants) proposent souvent un psychologue gratuit, et le service de conseil de votre école est aussi là pour vous." })}</p>
         </>
       )}
       {level === "long" && (
