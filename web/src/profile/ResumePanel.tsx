@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { downloadResume, downloadWorkHistory, listDrafts, type Draft, type ResumeOutcome } from "../api";
+import { downloadResume, downloadWorkHistory, listDrafts, type Draft, type ResumeOutcome, type ResumeTemplate, type Weekday } from "../api";
 import { useAuth } from "../auth/auth";
 import { useTr } from "../i18n";
 
@@ -7,6 +7,11 @@ const DEFAULT_WISHES = "貴社の規定に従います。";
 
 type Kind = "resume" | "workHistory";
 type Era = "western" | "japanese";
+const WEEKDAYS: { id: Weekday; ja: string; en: string; fr: string }[] = [
+  { id: "mon", ja: "月", en: "Mon", fr: "Lun" }, { id: "tue", ja: "火", en: "Tue", fr: "Mar" }, { id: "wed", ja: "水", en: "Wed", fr: "Mer" },
+  { id: "thu", ja: "木", en: "Thu", fr: "Jeu" }, { id: "fri", ja: "金", en: "Fri", fr: "Ven" }, { id: "sat", ja: "土", en: "Sat", fr: "Sam" },
+  { id: "sun", ja: "日", en: "Sun", fr: "Dim" },
+];
 type Status = "idle" | "busy" | "done" | Extract<ResumeOutcome, { ok: false }>["error"];
 
 /**
@@ -47,13 +52,19 @@ function Sheets({ front }: { front: Kind }) {
   );
 }
 
-/** 履歴書 (S11) et 職務経歴書 (S12) en PDF, à partir du profil enregistré. */
+/**
+ * 履歴書 (S11) et 職務経歴書 (S12) en PDF, à partir du profil enregistré.
+ * Le 履歴書 existe en trois variantes, comme au Japon : 新卒用 (par défaut, c'est le 就活),
+ * 一般用 (modèle du 厚生労働省) et アルバイト用.
+ */
 export function ResumePanel() {
   const auth = useAuth();
   const tr = useTr();
   const [kind, setKind] = useState<Kind>("resume");
   const [era, setEra] = useState<Era>("western");
-  const [texts, setTexts] = useState({ appeal: "", wishes: DEFAULT_WISHES, summary: "", skills: "", selfPr: "" });
+  const [template, setTemplate] = useState<ResumeTemplate>("student");
+  const [texts, setTexts] = useState({ appeal: "", wishes: DEFAULT_WISHES, summary: "", skills: "", selfPr: "", gakuchika: "", hours: "", station: "", commute: "" });
+  const [days, setDays] = useState<Weekday[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [status, setStatus] = useState<Status>("idle");
 
@@ -75,7 +86,14 @@ export function ResumePanel() {
       const token = await auth.getToken();
       if (!token) throw new Error("pas de jeton");
       const result = kind === "resume"
-        ? await downloadResume(token, { era, appeal: texts.appeal, wishes: texts.wishes })
+        ? await downloadResume(token, {
+          era, template, appeal: texts.appeal, wishes: texts.wishes,
+          ...(template === "student" && { gakuchika: texts.gakuchika, selfPr: texts.selfPr }),
+          ...(template === "baito" && {
+            days: WEEKDAYS.map((d) => d.id).filter((d) => days.includes(d)), hours: texts.hours, station: texts.station,
+            commute: Number(texts.commute) > 0 ? Math.round(Number(texts.commute)) : undefined,
+          }),
+        })
         : await downloadWorkHistory(token, { era, summary: texts.summary, skills: texts.skills, selfPr: texts.selfPr });
       if (!result.ok) return setStatus(result.error);
       const url = URL.createObjectURL(result.pdf);
@@ -116,6 +134,16 @@ export function ResumePanel() {
             <option value="workHistory">{tr({ ja: "職務経歴書", en: "Work history (shokumu keirekisho)", fr: "Historique professionnel (shokumu keirekisho)" })}</option>
           </select>
         </label>
+        {kind === "resume" && (
+          <label>
+            <span>{tr({ ja: "様式", en: "Template", fr: "Modèle" })}</span>
+            <select value={template} onChange={(e) => { setTemplate(e.target.value as ResumeTemplate); setStatus("idle"); }}>
+              <option value="student">{tr({ ja: "新卒用（就活）", en: "New graduates (job hunting)", fr: "Jeunes diplômés (就活)" })}</option>
+              <option value="standard">{tr({ ja: "一般用（厚生労働省様式）", en: "General (ministry format)", fr: "Général (modèle du ministère)" })}</option>
+              <option value="baito">{tr({ ja: "アルバイト・パート用", en: "Part-time job (baito)", fr: "Petit boulot (baito)" })}</option>
+            </select>
+          </label>
+        )}
         <label>
           <span>{tr({ ja: "年の書き方", en: "Years", fr: "Années" })}</span>
           <select value={era} onChange={(e) => setEra(e.target.value as Era)}>
@@ -129,7 +157,11 @@ export function ResumePanel() {
         <div>
       <p className="muted">
         {kind === "resume"
-          ? tr({ ja: "厚生労働省の様式で作成します。", en: "Created in the Ministry of Health, Labour and Welfare format.", fr: "Au format du ministère japonais de la Santé et du Travail." })
+          ? {
+            student: tr({ ja: "新卒の就活向け。志望動機・学生時代に力を入れたこと・自己PRの欄が大きい様式です。", en: "For graduate job hunting: large boxes for motivation, what you focused on as a student, and self-PR.", fr: "Pour le 就活 des jeunes diplômés : grandes cases pour la motivation, ce que tu as fait pendant tes études (gakuchika) et l'auto-présentation." }),
+            standard: tr({ ja: "厚生労働省の様式。どの応募にも使えます。", en: "The Ministry of Health, Labour and Welfare format, accepted everywhere.", fr: "Le modèle du ministère japonais de la Santé et du Travail, accepté partout." }),
+            baito: tr({ ja: "アルバイト・パート向け。勤務できる曜日・時間帯と通勤時間の欄があります。", en: "For part-time jobs: boxes for the days and hours you can work, and your commute.", fr: "Pour un petit boulot : cases pour les jours et horaires possibles, et le temps de trajet." }),
+          }[template]
           : tr({ ja: "職歴（アルバイト・インターン含む）を時系列でまとめます。", en: "Your work experience (part-time jobs and internships included), in chronological order.", fr: "Votre expérience (petits boulots et stages compris), par ordre chronologique." })}
       </p>
           <details className="hint">
@@ -140,13 +172,54 @@ export function ResumePanel() {
                 en: "Your name, contact details, education, work, certifications and languages come straight from your saved profile. Here you only write the parts specific to this document. To change the rest, update your profile.",
                 fr: "Le nom, les coordonnées, les études, les expériences, les certifications et les langues sont repris de ton profil enregistré. Ici, tu n'écris que les cases propres à ce document. Pour changer le reste, modifie ton profil.",
               })}
+              {kind === "resume" && template === "student" && (tr.lang === "ja" ? "" : " ") + tr({ ja: "新卒の履歴書では、アルバイトは職歴に書かないのが一般的です（自己PRや学生時代に力を入れたことで触れましょう）。", en: "On a graduate résumé, part-time jobs usually don't go under work history: mention them in your self-PR or gakuchika instead.", fr: "Sur un 履歴書 de jeune diplômé, on n'écrit en général pas les petits boulots dans 職歴 : parles-en plutôt dans l'auto-présentation ou le gakuchika." })}
               {kind === "resume" && (tr.lang === "ja" ? "" : " ") + tr({ ja: "写真の枠は空けてあるので、印刷して貼ってください。", en: "The photo box is left empty: print and paste your photo.", fr: "Le cadre photo reste vide : imprime et colle ta photo." })}
             </p>
           </details>
         </div>
       </div>
 
-      {kind === "resume" ? (
+      {kind === "resume" && template === "student" ? (
+        <>
+          {area("appeal", tr({ ja: "志望動機", en: "Motivation", fr: "Motivation" }), 4, 1500)}
+          {fromEs("appeal")}
+          {area("gakuchika", tr({ ja: "学生時代に力を入れたこと", en: "What you focused on as a student", fr: "Ce que tu as fait pendant tes études (gakuchika)" }), 4, 1500)}
+          {fromEs("gakuchika")}
+          {area("selfPr", tr({ ja: "自己PR", en: "Self-PR", fr: "Auto-présentation (jiko PR)" }), 4, 1500)}
+          {fromEs("selfPr")}
+          {area("wishes", tr({ ja: "本人希望記入欄", en: "Your requests", fr: "Vos souhaits" }), 2, 500)}
+        </>
+      ) : kind === "resume" && template === "baito" ? (
+        <>
+          <fieldset className="weekdays">
+            <legend>{tr({ ja: "勤務できる曜日", en: "Days you can work", fr: "Jours possibles" })}</legend>
+            {WEEKDAYS.map((d) => (
+              <label key={d.id} className="chip-check">
+                <input type="checkbox" checked={days.includes(d.id)}
+                  onChange={(e) => setDays((all) => (e.target.checked ? [...all, d.id] : all.filter((x) => x !== d.id)))} />
+                <span>{tr(d)}</span>
+              </label>
+            ))}
+          </fieldset>
+          <label>
+            <span>{tr({ ja: "時間帯", en: "Hours", fr: "Horaires" })}</span>
+            <input value={texts.hours} onChange={(e) => set("hours", e.target.value)} maxLength={200}
+              placeholder={tr({ ja: "例：平日17時以降、土日は終日", en: "e.g. weekdays after 5 pm, all day on weekends", fr: "ex. : en semaine après 17 h, le week-end toute la journée" })} />
+          </label>
+          <div className="grid">
+            <label>
+              <span>{tr({ ja: "最寄り駅", en: "Nearest station", fr: "Gare la plus proche" })}</span>
+              <input value={texts.station} onChange={(e) => set("station", e.target.value)} maxLength={40} />
+            </label>
+            <label>
+              <span>{tr({ ja: "通勤時間（分）", en: "Commute (minutes)", fr: "Trajet (minutes)" })}</span>
+              <input type="number" min={1} max={300} inputMode="numeric" value={texts.commute} onChange={(e) => set("commute", e.target.value)} />
+            </label>
+          </div>
+          {area("appeal", tr({ ja: "志望動機・自己PR・特技など", en: "Motivation, strengths, skills", fr: "Motivation, points forts, compétences" }), 4, 1500)}
+          {area("wishes", tr({ ja: "本人希望記入欄", en: "Your requests", fr: "Vos souhaits" }), 2, 500)}
+        </>
+      ) : kind === "resume" ? (
         <>
           {area("appeal", tr({ ja: "志望の動機・特技・アピールポイントなど", en: "Motivation, skills, strengths", fr: "Motivation, compétences, points forts" }), 6, 1500)}
           {fromEs("appeal")}

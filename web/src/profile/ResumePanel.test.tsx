@@ -41,6 +41,7 @@ describe("ResumePanel", () => {
     });
 
     render(<AuthContext.Provider value={auth}><ResumePanel /></AuthContext.Provider>);
+    await userEvent.selectOptions(screen.getByLabelText(/^様式$/), "standard");
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: /ESから入れる/ }), "d1");
     expect(screen.getByLabelText(/志望の動機/)).toHaveValue("私の強みは粘り強さです。");
     await userEvent.selectOptions(screen.getByLabelText(/年の書き方/), "japanese");
@@ -51,7 +52,44 @@ describe("ResumePanel", () => {
     expect(downloaded).toBe("履歴書_シモン.pdf");
     click.mockRestore();
     const post = fetchMock.mock.calls.find(([url]) => url === "/api/resume") as unknown as [string, RequestInit];
-    expect(JSON.parse(post[1].body as string)).toEqual({ era: "japanese", appeal: "私の強みは粘り強さです。", wishes: "貴社の規定に従います。" });
+    expect(JSON.parse(post[1].body as string)).toEqual({ era: "japanese", template: "standard", appeal: "私の強みは粘り強さです。", wishes: "貴社の規定に従います。" });
+  });
+
+  it("新卒用 par défaut : 志望動機, 学生時代に力を入れたこと, 自己PR", async () => {
+    const fetchMock = vi.fn(async (url: string) => (url === "/api/drafts" ? new Response("[]") : pdfResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(<AuthContext.Provider value={auth}><ResumePanel /></AuthContext.Provider>);
+    expect(screen.getByLabelText(/^様式$/)).toHaveValue("student");
+    await userEvent.type(screen.getByLabelText(/学生時代に力を入れたこと/), "ゼミ");
+    await userEvent.type(screen.getByLabelText(/^自己PR$/), "粘り強さ");
+    await userEvent.click(screen.getByRole("button", { name: /PDFをダウンロード/ }));
+    await screen.findByText(/ダウンロードしました/);
+    click.mockRestore();
+    const post = fetchMock.mock.calls.find(([url]) => url === "/api/resume") as unknown as [string, RequestInit];
+    expect(JSON.parse(post[1].body as string)).toEqual({ era: "western", template: "student", gakuchika: "ゼミ", selfPr: "粘り強さ", wishes: "貴社の規定に従います。" });
+  });
+
+  it("アルバイト用 : jours (dans l'ordre de la semaine), horaires, gare, trajet", async () => {
+    const fetchMock = vi.fn(async (url: string) => (url === "/api/drafts" ? new Response("[]") : pdfResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(<AuthContext.Provider value={auth}><ResumePanel /></AuthContext.Provider>);
+    await userEvent.selectOptions(screen.getByLabelText(/^様式$/), "baito");
+    await userEvent.click(screen.getByLabelText("土"));
+    await userEvent.click(screen.getByLabelText("月"));
+    await userEvent.type(screen.getByLabelText(/^時間帯$/), "17時以降");
+    await userEvent.type(screen.getByLabelText(/最寄り駅/), "新宿");
+    await userEvent.type(screen.getByLabelText(/通勤時間/), "15");
+    await userEvent.click(screen.getByRole("button", { name: /PDFをダウンロード/ }));
+    await screen.findByText(/ダウンロードしました/);
+    click.mockRestore();
+    const post = fetchMock.mock.calls.find(([url]) => url === "/api/resume") as unknown as [string, RequestInit];
+    expect(JSON.parse(post[1].body as string)).toEqual({
+      era: "western", template: "baito", days: ["mon", "sat"], hours: "17時以降", station: "新宿", commute: 15, wishes: "貴社の規定に従います。",
+    });
   });
 
   it("職務経歴書 : autres champs, autre adresse, message si pas d'expérience", async () => {

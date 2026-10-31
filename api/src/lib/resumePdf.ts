@@ -1,6 +1,11 @@
 /**
  * Dessin du 履歴書 en PDF (S11), sur le modèle du 厚生労働省 (A4, 2 pages).
  * Le contenu vient de resume.ts ; ici on ne fait que placer cadres et texte.
+ *
+ * Trois variantes, comme les modèles vendus au Japon ; la page 1 (identité, 学歴・職歴) est la même :
+ * - standard : le modèle du 厚生労働省, accepté partout ;
+ * - student (新卒用) : grandes cases 志望動機, 学生時代に力を入れたこと et 自己PR ;
+ * - baito (アルバイト・パート用) : 通勤時間 et 勤務可能な曜日・時間帯.
  */
 import type { Profile } from "./models";
 import { A4, Canvas, GREY, newDocument } from "./pdfCanvas";
@@ -9,14 +14,28 @@ import { age, certificationRows, historyRows, yearLabel, type Era, type Row } fr
 const M = 42; // marge
 const W = A4.width - 2 * M;
 
+export type Template = "standard" | "student" | "baito";
+export const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+export type Weekday = (typeof WEEKDAYS)[number];
+const WEEKDAY_JA: Record<Weekday, string> = { mon: "月", tue: "火", wed: "水", thu: "木", fri: "金", sat: "土", sun: "日" };
+
 export type ResumeOptions = {
   era: Era;
+  template?: Template;
   /** Date du document (AAAA-MM-JJ), « …現在 ». */
   date: string;
   /** 志望の動機・特技・好きな学科・アピールポイントなど */
   appeal?: string;
   /** 本人希望記入欄 */
   wishes?: string;
+  /** 新卒用 : 学生時代に力を入れたこと, 自己PR */
+  gakuchika?: string;
+  selfPr?: string;
+  /** アルバイト用 : jours possibles, horaires, gare la plus proche, trajet en minutes */
+  days?: Weekday[];
+  hours?: string;
+  station?: string;
+  commute?: number;
 };
 
 
@@ -35,8 +54,10 @@ export async function renderResume(profile: Profile, options: ResumeOptions): Pr
 
 function drawPage1(c: Canvas, p: Profile, o: ResumeOptions, history: Row[]): number {
   c.text("履　歴　書", M, 52, 22);
+  if (o.template === "student") c.text("（新卒用）", M + 118, 50, 9, { color: GREY });
+  if (o.template === "baito") c.text("（アルバイト・パート用）", M + 118, 50, 9, { color: GREY });
   const [y, m, d] = [o.date.slice(0, 10), Number(o.date.slice(5, 7)), Number(o.date.slice(8, 10))];
-  c.text(`${yearLabel(y, o.era)}年　${m}月　${d}日現在`, M + 150, 50, 10);
+  c.text(`${yearLabel(y, o.era)}年　${m}月　${d}日現在`, M + 150, 50 + (o.template && o.template !== "standard" ? 14 : 0), 10);
 
   // Cadre photo (30 × 40 mm)
   const photo = { x: A4.width - M - 85, top: 34, w: 85, h: 113 };
@@ -107,9 +128,12 @@ function drawPage2(c: Canvas, p: Profile, o: ResumeOptions, historyRest: Row[]) 
     top += 20 + rows * 24 + 16;
   }
   const certs = certificationRows(p, o.era);
-  const certRows = Math.max(certs.length, 6);
+  const certRows = Math.max(certs.length, o.template && o.template !== "standard" ? 4 : 6);
   drawTable(c, top, certRows, "免許・資格", certs);
   top += 20 + certRows * 24 + 16;
+
+  if (o.template === "student") return drawStudent(c, o, top);
+  if (o.template === "baito") return drawBaito(c, o, top);
 
   const free = A4.height - 60 - top;
   const appealH = Math.max(150, Math.round(free * 0.62));
@@ -124,6 +148,67 @@ function drawPage2(c: Canvas, p: Profile, o: ResumeOptions, historyRest: Row[]) 
   c.wrap(o.wishes ?? "貴社の規定に従います。", M + 8, top + 24, W - 16, 10, Math.floor((wishesH - 28) / 16), 16);
 
   c.text("※「性別」欄：記載は任意です。未記載とすることも可能です。", M, A4.height - 36, 7, { color: GREY });
+}
+
+const BOTTOM = A4.height - 48;
+const WISHES_TITLE = "本人希望記入欄（特に給料・職種・勤務時間・勤務地・その他についての希望などがあれば記入）";
+
+/** Un cadre avec un titre en haut à gauche et un texte qui va à la ligne. */
+function textBox(c: Canvas, top: number, h: number, title: string, body: string) {
+  c.box(M, top, W, h);
+  c.text(title, M + 6, top + 14, 8);
+  c.wrap(body, M + 8, top + 24, W - 16, 10, Math.max(1, Math.floor((h - 28) / 16)), 16);
+}
+
+/** 新卒用 : trois grandes cases, puis le 本人希望. */
+function drawStudent(c: Canvas, o: ResumeOptions, top: number) {
+  const gap = 10;
+  const wishesH = 64;
+  const each = Math.max(90, Math.floor((BOTTOM - top - wishesH - 3 * gap) / 3));
+  for (const [title, body] of [
+    ["志望動機", o.appeal ?? ""],
+    ["学生時代に力を入れたこと", o.gakuchika ?? ""],
+    ["自己PR", o.selfPr ?? ""],
+  ] as const) {
+    textBox(c, top, each, title, body);
+    top += each + gap;
+  }
+  textBox(c, top, Math.max(wishesH, BOTTOM - top), WISHES_TITLE, o.wishes ?? "貴社の規定に従います。");
+}
+
+/** アルバイト・パート用 : 通勤時間, 勤務可能な曜日・時間帯, puis motivation et 本人希望. */
+function drawBaito(c: Canvas, o: ResumeOptions, top: number) {
+  // 通勤時間 (à gauche) et 最寄り駅 (à droite)
+  const half = W / 2;
+  c.box(M, top, W, 40);
+  c.vline(M + half, top, 40);
+  c.text("通勤時間", M + 6, top + 14, 8);
+  c.centered(o.commute ? `約　${o.commute}　分` : "約　　　分", M, top + 31, half, 11);
+  c.text("最寄り駅", M + half + 6, top + 14, 8);
+  c.fit(o.station ? `${o.station.replace(/駅$/, "")}　駅` : "", M + half + 8, top + 16, half - 16, 24, 11);
+  top += 40 + 10;
+
+  // Jours : une case par jour, « ○ » si possible ; puis les horaires.
+  const days = new Set(o.days ?? []);
+  const cellW = W / 7;
+  c.box(M, top, W, 20 + 30 + 34);
+  c.text("勤務可能な曜日・時間帯", M + 6, top + 14, 8);
+  c.hline(M, top + 20, W);
+  WEEKDAYS.forEach((d, i) => {
+    if (i > 0) c.vline(M + i * cellW, top + 20, 30);
+    c.centered(WEEKDAY_JA[d], M + i * cellW, top + 32, cellW, 8, { color: GREY });
+    if (days.has(d)) c.centered("○", M + i * cellW, top + 46, cellW, 12);
+  });
+  c.hline(M, top + 50, W);
+  c.text("時間帯", M + 6, top + 64, 8);
+  c.fit(o.hours ?? "", M + 50, top + 50, W - 58, 34, 10);
+  top += 84 + 10;
+
+  const wishesH = 80;
+  const appealH = Math.max(110, BOTTOM - top - wishesH - 10);
+  textBox(c, top, appealH, "志望動機・自己PR・特技など", o.appeal ?? "");
+  top += appealH + 10;
+  textBox(c, top, Math.max(wishesH, BOTTOM - top), WISHES_TITLE, o.wishes ?? "");
 }
 
 /** Tableau année / mois / texte, avec une ligne d'en-tête et `rows` lignes. */

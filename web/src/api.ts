@@ -201,7 +201,13 @@ export const getUsage = (token: string, f?: typeof fetch) => call<Usage>(token, 
 
 // ------------------------------------------------------------------ 履歴書 PDF (S11)
 
-export type ResumeOptions = { era: "western" | "japanese"; appeal?: string; wishes?: string };
+export type ResumeTemplate = "standard" | "student" | "baito";
+export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+/** 履歴書 (S11) : modèle standard (厚生労働省), 新卒用 ou アルバイト用. */
+export type ResumeOptions = {
+  era: "western" | "japanese"; template?: ResumeTemplate; appeal?: string; wishes?: string;
+  gakuchika?: string; selfPr?: string; days?: Weekday[]; hours?: string; station?: string; commute?: number;
+};
 /** 職務経歴書 (S12) */
 export type WorkHistoryOptions = { era: "western" | "japanese"; summary?: string; skills?: string; selfPr?: string };
 export type ResumeOutcome = { ok: true; pdf: Blob; filename: string } | { ok: false; error: "profile_missing" | "no_work" | "invalid" | "failed" };

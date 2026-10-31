@@ -27,6 +27,19 @@ describe("POST /api/resume", () => {
     expect(pdf.length).toBeLessThan(200_000);
   });
 
+  it("variantes 新卒用 et アルバイト用 : deux pages, champs propres à chacune", async () => {
+    for (const payload of [
+      { template: "student", appeal: "御社を志望する理由", gakuchika: "ゼミ活動", selfPr: "粘り強さ" },
+      { template: "baito", days: ["mon", "sat", "sun"], hours: "平日17時以降、土日終日", station: "新宿駅", commute: 20 },
+    ]) {
+      const res = await call(payload);
+      expect(res.status).toBeUndefined();
+      expect((await PDFDocument.load(res.body as Uint8Array)).getPageCount()).toBe(2);
+    }
+    expect((await call({ template: "full-time" })).status).toBe(400);
+    expect((await call({ template: "baito", days: ["lundi"] })).status).toBe(400);
+  });
+
   it("404 sans profil", async () => {
     expect((await call({}, false)).jsonBody).toEqual({ error: "profile_missing" });
   });
