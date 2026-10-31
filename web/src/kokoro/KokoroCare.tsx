@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { setCharms, setCheerFrequency, type Charm, type CharmTiming, type Cheer, type CheerFrequency } from "../api";
+import { setCharms, type Charm, type CharmTiming, type Cheer } from "../api";
 import { useAuth } from "../auth/auth";
-import { BellIcon, CloseIcon, PlusIcon } from "../icons";
+import { CloseIcon, PlusIcon } from "../icons";
 import { type T3, type Tr } from "../i18n";
 
 /**
  * Ce qui relie « こころ » au reste de l'app :
  *  - 今日のあなたへ : félicitations, réconfort, petites poussées vers 面接・書類・応募, mot du jour (api/src/lib/cheer.ts) ;
  *  - お守りの言葉 : des phrases à soi, reçues sur l'iPhone avant chaque entretien ;
- *  - はげましの通知 : un petit bouton (téléphone et tablette seulement) qui ouvre le choix du rythme.
+ *  - le rythme des encouragements (はげましの通知) se règle dans l'app iPhone, là où ils arrivent.
  */
 
 export type CheerOpen = (action: NonNullable<Cheer["action"]>) => void;
@@ -123,48 +123,5 @@ export function Charms({ initial, tr, hasDevice }: { initial: Charm[]; tr: Tr; h
         {state === "error" && <span className="muted small" role="alert">{tr({ ja: "保存できませんでした。", en: "Could not save.", fr: "Enregistrement impossible." })}</span>}
       </div>
     </section>
-  );
-}
-
-/**
- * はげましの通知 : un petit bouton « 🔔 毎日 » ; un clic ouvre le choix du rythme (ou l'arrêt).
- * Les encouragements arrivent en notification : le bouton ne s'affiche que sur téléphone et tablette (CSS).
- */
-const RHYTHMS: { id: CheerFrequency; label: T3 }[] = [
-  { id: "daily", label: { ja: "毎日", en: "Every day", fr: "Chaque jour" } },
-  { id: "every2", label: { ja: "2日に1回", en: "Every 2 days", fr: "Tous les 2 jours" } },
-  { id: "weekly", label: { ja: "週に1回", en: "Once a week", fr: "Chaque semaine" } },
-  { id: "off", label: { ja: "オフ", en: "Off", fr: "Désactivés" } },
-];
-
-export function CheerRhythm({ initial, tr }: { initial: CheerFrequency; tr: Tr }) {
-  const auth = useAuth();
-  const [frequency, setFrequency] = useState<CheerFrequency>(initial);
-  const [open, setOpen] = useState(false);
-  async function choose(f: CheerFrequency) {
-    setFrequency(f);
-    setOpen(false);
-    const token = await auth.getToken();
-    if (token) await setCheerFrequency(token, f).catch(() => null);
-  }
-  const on = frequency !== "off";
-  const name = tr({ ja: "はげましの通知", en: "Encouragement", fr: "Encouragements" });
-  return (
-    <div className="cheer-toggle">
-      <button className={on ? "on" : ""} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <BellIcon size={14} />
-        {on
-          ? <>{name}<b>{tr(RHYTHMS.find((r) => r.id === frequency)!.label)}</b></>
-          : tr({ ja: "はげましを受け取る", en: "Get encouragement", fr: "Activer les encouragements" })}
-      </button>
-      {open && (
-        <div className="cheer-options" role="radiogroup" aria-label={name}>
-          {RHYTHMS.map((r) => (
-            <button key={r.id} role="radio" aria-checked={frequency === r.id} onClick={() => choose(r.id)}>{tr(r.label)}</button>
-          ))}
-          <small>{tr({ ja: "朝8時に届きます", en: "Arrives at 8 am", fr: "Arrive à 8 h" })}</small>
-        </div>
-      )}
-    </div>
   );
 }

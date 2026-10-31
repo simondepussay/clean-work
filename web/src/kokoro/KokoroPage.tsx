@@ -4,7 +4,7 @@ import { useAuth } from "../auth/auth";
 import { buildAgenda, ymd } from "../home/agenda";
 import { ChatIcon, CloseIcon, CloudIcon, GlobeIcon, HeartIcon, PhoneIcon, RainIcon, SunIcon } from "../icons";
 import { formatDay, useTr, type T3, type Tr } from "../i18n";
-import { Charms, CheerRhythm, Cheers, type CheerOpen } from "./KokoroCare";
+import { Charms, Cheers, type CheerOpen } from "./KokoroCare";
 import { Journal } from "./KokoroJournal";
 import { CloudCurtain, KokoroLoading, KokoroSky } from "./KokoroSky";
 import { useFreshData } from "../useFreshData";
@@ -33,22 +33,9 @@ const ECHO: Record<MoodWeather, T3> = {
   rainy: { ja: "雨の日もあります。ここで少し、ひと息つきましょう。", en: "Some days are rainy. Let's take a breath here.", fr: "Il y a des jours de pluie. Prenons un moment pour souffler." },
 };
 
-/** Des mots pour nommer ce qu'on ressent : les choisir aide à prendre du recul (Lieberman 2007). */
-const WORDS: T3[] = [
-  { ja: "不安", en: "Anxious", fr: "Inquiet" },
-  { ja: "疲れた", en: "Tired", fr: "Fatigué" },
-  { ja: "焦り", en: "Rushed", fr: "Pressé" },
-  { ja: "ほっとした", en: "Relieved", fr: "Soulagé" },
-  { ja: "ワクワク", en: "Excited", fr: "Enthousiaste" },
-];
-
 type Source = { name: string; url: string; text: T3 };
 const PAUSE: T3 = { ja: "ひと休みしましょう", en: "Take a break", fr: "Faites une pause" };
-const SOURCES: Record<"labeling" | "breathing" | "journal" | "excited" | "who" | "twoWeeks", Source> = {
-  labeling: {
-    name: "Lieberman et al., Psychological Science (2007)", url: "https://doi.org/10.1111/j.1467-9280.2007.01916.x",
-    text: { ja: "感情に名前をつけると、気持ちの反応がやわらぐ。", en: "Putting feelings into words dampens emotional reactions.", fr: "Mettre un mot sur une émotion en atténue la réaction." },
-  },
+const SOURCES: Record<"breathing" | "journal" | "excited" | "who" | "twoWeeks", Source> = {
   breathing: {
     name: "こころの耳（厚生労働省）", url: "https://kokoro.mhlw.go.jp/fivemin/",
     text: { ja: "ゆっくりした呼吸はリラクセーションの基本。", en: "Slow breathing is a basic relaxation method.", fr: "La respiration lente est une méthode de relaxation de base." },
@@ -238,7 +225,6 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   const [data, setData] = useState<Kokoro | null>(null);
   const [failed, setFailed] = useState(false);
   const [apps, setApps] = useState<Application[]>([]);
-  const [word, setWord] = useState("");
   const [mode, setMode] = useState<"none" | "breathe" | "ritual">("none");
   /** Rideau de nuages fermé pendant un chargement (au début, et quand la météo change). */
   const [veiled, setVeiled] = useState(true);
@@ -258,7 +244,7 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
     if (!token) return;
     try {
       const [k, a] = await Promise.all([getKokoro(token, today), listApplications(token).catch(() => null)]);
-      if (k.ok) { setData(k.value); setWord(k.value.moods.find((m) => m.date === today)?.word ?? ""); }
+      if (k.ok) { setData(k.value); }
       else setFailed(true);
       if (a && a.ok) setApps(a.value);
     } catch { setFailed(true); }
@@ -299,15 +285,14 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
    * Fluidité : l'écran change tout de suite (comme Headspace ou Calm), l'enregistrement part en arrière-plan.
    * Si l'enregistrement échoue, on revient en arrière et on le dit.
    */
-  const applyMood = (weather: MoodWeather | null, newWord: string) => setData((d) => d && {
+  const applyMood = (weather: MoodWeather | null) => setData((d) => d && {
     ...d,
-    moods: [...d.moods.filter((m) => m.date !== today), ...(weather ? [{ date: today, weather, ...(newWord.trim() ? { word: newWord.trim() } : {}) }] : [])],
+    moods: [...d.moods.filter((m) => m.date !== today), ...(weather ? [{ date: today, weather }] : [])],
   });
 
-  async function saveMood(weather: MoodWeather | null, newWord: string, before: Kokoro["moods"]) {
+  async function saveMood(weather: MoodWeather | null, before: Kokoro["moods"]) {
     const token = await auth.getToken();
-    const trimmed = newWord.trim();
-    const res = token ? await setMood(token, { date: today, weather, ...(trimmed && weather ? { word: trimmed } : {}) }).catch(() => null) : null;
+    const res = token ? await setMood(token, { date: today, weather }).catch(() => null) : null;
     if (res?.ok) { setSaveError(false); refresh(); }
     else { setSaveError(true); setData((d) => d && { ...d, moods: before }); }
   }
@@ -316,21 +301,12 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   async function chooseWeather(weather: MoodWeather | null) {
     if (!data) return;
     const before = data.moods;
-    const save = saveMood(weather, word, before);
+    const save = saveMood(weather, before);
     const calm = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (!calm) { setVeiled(true); await wait(620); }
-    applyMood(weather, word);
+    applyMood(weather);
     if (!calm) { await wait(120); setVeiled(false); }
     await save;
-  }
-
-  /** Un mot : visible tout de suite, enregistré ensuite. */
-  function chooseWord(newWord: string) {
-    if (!data || !todayMood) return;
-    const before = data.moods;
-    setWord(newWord);
-    applyMood(todayMood.weather, newWord);
-    saveMood(todayMood.weather, newWord, before);
   }
 
   async function erase() {
@@ -384,24 +360,6 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
         <p className="kokoro-save-error" role="alert">{tr({ ja: "保存できませんでした。通信を確認して、もう一度お試しください。", en: "Could not save. Check your connection and try again.", fr: "Enregistrement impossible. Vérifiez la connexion et réessayez." })}</p>
       )}
 
-      {todayMood && (
-        <section className="kokoro-block mood-word">
-          <h3>{tr({ ja: "ひとことで言うと？", en: "In one word?", fr: "En un mot ?" })}</h3>
-          <div className="word-chips">
-            {WORDS.map((w) => {
-              const text = tr(w);
-              return <button key={w.ja} aria-pressed={word === text} onClick={() => chooseWord(word === text ? "" : text)}>{text}</button>;
-            })}
-          </div>
-          <form className="mood-word-form" onSubmit={(e) => { e.preventDefault(); chooseWord(word); }}>
-            <input value={word} maxLength={30} onChange={(e) => setWord(e.target.value)}
-              aria-label={tr({ ja: "自分の言葉で", en: "In your own words", fr: "Avec vos mots" })} placeholder={tr({ ja: "自分の言葉で…", en: "In your own words…", fr: "Avec vos mots…" })} />
-            <button type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
-          </form>
-          <SourceLink source={SOURCES.labeling} tr={tr} />
-        </section>
-      )}
-
       <Letter data={data} name={name} tr={tr} onBreathe={() => setMode("breathe")} />
 
       <Cheers cheers={data.cheers} tr={tr} onOpen={openCheer} onBreathe={() => setMode("breathe")} onJournal={goToJournal} />
@@ -417,7 +375,7 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
         <button className="primary" onClick={() => setMode("ritual")}>{tr({ ja: "はじめる", en: "Start", fr: "Commencer" })}</button>
       </section>
 
-      <CheerRhythm initial={data.cheerFrequency} tr={tr} />
+      <Journal today={today} tr={tr} />
 
       <section className="kokoro-block garden" aria-label={tr({ ja: "この4週間の天気", en: "The last 4 weeks", fr: "Les 4 dernières semaines" })}>
         <h3>{tr({ ja: "この4週間", en: "The last 4 weeks", fr: "Ces 4 semaines" })}</h3>
@@ -432,8 +390,6 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
           {WEATHERS.map((w) => <span key={w.id}><i className={`dot ${w.id}`} />{tr(w.label)} {counted[w.id]}</span>)}
         </p>
       </section>
-
-      <Journal today={today} tr={tr} source={<SourceLink source={SOURCES.journal} tr={tr} />} />
 
       <Charms initial={data.charms} tr={tr} hasDevice={data.devices.count > 0} />
 

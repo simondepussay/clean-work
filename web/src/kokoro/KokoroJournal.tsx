@@ -8,7 +8,7 @@ import { formatDay, type Tr } from "../i18n";
  * précédentes. Écrire ce qu'on ressent aide à le poser (écriture expressive, Pennebaker).
  * Les pages ne vont jamais à l'IA et ne sont lues qu'ici, à l'ouverture de l'onglet.
  */
-export function Journal({ today, tr, source }: { today: string; tr: Tr; source: React.ReactNode }) {
+export function Journal({ today, tr }: { today: string; tr: Tr }) {
   const auth = useAuth();
   const [entries, setEntries] = useState<JournalEntry[] | null>(null);
   const [text, setText] = useState("");
@@ -76,7 +76,6 @@ export function Journal({ today, tr, source }: { today: string; tr: Tr; source: 
       {past.length > shown && (
         <button className="link" onClick={() => setShown((n) => n + 10)}>{tr({ ja: "もっと見る", en: "Show more", fr: "Voir plus" })}</button>
       )}
-      {source}
     </section>
   );
 }

@@ -48,16 +48,6 @@ describe("KokoroPage (こころ)", () => {
     expect(JSON.parse(put[1]!.body as string)).toEqual({ date: today, weather: "rainy" });
   });
 
-  it("une fois la météo notée, propose de la nommer en un mot", async () => {
-    const fetchMock = server(kokoro({ moods: [{ date: today, weather: "cloudy" }] }));
-    renderPage();
-    expect(await screen.findByRole("radio", { name: /くもり/ })).toHaveAttribute("aria-checked", "true");
-    await userEvent.click(screen.getByRole("button", { name: "不安" }));
-    const put = fetchMock.mock.calls.filter(([url]) => url === "/api/kokoro/mood").at(-1)!;
-    expect(JSON.parse(put[1]!.body as string)).toEqual({ date: today, weather: "cloudy", word: "不安" });
-    expect(screen.getByRole("link", { name: /出典 : Lieberman/ })).toBeInTheDocument();
-  });
-
   it("les aides sont toujours visibles, même par beau temps", async () => {
     server(kokoro());
     renderPage();
@@ -186,15 +176,6 @@ describe("KokoroPage : fluidité (l'écran change tout de suite)", () => {
     await waitFor(() => expect(server.fetchMock.mock.calls.filter(([u]) => u.startsWith("/api/kokoro?")).length).toBeGreaterThan(1));
   });
 
-  it("un mot s'allume tout de suite", async () => {
-    const server = slowServer(kokoro({ moods: [{ date: today, weather: "cloudy" }] }));
-    renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: "焦り" }));
-    expect(screen.getByRole("button", { name: "焦り" })).toHaveAttribute("aria-pressed", "true");
-    server.release();
-    await waitFor(() => expect(server.fetchMock.mock.calls.filter(([u]) => u.startsWith("/api/kokoro?")).length).toBeGreaterThan(1));
-  });
-
   it("si l'enregistrement échoue, l'écran revient en arrière et le dit", async () => {
     const server = slowServer(kokoro(), true);
     renderPage();
@@ -234,19 +215,15 @@ describe("KokoroPage : liens avec le reste de l'app", () => {
     expect(await within(box).findByText(/iPhoneアプリにサインインすると届きます/)).toBeInTheDocument();
   });
 
-  it("はげましの通知 : un petit bouton ouvre le choix du rythme ; plus de section « 通知 »", async () => {
-    const fetchMock = server(kokoro());
+  it("ni « En un mot », ni réglage des encouragements sur le web ; le journal suit la pause", async () => {
+    server(kokoro({ moods: [{ date: today, weather: "cloudy" }] }));
     renderPage();
-    const toggle = await screen.findByRole("button", { name: /はげましの通知/ });
+    await screen.findByRole("radio", { name: /くもり/ });
+    expect(screen.queryByText("ひとことで言うと？")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /はげまし/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "通知" })).not.toBeInTheDocument();
-    await userEvent.click(toggle);
-    const rhythm = screen.getByRole("radiogroup", { name: "はげましの通知" });
-    expect(within(rhythm).getAllByRole("radio")).toHaveLength(4);
-    expect(within(rhythm).getByRole("radio", { name: "毎日" })).toHaveAttribute("aria-checked", "true");
-    await userEvent.click(within(rhythm).getByRole("radio", { name: "週に1回" }));
-    const put = fetchMock.mock.calls.find(([url]) => url === "/api/kokoro/settings")!;
-    expect(JSON.parse(put[1]!.body as string)).toEqual({ cheerFrequency: "weekly" });
-    expect(screen.getByRole("button", { name: /週に1回/ })).toBeInTheDocument();
+    const pause = document.querySelector(".kokoro-ritual")!;
+    expect(pause.nextElementSibling?.classList.contains("journal")).toBe(true);
   });
 });
 

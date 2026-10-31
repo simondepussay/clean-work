@@ -698,12 +698,6 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .kokoro-save-error { margin: -8px 0 0; padding: 10px 16px; border-radius: 14px; background: #fbf1f0; color: var(--bordeaux); font-size: 14px; text-align: center; }
 
 /* --- Un mot -------------------------------------------------------------------------------------- */
-.mood-word { animation: rise .6s ease both; }
-.word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.word-chips button { padding: 7px 16px; border-radius: 999px; border: 1px solid var(--k-sand); background: var(--k-cream); color: var(--blue-800); font-size: 14px; }
-.word-chips button[aria-pressed="true"] { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
-.mood-word-form { display: flex; gap: 8px; margin-top: 12px; }
-.mood-word-form input { flex: 1; min-width: 0; border-radius: 999px; padding: 9px 16px; border: 1px solid var(--k-sand); background: var(--k-paper); }
 
 /* --- La lettre ------------------------------------------------------------------------------------ */
 .kokoro-letter { position: relative; padding: 30px 30px 26px; border-radius: 6px; transform: rotate(-.4deg);
@@ -762,17 +756,6 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .journal-text { white-space: pre-wrap; line-height: 1.7; }
 .journal-text.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
 /* はげましの通知 : trois petits points sur une ligne. */
-/* はげましの通知 : petit bouton, seulement sur téléphone et tablette (les encouragements arrivent en notification). */
-.cheer-toggle { display: none; margin: -6px 0 0; }
-@media (pointer: coarse), (max-width: 1024px) { .cheer-toggle { display: block; } }
-.cheer-toggle > button { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 12px; border-radius: 999px;
-  color: var(--muted); background: #fff; border: 1px solid var(--line); }
-.cheer-toggle > button.on { color: var(--blue-800); }
-.cheer-toggle > button b { font-weight: 600; margin-left: 2px; padding-left: 8px; border-left: 1px solid var(--line); }
-.cheer-options { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
-.cheer-options button { padding: 4px 11px; font-size: 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--muted); }
-.cheer-options button[aria-checked="true"] { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
-.cheer-options small { font-size: 11px; color: var(--muted); margin-left: 4px; }
 .values-notes { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .values-notes li { position: relative; padding: 12px 16px 12px 40px; border-radius: 14px; background: var(--k-cream);
   font-family: var(--k-mincho); font-size: 17px; font-weight: 600; color: var(--blue-800); }
