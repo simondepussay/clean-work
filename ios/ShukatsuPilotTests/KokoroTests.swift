@@ -69,6 +69,25 @@ final class KokoroTests: XCTestCase {
         XCTAssertEqual(model.todayMood?.word, "不安")
     }
 
+    func testCheerFrequencyIsSentToSettings() async throws {
+        var sent: [String: Any] = [:]
+        StubURLProtocol.handler = { request in
+            if request.httpMethod == "PUT" {
+                let body = request.httpBody ?? request.httpBodyStream.map { s in
+                    s.open(); defer { s.close() }
+                    var d = Data(); var b = [UInt8](repeating: 0, count: 1024)
+                    while s.hasBytesAvailable { let n = s.read(&b, maxLength: b.count); if n <= 0 { break }; d.append(b, count: n) }
+                    return d
+                } ?? Data()
+                sent = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] ?? [:]
+            }
+            return (200, Data(#"{"cheerFrequency":"weekly"}"#.utf8))
+        }
+        try await api().setCheerFrequency("weekly")
+        XCTAssertEqual(StubURLProtocol.lastRequest?.url?.path, "/api/kokoro/settings")
+        XCTAssertEqual(sent["cheerFrequency"] as? String, "weekly")
+    }
+
     func testShortDateFollowsTheLanguage() {
         UserDefaults.standard.set("ja", forKey: HelpLanguage.storageKey)
         XCTAssertEqual(KokoroView.shortDate("2026-11-03"), "11月3日(火)")

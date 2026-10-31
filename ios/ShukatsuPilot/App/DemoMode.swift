@@ -46,6 +46,10 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
         case ("GET", "/api/info"): body = Self.info
         case ("GET", "/api/kokoro"): body = Self.kokoro
+        case ("GET", "/api/kokoro/journal"): body = ["entries": [
+            ["date": Self.day(-1), "text": "説明会で話した社員さんが優しかった。少し安心した。", "updatedAt": ""],
+            ["date": Self.day(-3), "text": "ESが3本終わった。疲れたけど、自分の言葉で書けた気がする。", "updatedAt": ""],
+        ]]
         // Données ouvertes (exemples).
         case ("GET", "/api/holidays"): body = ["2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日", "2027-01-01": "元日"]
         case ("GET", "/api/weather"): body = ["date": Self.day(6), "prefecture": "東京都", "place": "東京都港区", "kind": "rain", "rainChance": 70, "tMax": 18, "tMin": 12] as [String: Any]
@@ -109,7 +113,7 @@ private final class DemoURLProtocol: URLProtocol {
             if let w = d.1 { m["word"] = w }
             return m
         }
-        return ["moods": moods, "values": ["家族を安心させたい", "誠実でいること", "人の役に立つものを作る"],
+        return ["moods": moods, "cheerFrequency": "daily",
                 "support": ["level": "often", "rainy7": 3, "rainy14": 4],
                 "week": ["applications": 2, "drafts": 3, "interviews": 1, "rejections": 1],
                 "prefecture": "東京都", "international": true]

@@ -8,19 +8,17 @@ struct KokoroSource: Identifiable {
     var id: String { url }
     var text: String { tr(ja, en, fr) }
 
-    static let labeling = KokoroSource(name: "Lieberman et al., Psychological Science (2007)", url: "https://doi.org/10.1111/j.1467-9280.2007.01916.x",
-        ja: "感情に名前をつけると、気持ちの反応がやわらぐ。", en: "Putting feelings into words dampens emotional reactions.", fr: "Mettre un mot sur une émotion en atténue la réaction.")
     static let breathing = KokoroSource(name: "こころの耳（厚生労働省）", url: "https://kokoro.mhlw.go.jp/fivemin/",
         ja: "ゆっくりした呼吸はリラクセーションの基本。", en: "Slow breathing is a basic relaxation method.", fr: "La respiration lente est une méthode de relaxation de base.")
-    static let values = KokoroSource(name: "Creswell et al., Psychological Science (2005)", url: "https://doi.org/10.1111/j.1467-9280.2005.01624.x",
-        ja: "大切な価値を思い出すと、ストレスへの反応が小さくなった。", en: "Recalling personal values lowered stress responses.", fr: "Se rappeler ses valeurs a réduit la réaction au stress.")
+    static let journal = KokoroSource(name: "APA Monitor — Writing to heal (2002)", url: "https://www.apa.org/monitor/jun02/writing",
+        ja: "気持ちを書き出すことで、心と体の調子がよくなるという研究。", en: "Research on how writing about feelings improves well-being.", fr: "Les recherches sur l'écriture de ses émotions et le bien-être.")
     static let excited = KokoroSource(name: "Brooks, J. Exp. Psychology: General (2014)", url: "https://doi.org/10.1037/a0035325",
         ja: "「落ち着こう」より「ワクワクしてる」と言う方が、人前での発表がうまくいった。", en: "Saying “I am excited” rather than “calm down” improved performance in public speaking.", fr: "Dire « je suis enthousiaste » plutôt que « calme-toi » a amélioré la prise de parole.")
     static let who = KokoroSource(name: "WHO — Doing What Matters in Times of Stress", url: "https://www.who.int/publications/i/item/9789240003927",
         ja: "大切なことに沿って行動し、自分にやさしくする。", en: "Act on your values and be kind to yourself.", fr: "Agir selon ses valeurs, être bienveillant envers soi.")
     static let twoWeeks = KokoroSource(name: "こころもメンテしよう（厚生労働省）", url: "https://www.mhlw.go.jp/kokoro/youth/",
         ja: "つらい気分が2週間以上続くときは、早めに相談を。", en: "If low mood lasts more than 2 weeks, talk to someone early.", fr: "Si le mal-être dure plus de 2 semaines, en parler tôt.")
-    static let all = [labeling, breathing, values, excited, who, twoWeeks]
+    static let all = [breathing, journal, excited, who, twoWeeks]
 }
 
 private struct SourceLink: View {
@@ -85,11 +83,9 @@ struct BreathingView: View {
     private var inhale: Bool { tick % 10 < 4 }
 }
 
-/// « 面接前の3分 » : respirer → relire ce qui compte → requalifier le trac.
+/// « ひと休みしましょう » : respirer une minute → requalifier le trac.
 struct RitualView: View {
-    let values: [String]
     let company: String?
-    var onEditValues: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var step = 0
 
@@ -98,7 +94,7 @@ struct RitualView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     HStack(spacing: 6) {
-                        ForEach(0..<3) { i in
+                        ForEach(0..<2) { i in
                             Capsule().fill(i == step ? Color.cwBordeaux : i < step ? Color.cwBlue300 : Color.cwLine).frame(width: 28, height: 4)
                         }
                     }
@@ -110,23 +106,12 @@ struct RitualView: View {
                         SourceLink(source: .breathing)
                         Button(tr("次へ", "Next", "Suivant")) { step = 1 }.buttonStyle(SecondaryButtonStyle())
                     case 1:
-                        title(tr("あなたが大切にしていること", "What matters to you", "Ce qui compte pour vous"))
-                        if values.isEmpty {
-                            Button(tr("まだ書かれていません。書く", "Nothing written yet. Write them", "Rien d'écrit. Les écrire")) { dismiss(); onEditValues() }
-                        } else {
-                            ForEach(values, id: \.self) { Text($0).font(.title3.weight(.semibold)).foregroundStyle(Color.cwBlue800) }
-                        }
-                        Text(tr("ゆっくり読んで、どうしてそれが大切か思い出してください。", "Read slowly and recall why each one matters.", "Lisez lentement et rappelez-vous pourquoi chacune compte."))
-                            .font(.footnote).foregroundStyle(Color.cwMuted).multilineTextAlignment(.center)
-                        SourceLink(source: .values)
-                        Button(tr("次へ", "Next", "Suivant")) { step = 2 }.buttonStyle(PrimaryButtonStyle())
-                    case 2:
                         title(tr("ドキドキは、準備ができたしるし", "Nerves mean you are ready", "Le trac, signe que vous êtes prêt"))
                         Text(tr("「落ち着かなきゃ」ではなく、「ワクワクしてる」。", "Not “I must calm down” — “I am excited.”", "Pas « je dois me calmer », mais « je suis enthousiaste »."))
                             .font(.title3.bold()).foregroundStyle(Color.cwBlue800).multilineTextAlignment(.center)
                         Text(tr("声に出して一度だけ言ってみましょう。", "Say it out loud, once.", "Dites-le une fois à voix haute.")).font(.footnote).foregroundStyle(Color.cwMuted)
                         SourceLink(source: .excited)
-                        Button(tr("終わる", "Finish", "Terminer")) { step = 3 }.buttonStyle(PrimaryButtonStyle())
+                        Button(tr("終わる", "Finish", "Terminer")) { step = 2 }.buttonStyle(PrimaryButtonStyle())
                     default:
                         title(company.map { tr("\($0)、いってらっしゃい。", "Good luck at \($0).", "Bonne chance chez \($0).") } ?? tr("いってらっしゃい。", "Good luck.", "Bonne chance."))
                         Button(tr("閉じる", "Close", "Fermer")) { dismiss() }.buttonStyle(SecondaryButtonStyle())
@@ -137,7 +122,7 @@ struct RitualView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(Color.cwBlue50)
-            .navigationTitle(tr("面接前の3分", "3 minutes before the interview", "3 minutes avant l'entretien"))
+            .navigationTitle(KokoroView.pause)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } } }
         }
@@ -152,11 +137,12 @@ struct RitualView: View {
 struct KokoroView: View {
     @State var model: KokoroModel
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var word = ""
     @State private var breathing = false
     @State private var ritual = false
-    @State private var editingValues = false
-    @State private var draftValues = ["", "", ""]
+    @State private var journalText = ""
+    @State private var journalState: JournalState = .idle
+    @State private var shownPages = 5
+    @State private var openPages: Set<String> = []
     @State private var confirmErase = false
 
     var body: some View {
@@ -187,7 +173,7 @@ struct KokoroView: View {
             }
         }
         .background(.white)
-        .task { await model.load(); word = model.todayMood?.word ?? "" }
+        .task { await model.load(); journalText = model.journal.first { $0.date == model.today }?.text ?? "" }
         .refreshable { await model.load() }
         .sheet(isPresented: $breathing) {
             VStack(spacing: 12) {
@@ -199,12 +185,11 @@ struct KokoroView: View {
             .presentationDetents([.medium])
         }
         .sheet(isPresented: $ritual) {
-            RitualView(values: model.data?.values ?? [], company: model.nextInterview?.company) { startEditingValues() }
+            RitualView(company: model.nextInterview?.company)
         }
-        .sheet(isPresented: $editingValues) { valuesEditor }
-        .confirmationDialog(tr("こころの記録（天気と大切なこと）をすべて消しますか？元に戻せません。", "Erase all your Mind records (weather and values)? This cannot be undone.", "Effacer tout votre journal (météo et valeurs) ? C'est définitif."),
+        .confirmationDialog(tr("こころの記録（天気と日記）をすべて消しますか？元に戻せません。", "Erase all your Mind records (weather and journal)? This cannot be undone.", "Tout effacer (météo et journal intime) ? C'est définitif."),
                             isPresented: $confirmErase, titleVisibility: .visible) {
-            Button(tr("すべて消す", "Erase all", "Tout effacer"), role: .destructive) { Task { await model.erase(); word = "" } }
+            Button(tr("すべて消す", "Erase all", "Tout effacer"), role: .destructive) { Task { await model.erase(); journalText = "" } }
         }
     }
 
@@ -214,6 +199,113 @@ struct KokoroView: View {
         today(data).card()
         support(data)
         ritualCard
+        cheerMenu(data)
+        journalCard
+    }
+
+    static let pause = tr("ひと休みしましょう", "Take a break", "Faites une pause")
+
+    enum JournalState { case idle, saving, saved, failed }
+
+    /// 日記 : la page du jour (lignée), puis les pages précédentes, deux lignes chacune ; un tap déplie.
+    private var journalCard: some View {
+        let saved = model.journal.first { $0.date == model.today }?.text ?? ""
+        let dirty = journalText.trimmingCharacters(in: .whitespacesAndNewlines) != saved
+        let past = model.journal.filter { $0.date != model.today }
+        return VStack(alignment: .leading, spacing: 10) {
+            heading(tr("日記", "Journal", "Journal intime"))
+            Text(tr("あなただけのページ。AIには送りません。", "Your own page. Never sent to the AI.", "Votre page à vous. Jamais envoyée à l'IA."))
+                .font(.caption).foregroundStyle(Color.cwMuted)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(Self.shortDate(model.today)).font(.caption2).foregroundStyle(Color.cwMuted)
+                TextEditor(text: $journalText)
+                    .frame(minHeight: 120)
+                    .scrollContentBackground(.hidden)
+                    .font(.body)
+                    .overlay(alignment: .topLeading) {
+                        if journalText.isEmpty {
+                            Text(tr("今日あったこと、感じたこと…", "What happened today, how you felt…", "Ce qui s'est passé aujourd'hui, ce que vous avez ressenti…"))
+                                .foregroundStyle(Color.cwMuted).padding(.top, 8).padding(.leading, 5).allowsHitTesting(false)
+                        }
+                    }
+                    .onChange(of: journalText) { if journalState != .saving { journalState = .idle } }
+            }
+            .padding(12)
+            .background(Color(red: 1, green: 0.992, blue: 0.97), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.cwLine))
+            HStack(spacing: 12) {
+                Button(tr("保存", "Save", "Enregistrer")) {
+                    journalState = .saving
+                    Task { journalState = await model.saveJournal(journalText) ? .saved : .failed }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!dirty || journalState == .saving)
+                if journalState == .saved && !dirty { Text(tr("保存しました", "Saved", "Enregistré")).font(.caption).foregroundStyle(Color.cwMuted) }
+                if journalState == .failed { Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).font(.caption).foregroundStyle(Color.cwBordeaux) }
+            }
+            if !past.isEmpty {
+                Divider().padding(.vertical, 4)
+                ForEach(past.prefix(shownPages)) { page in
+                    let open = openPages.contains(page.date)
+                    Button {
+                        if open { openPages.remove(page.date) } else { openPages.insert(page.date) }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(Self.shortDate(page.date)).font(.caption.bold()).foregroundStyle(Color.cwBlue800)
+                            Text(page.text).font(.subheadline).foregroundStyle(Color.cwBlue950)
+                                .lineLimit(open ? nil : 2).multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(open ? tr("たたむ", "Collapse", "Replier") : tr("全文を見る", "Show all", "Tout afficher"))
+                }
+                if past.count > shownPages {
+                    Button(tr("もっと見る", "Show more", "Voir plus")) { shownPages += 10 }.font(.subheadline).underline()
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    /// はげましの通知 : un petit bouton ; le menu propose le rythme (ou l'arrêt). Seulement dans l'app iPhone,
+    /// là où les encouragements arrivent.
+    private static let rhythms: [(id: String, ja: String, en: String, fr: String)] = [
+        ("daily", "毎日", "Every day", "Chaque jour"),
+        ("every2", "2日に1回", "Every 2 days", "Tous les 2 jours"),
+        ("weekly", "週に1回", "Once a week", "Chaque semaine"),
+        ("off", "オフ", "Off", "Désactivés"),
+    ]
+
+    private func cheerMenu(_ data: Kokoro) -> some View {
+        let current = data.cheerFrequency ?? "daily"
+        let label = Self.rhythms.first { $0.id == current }.map { tr($0.ja, $0.en, $0.fr) } ?? ""
+        return HStack {
+            Menu {
+                Picker(tr("はげましの通知（朝8時）", "Encouragement (8 am)", "Encouragements (8 h)"), selection: Binding(
+                    get: { current },
+                    set: { f in Task { await model.setCheerFrequency(f) } }
+                )) {
+                    ForEach(Self.rhythms, id: \.id) { r in Text(tr(r.ja, r.en, r.fr)).tag(r.id) }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: current == "off" ? "bell.slash" : "bell").font(.caption)
+                    Text(current == "off" ? tr("はげましを受け取る", "Get encouragement", "Activer les encouragements") : tr("はげましの通知", "Encouragement", "Encouragements"))
+                    if current != "off" { Text(label).fontWeight(.semibold) }
+                }
+                .font(.footnote)
+                .foregroundStyle(current == "off" ? Color.cwMuted : Color.cwBlue800)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(.white, in: Capsule())
+                .overlay(Capsule().stroke(Color.cwLine))
+            }
+            .accessibilityLabel(tr("はげましの通知", "Encouragement", "Encouragements"))
+            .accessibilityValue(label)
+            Spacer(minLength: 0)
+        }
+        .padding(.top, -6)
     }
 
     private func today(_ data: Kokoro) -> some View {
@@ -223,7 +315,7 @@ struct KokoroView: View {
                 ForEach(MoodWeather.allCases) { w in
                     let selected = model.todayMood?.weather == w.rawValue
                     Button {
-                        Task { await model.choose(selected ? nil : w.rawValue, word: word) }
+                        Task { await model.choose(selected ? nil : w.rawValue) }
                     } label: {
                         VStack(spacing: 6) {
                             Image(systemName: w.symbol).font(.title2)
@@ -237,33 +329,6 @@ struct KokoroView: View {
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
-            }
-            if let mood = model.todayMood {
-                Text(tr("ひとことで言うと？", "In one word?", "En un mot ?")).font(.caption).foregroundStyle(Color.cwMuted)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(Self.words, id: \.ja) { w in
-                            let text = tr(w.ja, w.en, w.fr)
-                            let on = word == text
-                            Button(text) {
-                                word = on ? "" : text
-                                Task { await model.choose(mood.weather, word: word) }
-                            }
-                            .font(.footnote)
-                            .padding(.horizontal, 12).padding(.vertical, 5)
-                            .foregroundStyle(on ? .white : Color.cwBlue800)
-                            .background(on ? Color.cwBlue700 : .white, in: Capsule())
-                            .overlay(Capsule().stroke(on ? Color.cwBlue700 : Color.cwBlue300))
-                        }
-                    }
-                }
-                HStack {
-                    TextField(tr("自分の言葉で", "In your own words", "Avec vos mots"), text: $word)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit { Task { await model.choose(mood.weather, word: word) } }
-                    Button(tr("保存", "Save", "Enregistrer")) { Task { await model.choose(mood.weather, word: word) } }.buttonStyle(SecondaryButtonStyle())
-                }
-                SourceLink(source: .labeling)
             }
             monthStrip(data)
         }
@@ -326,9 +391,9 @@ struct KokoroView: View {
     private var ritualCard: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(tr("面接前の3分", "3 MINUTES BEFORE THE INTERVIEW", "3 MINUTES AVANT L'ENTRETIEN")).font(.caption.bold()).foregroundStyle(Color.cwBordeaux)
+                Text(Self.pause).font(.caption.bold()).foregroundStyle(Color.cwBordeaux)
                 Text(model.nextInterview.map { tr("\(Self.shortDate($0.date))、\($0.company)の面接の前に", "Before your interview at \($0.company), \(Self.shortDate($0.date))", "Avant votre entretien chez \($0.company), \(Self.shortDate($0.date))") }
-                     ?? tr("呼吸・大切なこと・ひとこと", "Breathe, recall what matters, one sentence", "Respirer, se rappeler l'essentiel, une phrase"))
+                     ?? tr("1分呼吸して、ひとこと。", "One minute of breathing, then one sentence.", "Une minute pour respirer, puis une phrase."))
                     .font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue950)
             }
             Spacer(minLength: 0)
@@ -357,15 +422,6 @@ struct KokoroView: View {
             Text(tr("学校の学生相談室も、就活の悩みを聞いてくれます。", "Your school's student counseling office also listens to job-hunting worries.", "Le service de conseil aux étudiants de votre école écoute aussi les soucis liés au 就活."))
                 .font(.caption).foregroundStyle(Color.cwMuted)
         }
-        VStack(alignment: .leading, spacing: 6) {
-            sideTitle(tr("大切にしていること", "What matters to me", "Ce qui compte pour moi"))
-            if data.values.isEmpty {
-                Text(tr("面接の前に読み返す、自分のための3行。", "Three lines for yourself, to reread before interviews.", "Trois lignes pour vous, à relire avant les entretiens.")).font(.caption).foregroundStyle(Color.cwMuted)
-            }
-            ForEach(data.values, id: \.self) { Text("・\($0)").font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800) }
-            Button(data.values.isEmpty ? tr("書く", "Write", "Écrire") : tr("書きなおす", "Edit", "Modifier")) { startEditingValues() }
-                .font(.subheadline).underline()
-        }
         VStack(alignment: .leading, spacing: 8) {
             sideTitle(tr("このページの根拠", "What this page is based on", "Sur quoi repose cette page"))
             ForEach(KokoroSource.all) { s in
@@ -382,34 +438,6 @@ struct KokoroView: View {
             Button(tr("記録をすべて消す", "Erase all records", "Tout effacer")) { confirmErase = true }
                 .font(.caption).foregroundStyle(Color.cwBordeaux)
         }
-    }
-
-    private var valuesEditor: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    ForEach(0..<3, id: \.self) { i in
-                        TextField([tr("例：家族を安心させたい", "e.g. Reassure my family", "Ex. : rassurer ma famille"), tr("例：誠実でいること", "e.g. Stay honest", "Ex. : rester honnête"), ""][i], text: $draftValues[i])
-                    }
-                } footer: {
-                    Text(tr("面接の前に読み返す、自分のための3行。", "Three lines for yourself, to reread before interviews.", "Trois lignes pour vous, à relire avant les entretiens."))
-                }
-            }
-            .cleanList()
-            .navigationTitle(tr("大切にしていること", "What matters to me", "Ce qui compte pour moi"))
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button(tr("やめる", "Cancel", "Annuler")) { editingValues = false } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(tr("保存", "Save", "Enregistrer")) { Task { await model.saveValues(draftValues); editingValues = false } }
-                }
-            }
-        }
-        .presentationDetents([.medium])
-    }
-
-    private func startEditingValues() {
-        draftValues = Array(((model.data?.values ?? []) + ["", "", ""]).prefix(3))
-        editingValues = true
     }
 
     private func heading(_ text: String) -> some View { Text(text).font(.headline).foregroundStyle(Color.cwBlue950) }
@@ -445,9 +473,4 @@ struct KokoroView: View {
         f.setLocalizedDateFormatFromTemplate("MMMdEEE")
         return f.string(from: date)
     }
-
-    /// Des mots pour nommer ce qu'on ressent (Lieberman 2007).
-    static let words: [(ja: String, en: String, fr: String)] = [
-        ("不安", "Anxious", "Inquiet"), ("疲れた", "Tired", "Fatigué"), ("焦り", "Rushed", "Pressé"), ("ほっとした", "Relieved", "Soulagé"), ("ワクワク", "Excited", "Enthousiaste"),
-    ]
 }

@@ -10,16 +10,34 @@ struct Kokoro: Codable, Equatable {
     struct Week: Codable, Equatable { let applications: Int; let drafts: Int; let interviews: Int; let rejections: Int }
 
     var moods: [Mood]
-    var values: [String]
     let support: Support
     let week: Week
     let prefecture: String?
     let international: Bool
     /// お守りの言葉 (écrites sur le web pour l'instant) : programmées en notifications locales.
     var charms: [Charm]?
+    /// はげましの通知 : daily (par défaut) / every2 / weekly / off.
+    var cheerFrequency: String?
+}
+
+/// Une page du journal intime (日記) : une par jour, jamais envoyée à l'IA.
+struct JournalEntry: Codable, Equatable, Identifiable {
+    let date: String
+    let text: String
+    var id: String { date }
 }
 
 extension APIClient {
+    func journal() async throws -> [JournalEntry] {
+        struct Page: Decodable { let entries: [JournalEntry] }
+        return try JSONDecoder().decode(Page.self, from: try await sendRaw("GET", "api/kokoro/journal")).entries
+    }
+
+    /// Texte vide : la page du jour est effacée.
+    func writeJournal(date: String, text: String) async throws {
+        try await sendRaw("PUT", "api/kokoro/journal", body: try JSONEncoder().encode(["date": date, "text": text]))
+    }
+
     func kokoro(today: String) async throws -> Kokoro {
         try JSONDecoder().decode(Kokoro.self, from: try await sendRaw("GET", "api/kokoro?today=\(today)"))
     }
@@ -41,8 +59,8 @@ extension APIClient {
         try await sendRaw("PUT", "api/kokoro/mood", body: try JSONEncoder().encode(Body(date: date, weather: weather, word: weather == nil || clean?.isEmpty != false ? nil : clean)))
     }
 
-    func setValues(_ values: [String]) async throws {
-        try await sendRaw("PUT", "api/kokoro/values", body: try JSONEncoder().encode(["values": values]))
+    func setCheerFrequency(_ frequency: String) async throws {
+        try await sendRaw("PUT", "api/kokoro/settings", body: try JSONEncoder().encode(["cheerFrequency": frequency]))
     }
 
     func eraseKokoro() async throws {
@@ -55,7 +73,9 @@ extension APIClient {
 final class KokoroModel {
     private(set) var data: Kokoro?
     private(set) var failed = false
-    /// Le prochain entretien dans les 7 jours : le rituel « 面接前の3分 » lui est dédié.
+    /// Le journal, du plus récent au plus ancien (lu à part : il ne voyage pas avec le reste).
+    private(set) var journal: [JournalEntry] = []
+    /// Le prochain entretien dans les 7 jours : la pause « ひと休みしましょう » lui est dédiée.
     private(set) var nextInterview: (company: String, date: String)?
     let api: APIClient
     private let now: () -> Date
@@ -76,17 +96,28 @@ final class KokoroModel {
         } catch {
             failed = data == nil
         }
+        if let pages = try? await api.journal() { journal = pages }
         if let apps = try? await api.applications() { nextInterview = Self.nextInterview(in: apps, today: today) }
     }
 
-    func choose(_ weather: String?, word: String? = nil) async {
-        try? await api.setMood(date: today, weather: weather, word: word ?? todayMood?.word)
+    func choose(_ weather: String?) async {
+        try? await api.setMood(date: today, weather: weather, word: nil)
         await load()
     }
 
-    func saveValues(_ values: [String]) async {
-        try? await api.setValues(values.map { $0.trimmingCharacters(in: .whitespaces) })
-        await load()
+    /// Change tout de suite à l'écran, puis enregistre ; en cas d'échec, relit l'état du serveur.
+    func setCheerFrequency(_ frequency: String) async {
+        data?.cheerFrequency = frequency
+        do { try await api.setCheerFrequency(frequency) } catch { await load() }
+    }
+
+    /// Enregistre la page du jour ; renvoie false si l'envoi a échoué (le texte reste à l'écran).
+    func saveJournal(_ text: String) async -> Bool {
+        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        do { try await api.writeJournal(date: today, text: clean) } catch { return false }
+        journal.removeAll { $0.date == today }
+        if !clean.isEmpty { journal.insert(JournalEntry(date: today, text: clean), at: 0) }
+        return true
     }
 
     func erase() async {
