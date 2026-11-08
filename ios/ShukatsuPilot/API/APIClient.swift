@@ -124,11 +124,32 @@ struct APIClient {
 
     // MARK: 履歴書 PDF (S11)
 
+    /// 履歴書 : trois modèles, comme au Japon. 新卒用 par défaut (c'est le 就活), comme sur le web.
     struct ResumeOptions: Encodable, Equatable {
         enum Era: String, Encodable, CaseIterable { case western, japanese }
+        enum Template: String, Encodable, CaseIterable { case student, standard, baito }
         var era: Era = .western
+        var template: Template = .student
         var appeal: String?
         var wishes: String?
+        /// 新卒用
+        var gakuchika: String?
+        var selfPr: String?
+        /// アルバイト用 : jours (mon…sun), horaires, gare, trajet en minutes.
+        var days: [String]?
+        var hours: String?
+        var station: String?
+        var commute: Int?
+
+        /// Ce qui part au serveur : seulement les cases du modèle choisi.
+        var forSending: ResumeOptions {
+            var o = self
+            if template != .student { o.gakuchika = nil; o.selfPr = nil }
+            if template != .baito { o.days = nil; o.hours = nil; o.station = nil; o.commute = nil }
+            if o.days?.isEmpty == true { o.days = nil }
+            if let c = o.commute, c <= 0 { o.commute = nil }
+            return o
+        }
     }
 
     /// 職務経歴書 (S12)
@@ -143,7 +164,7 @@ struct APIClient {
 
     /// Le PDF et son nom de fichier (japonais), ou la raison de l'échec.
     func resume(_ options: ResumeOptions) async throws -> Result<(data: Data, filename: String), ResumeError> {
-        try await pdf("api/resume", options, filename: "履歴書.pdf")
+        try await pdf("api/resume", options.forSending, filename: "履歴書.pdf")
     }
 
     func workHistory(_ options: WorkHistoryOptions) async throws -> Result<(data: Data, filename: String), ResumeError> {

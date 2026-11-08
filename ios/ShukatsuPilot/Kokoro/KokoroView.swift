@@ -144,6 +144,7 @@ struct KokoroView: View {
     @State private var shownPages = 5
     @State private var openPages: Set<String> = []
     @State private var confirmErase = false
+    @State private var reading = false
 
     var body: some View {
         ScrollView {
@@ -184,6 +185,7 @@ struct KokoroView: View {
             .padding(24)
             .presentationDetents([.medium])
         }
+        .fullScreenCover(isPresented: $reading) { JournalBookView(entries: model.journal) }
         .sheet(isPresented: $ritual) {
             RitualView(company: model.nextInterview?.company)
         }
@@ -213,7 +215,17 @@ struct KokoroView: View {
         let dirty = journalText.trimmingCharacters(in: .whitespacesAndNewlines) != saved
         let past = model.journal.filter { $0.date != model.today }
         return VStack(alignment: .leading, spacing: 10) {
-            heading(tr("日記", "Journal", "Journal intime"))
+            HStack(alignment: .firstTextBaseline) {
+                heading(tr("日記", "Journal", "Journal intime"))
+                Spacer()
+                if !model.journal.isEmpty {
+                    Button { reading = true } label: {
+                        Label(tr("日記を読む", "Read as a book", "Feuilleter"), systemImage: "book")
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue700)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
             Text(tr("あなただけのページ。AIには送りません。", "Your own page. Never sent to the AI.", "Votre page à vous. Jamais envoyée à l'IA."))
                 .font(.caption).foregroundStyle(Color.cwMuted)
             VStack(alignment: .leading, spacing: 4) {

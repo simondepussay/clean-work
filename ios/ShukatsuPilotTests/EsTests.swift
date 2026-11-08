@@ -146,7 +146,20 @@ final class ResumeTests: XCTestCase {
 
     func testOptionsEncodeWithoutEmptyFields() throws {
         let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(APIClient.ResumeOptions(era: .western))) as? [String: String]
-        XCTAssertEqual(json, ["era": "western"])
+        XCTAssertEqual(json, ["era": "western", "template": "student"])
+    }
+
+    func testOnlyTheChosenTemplateFieldsAreSent() throws {
+        var options = APIClient.ResumeOptions(gakuchika: "部活", selfPr: "粘り強さ", days: ["mon", "sat"], hours: "17時以降", commute: 0)
+        XCTAssertEqual(options.forSending.gakuchika, "部活")
+        XCTAssertNil(options.forSending.days, "新卒用 : pas de cases アルバイト")
+        options.template = .baito
+        XCTAssertNil(options.forSending.selfPr, "アルバイト用 : pas de 自己PR séparé")
+        XCTAssertEqual(options.forSending.days, ["mon", "sat"])
+        XCTAssertNil(options.forSending.commute, "0 minute = non renseigné")
+        options.template = .standard
+        XCTAssertNil(options.forSending.hours)
+        XCTAssertNil(options.forSending.gakuchika)
     }
 }
 

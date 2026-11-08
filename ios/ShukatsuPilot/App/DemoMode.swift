@@ -49,6 +49,7 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/kokoro/journal"): body = ["entries": [
             ["date": Self.day(-1), "text": "説明会で話した社員さんが優しかった。少し安心した。", "updatedAt": ""],
             ["date": Self.day(-3), "text": "ESが3本終わった。疲れたけど、自分の言葉で書けた気がする。", "updatedAt": ""],
+            ["date": Self.day(-6), "text": "初めての面接練習。緊張して、志望動機の途中で言葉が出てこなくなった。\nでも、二回目は最後まで話せた。少しずつでいい。明日は自己PRをもう一度声に出して読んでみる。", "updatedAt": ""],
         ]]
         // Données ouvertes (exemples).
         case ("GET", "/api/holidays"): body = ["2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日", "2027-01-01": "元日"]

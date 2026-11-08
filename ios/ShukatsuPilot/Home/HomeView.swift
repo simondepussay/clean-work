@@ -120,15 +120,38 @@ private struct HomeContent: View {
 
     private var calendar: some View {
         VStack(spacing: 10) {
-            HStack {
-                Image(systemName: "calendar").foregroundStyle(Color.cwBlue700)
-                Text(monthTitle).font(.title3.bold()).foregroundStyle(Color.cwBlue800)
+            // Comme sur le web : grand chiffre du mois en bordeaux, nom du mois (霜月…) et année, puis ‹ 今日 › en une pastille.
+            HStack(alignment: .center, spacing: 12) {
+                HStack(spacing: 12) {
+                    Text("\(home.month.month ?? 1)")
+                        .font(.system(size: 40, weight: .heavy)).monospacedDigit()
+                        .foregroundStyle(Color.cwBordeaux)
+                        .frame(minWidth: 44, alignment: .trailing)
+                    Rectangle().fill(Color.cwLine).frame(width: 1, height: 38)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Self.monthName(year: home.month.year ?? 2026, month: home.month.month ?? 1))
+                            .font(.title3.bold()).foregroundStyle(Color.cwBlue800)
+                        Text(tr("\(String(home.month.year ?? 2026))年", String(home.month.year ?? 2026), String(home.month.year ?? 2026)))
+                            .font(.caption.weight(.semibold)).tracking(1.6).foregroundStyle(Color.cwMuted)
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(monthTitle)
+                .accessibilityAddTraits(.isHeader)
                 Spacer()
-                Button { home.shift(-1) } label: { Image(systemName: "chevron.left") }
-                    .accessibilityLabel(tr("前の月", "Previous month", "Mois précédent"))
-                Button(tr("今日", "Today", "Aujourd'hui")) { home.goToday() }.buttonStyle(SecondaryButtonStyle())
-                Button { home.shift(1) } label: { Image(systemName: "chevron.right") }
-                    .accessibilityLabel(tr("次の月", "Next month", "Mois suivant"))
+                HStack(spacing: 0) {
+                    Button { home.shift(-1) } label: { Image(systemName: "chevron.left").frame(width: 34, height: 30) }
+                        .accessibilityLabel(tr("前の月", "Previous month", "Mois précédent"))
+                    Divider().frame(height: 30)
+                    Button { home.goToday() } label: { Text(tr("今日", "Today", "Aujourd'hui")).font(.footnote).padding(.horizontal, 12).frame(height: 30) }
+                    Divider().frame(height: 30)
+                    Button { home.shift(1) } label: { Image(systemName: "chevron.right").frame(width: 34, height: 30) }
+                        .accessibilityLabel(tr("次の月", "Next month", "Mois suivant"))
+                }
+                .foregroundStyle(Color.cwBlue800)
+                .background(Color.cwBlue50, in: Capsule())
+                .overlay(Capsule().stroke(Color.cwLine))
+                .clipShape(Capsule())
             }
             .buttonStyle(.borderless)
             let weekdays = [tr("日", "Sun", "dim."), tr("月", "Mon", "lun."), tr("火", "Tue", "mar."), tr("水", "Wed", "mer."),
@@ -342,6 +365,19 @@ private struct HomeContent: View {
     }
 
     // MARK: Dates
+
+    /// Le mois seul, pour l'en-tête : en japonais son nom traditionnel (霜月…), le chiffre est déjà à côté.
+    static let wafu = ["睦月", "如月", "弥生", "卯月", "皐月", "水無月", "文月", "葉月", "長月", "神無月", "霜月", "師走"]
+
+    static func monthName(year: Int, month: Int) -> String {
+        if HelpLanguage.saved == .ja { return wafu[(month - 1 + 12) % 12] }
+        guard let date = Calendar.current.date(from: DateComponents(year: year, month: month, day: 1)) else { return "" }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: tr("ja_JP", "en_US", "fr_FR"))
+        f.setLocalizedDateFormatFromTemplate("MMMM")
+        let text = f.string(from: date)
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
 
     private var monthTitle: String {
         guard let date = Calendar.current.date(from: home.month) else { return "" }
