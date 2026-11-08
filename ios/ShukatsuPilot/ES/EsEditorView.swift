@@ -156,7 +156,8 @@ private struct ReviewSection: View {
 
     static func category(_ id: String) -> String {
         ["keigo": tr("敬語", "Keigo", "Keigo"), "grammar": tr("文法", "Grammar", "Grammaire"), "wording": tr("表現", "Wording", "Formulation"),
-         "structure": tr("構成", "Structure", "Structure"), "star": "STAR", "length": tr("文字数", "Length", "Longueur")][id] ?? id
+         "structure": tr("構成", "Structure", "Structure"), "star": "STAR", "length": tr("文字数", "Length", "Longueur"),
+         "fit": tr("企業との一致", "Fit with the company", "Lien avec l'entreprise")][id] ?? id
     }
 
     static func message(_ refusal: ReviewRefusal) -> String {

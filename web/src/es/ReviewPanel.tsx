@@ -12,6 +12,7 @@ const CATEGORY: Record<string, T3> = {
   structure: { ja: "構成", en: "Structure", fr: "Structure" },
   star: { ja: "STAR", en: "STAR", fr: "STAR" },
   length: { ja: "文字数", en: "Length", fr: "Longueur" },
+  fit: { ja: "企業との一致", en: "Fit with the company", fr: "Lien avec l'entreprise" },
 };
 
 const LOCALE = { ja: "ja-JP", en: "en-US", fr: "fr-FR" } as const;

@@ -16,7 +16,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { containers, type Application, type Draft, type Profile } from "./models";
-import { costJpy, explanationLanguages, type ChatMessage, type ExplanationLanguage, type ModelUsage, type StructuredModel } from "./review";
+import { costJpy, cut, explanationLanguages, INDUSTRY_NAMES, TYPE_NAMES, type ChatMessage, type ExplanationLanguage, type ModelUsage, type StructuredModel } from "./review";
 import type { DocStore } from "./store";
 import { INTERVIEW_LIMITS, INTERVIEWS, UsageLimiter, type Refusal } from "./usage";
 
@@ -88,11 +88,6 @@ export type Interview = {
 // ------------------------------------------------------------------ contexte
 
 const STAGE_NAMES: Record<InterviewStage, string> = { interview1: "一次面接", interview2: "二次面接", final: "最終面接" };
-const INDUSTRY_NAMES: Record<string, string> = {
-  it: "IT・通信", maker: "メーカー", trading: "商社", finance: "金融", consulting: "コンサル", retail: "小売・流通",
-  service: "サービス・人材", media: "広告・マスコミ", infrastructure: "インフラ・交通", public: "官公庁・団体", other: "その他",
-};
-const TYPE_NAMES: Record<string, string> = { large: "大手", sme: "中小企業", startup: "ベンチャー", foreign: "外資系" };
 const LANGUAGE_NAMES: Record<string, string> = {
   ja: "日本語", en: "英語", zh: "中国語", ko: "韓国語", vi: "ベトナム語", ne: "ネパール語", id: "インドネシア語",
   th: "タイ語", fr: "フランス語", es: "スペイン語", de: "ドイツ語", pt: "ポルトガル語",
@@ -100,7 +95,6 @@ const LANGUAGE_NAMES: Record<string, string> = {
 const LEVEL_NAMES: Record<string, string> = { native: "ネイティブ", business: "ビジネス", conversational: "日常会話", basic: "基礎" };
 const STATUS_NAMES: Record<string, string> = { enrolled: "在学中", graduated: "卒業", expected: "卒業見込み", completed: "修了", left: "中退" };
 
-const cut = (text: string, max: number) => (text.length > max ? `${text.slice(0, max)}…` : text);
 
 /**
  * Ce que l'IA sait de la séance. Volontairement sans nom, date de naissance, adresse, téléphone

@@ -3,9 +3,9 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
-import type { Review } from "../lib/models";
+import { containers, type Application, type Review } from "../lib/models";
 import { Repository } from "../lib/repository";
-import { buildMessages, costJpy, explanationLanguages, reviewModelFromEnv, sanitize, type ReviewModel } from "../lib/review";
+import { buildMessages, costJpy, draftPurpose, explanationLanguages, reviewModelFromEnv, sanitize, type ReviewModel } from "../lib/review";
 import { getStore, type DocStore } from "../lib/store";
 import { UsageLimiter } from "../lib/usage";
 
@@ -40,9 +40,17 @@ export function reviewHandlers(deps: Deps = {}) {
       return { status: reason === "budget" ? 503 : 429, jsonBody: { error: "limit", reason, retryAfter } };
     }
 
+    // L'entreprise liée (poste, secteur, offre) et, pour un 志望動機, ceux écrits pour d'autres
+    // entreprises : il doit changer d'une entreprise à l'autre.
+    const application = draft.applicationId ? await store().get<Application>(containers.applications, user.userId, draft.applicationId) : null;
+    const otherMotivations = draftPurpose(draft) !== "motivation" ? [] : (await repo.listDrafts(user.userId))
+      .filter((d) => d.id !== draft.id && d.body.trim() && draftPurpose(d) === "motivation")
+      .filter((d) => (draft.applicationId ? d.applicationId !== draft.applicationId : true) && d.company && d.company !== (application?.company ?? draft.company))
+      .map((d) => ({ company: d.company!, body: d.body }));
+
     let output;
     try {
-      output = await ai.review(buildMessages(draft, language));
+      output = await ai.review(buildMessages(draft, language, { application, otherMotivations }));
     } catch (e) {
       await reserved.reservation.release();
       ctx.error("relecture : échec du modèle", e);
