@@ -174,6 +174,7 @@ final class EsLinkTests: XCTestCase {
     func testApplicationIdIsAlwaysSentAndNullUnlinks() throws {
         let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: JSONEncoder().encode(DraftInput(question: "Q"))) as? [String: Any])
         XCTAssertTrue(json["applicationId"] is NSNull, "null explicite pour délier côté serveur")
+        XCTAssertTrue(json["industry"] is NSNull, "null explicite pour effacer le secteur côté serveur")
     }
 
     func testLinksByCompanyName() {

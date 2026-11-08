@@ -141,6 +141,8 @@ label small { color: var(--bordeaux); }
 .es aside li button { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; }
 .es aside li button span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .es aside li button.current { border-color: var(--accent); }
+/* Même hauteur que les champs voisins (un select natif est plus bas qu'un input en japonais). */
+.es .editor select { height: 2.75rem; }
 .count { font-family: ui-monospace, Menlo, monospace; text-align: right; margin: 0; }
 .count.over { color: var(--bordeaux); font-weight: 700; }
 .review { margin-top: 24px; border-top: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); padding-top: 16px; }

@@ -6,6 +6,7 @@ struct Draft: Codable, Equatable, Identifiable {
     var kind: String
     var applicationId: String?
     var company: String?
+    var industry: String?
     var question: String
     var charLimit: Int?
     var body: String
@@ -18,6 +19,8 @@ struct DraftInput: Encodable, Equatable {
     /// Candidature reliée ; nil = ES commune (envoyé comme null pour délier).
     var applicationId: String?
     var company: String?
+    /// Secteur visé par une ES commune (un 自己PR resservi dans tout un secteur) ; nil = aucun.
+    var industry: String?
     var question = ""
     var charLimit: Int?
     var body = ""
@@ -29,17 +32,19 @@ struct DraftInput: Encodable, Equatable {
     init(_ draft: Draft) {
         self.init(kind: draft.kind, company: draft.company, question: draft.question, charLimit: draft.charLimit, body: draft.body)
         applicationId = draft.applicationId
+        industry = draft.industry
     }
 
-    private enum CodingKeys: String, CodingKey { case kind, applicationId, company, question, charLimit, body }
+    private enum CodingKeys: String, CodingKey { case kind, applicationId, company, industry, question, charLimit, body }
 
-    /// Comme l'encodage automatique, sauf applicationId : toujours écrit, null quand il n'y a pas
-    /// de lien (l'encodage automatique l'omettrait, et l'ancien lien resterait sur le serveur).
+    /// Comme l'encodage automatique, sauf applicationId et industry : toujours écrits, null quand
+    /// ils sont vides (l'encodage automatique les omettrait, et l'ancienne valeur resterait sur le serveur).
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(kind, forKey: .kind)
         try c.encode(applicationId, forKey: .applicationId)
         try c.encodeIfPresent(company, forKey: .company)
+        try c.encode(industry, forKey: .industry)
         try c.encode(question, forKey: .question)
         try c.encodeIfPresent(charLimit, forKey: .charLimit)
         try c.encode(body, forKey: .body)

@@ -96,7 +96,7 @@ export function withoutEmptyFields<T>(value: T): T {
 // ------------------------------------------------------------------ ES (S13)
 
 /** applicationId : candidature reliée ; null pour délier (ES commune). */
-export type DraftInput = { kind?: string; applicationId?: string | null; company?: string; question: string; charLimit?: number; body: string };
+export type DraftInput = { kind?: string; applicationId?: string | null; company?: string; industry?: Industry | null; question: string; charLimit?: number; body: string };
 export type Draft = DraftInput & { id: string; createdAt: string; updatedAt: string };
 
 /**

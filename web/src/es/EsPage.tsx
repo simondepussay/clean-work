@@ -8,6 +8,7 @@ import { useGuide, type GuideType } from "./guide";
 import { apiMessage, useTr } from "../i18n";
 import { ReviewPanel } from "./ReviewPanel";
 import { CheckIcon, PlusIcon } from "../icons";
+import { INDUSTRIES } from "../apps/statuses";
 
 const blank: DraftInput = { question: "", body: "" };
 
@@ -51,7 +52,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
 
   function open(d: Draft) {
     setSelected(d.id);
-    setForm({ kind: d.kind, applicationId: d.applicationId, company: d.company, question: d.question, charLimit: d.charLimit, body: d.body });
+    setForm({ kind: d.kind, applicationId: d.applicationId, company: d.company, industry: d.industry, question: d.question, charLimit: d.charLimit, body: d.body });
     setIssues([]);
     setStatus("idle");
     setChoosing(false);
@@ -76,7 +77,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
       const t = await token();
       // Reliée à la candidature dont le nom correspond ; sinon ES commune (null délie).
       const linked = apps.find((a) => a.company === form.company?.trim());
-      const payload = { ...form, applicationId: linked?.id ?? null };
+      const payload = { ...form, applicationId: linked?.id ?? null, industry: form.industry ?? null };
       const result = selected === "new" ? await createDraft(t, payload) : await updateDraft(t, selected!, payload);
       if (!result.ok) {
         setIssues(result.issues);
@@ -135,7 +136,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
           {drafts.map((d) => (
             <li key={d.id}>
               <button className={d.id === selected ? "current" : undefined} onClick={() => open(d)}>
-                <strong>{d.company || tr({ ja: "共通", en: "General", fr: "Commune" })}</strong>
+                <strong>{d.company || [tr({ ja: "共通", en: "General", fr: "Commune" }), ...INDUSTRIES.filter((i) => i.value === d.industry).map((i) => i[lang])].join(" · ")}</strong>
                 <span>{d.question}</span>
               </button>
             </li>
@@ -170,6 +171,16 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
               <datalist id="es-companies">{apps.map((a) => <option key={a.id} value={a.company} />)}</datalist>
               {apps.some((a) => a.company === form.company?.trim()) && <small className="linked"><CheckIcon size={13} /> {tr({ ja: "応募と連携", en: "Linked to your application", fr: "Liée à votre candidature" })}</small>}
             </label>
+            {/* Le secteur d'une ES liée vient de la candidature ; une ES commune peut viser un secteur (自己PR). */}
+            {!apps.some((a) => a.company === form.company?.trim()) && (
+              <label>
+                <span>{tr({ ja: "業界（共通のES）", en: "Industry (general ES)", fr: "Secteur (ES commune)" })}</span>
+                <select value={form.industry ?? ""} onChange={(e) => edit({ industry: (e.target.value || null) as DraftInput["industry"] })}>
+                  <option value="">{tr({ ja: "指定なし", en: "Any", fr: "Tous" })}</option>
+                  {INDUSTRIES.map((i) => <option key={i.value} value={i.value}>{i[lang]}</option>)}
+                </select>
+              </label>
+            )}
             <label className={error("charLimit") ? "invalid" : undefined}>
               <span>{tr({ ja: "文字数制限", en: "Character limit", fr: "Limite de caractères" })}</span>
               <input type="number" min={1} max={5000} value={form.charLimit ?? ""}

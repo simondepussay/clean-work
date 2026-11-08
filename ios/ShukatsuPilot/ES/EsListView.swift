@@ -30,7 +30,7 @@ struct EsListView: View {
                             editor(for: draft, input: nil)
                         } label: {
                             VStack(alignment: .leading) {
-                                Text(draft.company ?? tr("共通", "General", "Général")).font(.headline)
+                                Text(draft.company ?? ([tr("共通", "General", "Général")] + CompanyProfile.industries.filter { $0.id == draft.industry }.map(\.name)).joined(separator: " · ")).font(.headline)
                                 Text(draft.question).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                             }
                         }

@@ -83,8 +83,22 @@ describe("EsPage", () => {
     expect(await screen.findByText("保存しました")).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST")!;
     // Pas de candidature « 楽天 » : ES commune (applicationId null).
-    expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "free", company: "楽天", applicationId: null, question: "志望動機", body: "貴社を志望する理由は…" });
+    expect(JSON.parse(post[1]!.body as string)).toEqual({ kind: "free", company: "楽天", applicationId: null, industry: null, question: "志望動機", body: "貴社を志望する理由は…" });
     expect(screen.getByRole("list", { name: "ES" })).toHaveTextContent("楽天");
+  });
+
+  it("propose un secteur pour une ES commune et l'envoie", async () => {
+    const fetchMock = api();
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: /新しいES/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /自由/ }));
+    await userEvent.selectOptions(screen.getByLabelText(/業界/), "金融");
+    await userEvent.type(screen.getByLabelText(/設問/), "自己PR");
+    await userEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+    expect(await screen.findByText("保存しました")).toBeInTheDocument();
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST")!;
+    expect(JSON.parse(post[1]!.body as string)).toMatchObject({ industry: "finance", applicationId: null });
   });
 
   it("explique ce qu'est une ES, dans la langue choisie", async () => {

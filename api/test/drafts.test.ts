@@ -54,6 +54,13 @@ describe("/api/drafts", () => {
     expect(unlinked).not.toHaveProperty("applicationId");
   });
 
+  it("garde le secteur d'une ES commune, le conserve si on ne l'envoie pas et l'efface avec null", async () => {
+    const created = (await call("d9", "POST", undefined, { ...jikoPR, industry: "finance" })).jsonBody as { id: string };
+    expect((await call("d9", "PUT", created.id, { body: "新しい本文" })).jsonBody).toMatchObject({ industry: "finance", body: "新しい本文" });
+    expect((await call("d9", "PUT", created.id, { industry: null })).jsonBody).not.toHaveProperty("industry");
+    expect((await call("d9", "POST", undefined, { ...jikoPR, industry: "pâtisserie" })).status).toBe(400);
+  });
+
   it("supprime une ES", async () => {
     const created = (await call("d4", "POST", undefined, jikoPR)).jsonBody as { id: string };
     expect((await call("d4", "DELETE", created.id)).status).toBe(204);

@@ -209,6 +209,8 @@ export const draftInputSchema = z.object({
   applicationId: z.string().min(1).nullish().transform((v) => v ?? undefined).optional(),
   /** L'entreprise, en clair, tant que le suivi des candidatures (S07) n'existe pas. */
   company: text(100).optional(),
+  /** Secteur visé par une ES commune (un 自己PR resservi dans tout un secteur). null = effacer. */
+  industry: choice(industries).nullish().transform((v) => v ?? undefined).optional(),
   question: required(300),
   charLimit: z.number({ error: messages.number }).int(messages.number).positive(messages.number).max(5000, messages.number).optional(),
   body: z.string().max(5000, messages.tooLong(5000)).default(""),

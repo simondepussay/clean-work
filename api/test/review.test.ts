@@ -81,6 +81,17 @@ describe("buildMessages : entreprise et type d'ES", () => {
   });
 });
 
+describe("buildMessages : secteur d'une ES commune", () => {
+  it("envoie le secteur choisi pour un 自己PR commun, mais celui de la candidature s'il y en a une", () => {
+    const [, common] = buildMessages({ kind: "jikopr", industry: "finance", question: "自己PR", body: "本文" }, "ja");
+    expect(common.content).toContain("業界：金融");
+    expect(common.content).toContain("企業：（共通のES）");
+    const [, linked] = buildMessages({ kind: "jikopr", industry: "finance", question: "自己PR", body: "本文" }, "ja", { application: { company: "楽天", industry: "it" } });
+    expect(linked.content).toContain("業界：IT・通信");
+    expect(linked.content).not.toContain("金融");
+  });
+});
+
 describe("relecture : contexte envoyé au modèle", () => {
   it("envoie la candidature liée et les 志望動機 des autres entreprises", async () => {
     const model = fakeModel();

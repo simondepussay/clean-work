@@ -93,7 +93,7 @@ const LANGUAGE_RULE: Record<ExplanationLanguage, string> = {
   fr: "Rédige summary, strengths et chaque problem entièrement en français. Seuls quote et suggestion sont en japonais.",
 };
 
-export function buildMessages(draft: Pick<Draft, "question" | "body" | "charLimit" | "company"> & Partial<Pick<Draft, "kind">>, language: ExplanationLanguage, context: ReviewContext = {}): ChatMessage[] {
+export function buildMessages(draft: Pick<Draft, "question" | "body" | "charLimit" | "company"> & Partial<Pick<Draft, "kind" | "industry">>, language: ExplanationLanguage, context: ReviewContext = {}): ChatMessage[] {
   const purpose = draftPurpose({ kind: draft.kind ?? "free", question: draft.question });
   const app = context.application;
   const others = purpose === "motivation" ? (context.otherMotivations ?? []).slice(0, 3) : [];
@@ -125,12 +125,14 @@ export function buildMessages(draft: Pick<Draft, "question" | "body" | "charLimi
 ${LANGUAGE_RULE[language]}`;
 
   const company = app?.company ?? draft.company;
+  // Le secteur de la candidature liée l'emporte ; sinon celui choisi pour l'ES commune.
+  const industry = app ? app.industry : draft.industry;
   const user = [
     `設問：${draft.question}`,
     ...(purpose === "motivation" ? ["種類：志望動機"] : purpose === "selfPr" ? ["種類：自己PR・長所"] : []),
     company ? `企業：${company}` : "企業：（共通のES）",
     ...(app?.position ? [`職種：${app.position}`] : []),
-    ...(app?.industry ? [`業界：${INDUSTRY_NAMES[app.industry] ?? app.industry}`] : []),
+    ...(industry ? [`業界：${INDUSTRY_NAMES[industry] ?? industry}`] : []),
     ...(app?.companyType ? [`企業の種類：${TYPE_NAMES[app.companyType] ?? app.companyType}`] : []),
     draft.charLimit ? `文字数制限：${draft.charLimit}字` : "文字数制限：なし",
     ...(app?.notes?.trim() ? [`<offer>\n${cut(untag(app.notes.trim()), 2000)}\n</offer>`] : []),

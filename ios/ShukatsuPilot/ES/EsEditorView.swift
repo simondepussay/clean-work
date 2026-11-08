@@ -18,6 +18,12 @@ struct EsEditorView: View {
                 }
                 if model.linkedApplication != nil {
                     Label(tr("応募と連携", "Linked to your application", "Lié à votre candidature"), systemImage: "link").font(.caption).foregroundStyle(.green)
+                } else {
+                    // Le secteur d'une ES liée vient de la candidature ; une ES commune peut viser un secteur (自己PR).
+                    Picker(tr("業界（共通のES）", "Industry (general ES)", "Secteur (ES commune)"), selection: $model.input.industry) {
+                        Text(tr("指定なし", "Any", "Tous")).tag(String?.none)
+                        ForEach(CompanyProfile.industries) { Text($0.name).tag(Optional($0.id)) }
+                    }
                 }
                 TextField(tr("文字数制限", "Character limit", "Limite de caractères"), value: $model.input.charLimit, format: .number)
                     .keyboardType(.numberPad)
