@@ -4,10 +4,11 @@ import { createDraft, deleteDraft, listApplications, listDrafts, updateDraft, ty
 import { useAuth } from "../auth/auth";
 import { countChars } from "./count";
 import { GuidePanel, Intro } from "./GuidePanel";
-import { useGuide, type GuideType } from "./guide";
+import { useGuide, type Guide, type GuideType, type Lang } from "./guide";
 import { apiMessage, useTr } from "../i18n";
 import { ReviewPanel } from "./ReviewPanel";
-import { CheckIcon, PlusIcon } from "../icons";
+import { CheckIcon, CloseIcon, CopyIcon, LightIcon, PlusIcon } from "../icons";
+import { runChecks, starterText, type CheckResult } from "./checks";
 import { INDUSTRIES } from "../apps/statuses";
 
 const blank: DraftInput = { question: "", body: "" };
@@ -24,6 +25,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [choosing, setChoosing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [apps, setApps] = useState<Application[]>([]);
   const pendingSeed = useRef<EsSeed | null>(null);
   const guide = useGuide();
@@ -54,6 +56,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
     setSelected(d.id);
     setForm({ kind: d.kind, applicationId: d.applicationId, company: d.company, industry: d.industry, question: d.question, charLimit: d.charLimit, body: d.body });
     setIssues([]);
+    setCopied(false);
     setStatus("idle");
     setChoosing(false);
   }
@@ -66,6 +69,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
     setSelected("new");
     setForm(type ? { kind: type.id, question: type.question, charLimit: type.charLimit, body: "", ...company } : { ...blank, kind: "free", ...company });
     setIssues([]);
+    setCopied(false);
     setStatus("idle");
     setChoosing(false);
   }
@@ -88,6 +92,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
       setDrafts((all) => [saved, ...(all ?? []).filter((d) => d.id !== saved.id)]);
       setSelected(saved.id);
       setIssues([]);
+      setCopied(false);
       setStatus("saved");
       return saved.id;
     } catch {
@@ -100,6 +105,14 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
   async function prepare() {
     if (selected !== "new" && selected !== null && status === "saved") return selected;
     return save();
+  }
+
+  /** 別パターン : copie de l'ES ouverte, pas encore enregistrée (le cours conseille 2 ou 3 versions). */
+  function duplicate() {
+    setSelected("new");
+    setIssues([]);
+    setStatus("idle");
+    setCopied(true);
   }
 
   async function remove() {
@@ -138,6 +151,7 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
               <button className={d.id === selected ? "current" : undefined} onClick={() => open(d)}>
                 <strong>{d.company || [tr({ ja: "共通", en: "General", fr: "Commune" }), ...INDUSTRIES.filter((i) => i.value === d.industry).map((i) => i[lang])].join(" · ")}</strong>
                 <span>{d.question}</span>
+                {d.body?.trim() && <span className="excerpt">{d.body.trim().replace(/\s+/g, " ").slice(0, 40)}</span>}
               </button>
             </li>
           ))}
@@ -198,12 +212,18 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
             <span>{tr({ ja: "本文", en: "Answer", fr: "Réponse" })}</span>
             <textarea rows={12} value={form.body} onChange={(e) => edit({ body: e.target.value })} />
           </label>
+          {guide && type?.starter && !form.body.trim() && (
+            <Starter guide={guide} starter={type.starter} lang={lang} onStart={(text) => edit({ body: text })} />
+          )}
           <p className={over ? "count over" : "count"} aria-live="polite">
             {count}{form.charLimit ? ` / ${form.charLimit}` : ""}{tr({ ja: "字", en: " characters", fr: " caractères" })}
             {over && tr({ ja: ` — ${count - form.charLimit!}字オーバー`, en: ` — ${count - form.charLimit!} over`, fr: ` — ${count - form.charLimit!} de trop` })}
           </p>
+          {guide && <Checklist results={runChecks(guide, form.kind, form.body)} lang={lang} />}
+          {copied && <p className="muted" role="status">{tr({ ja: "コピーを作りました。書き直して保存すると、別のESになります。", en: "Copy made. Rewrite it and save: it becomes a separate entry sheet.", fr: "Copie créée. Réécrivez-la et enregistrez : elle devient une ES à part." })}</p>}
           <div className="actions">
             <button className="primary" type="submit" disabled={status === "saving"}>{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
+            {selected !== "new" && <button type="button" onClick={duplicate}><CopyIcon size={16} /> {tr({ ja: "別パターンを作る", en: "Make another version", fr: "Créer une autre version" })}</button>}
             {selected !== "new" && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
             <span role="status" className="muted">
               {status === "saved" && tr({ ja: "保存しました", en: "Saved", fr: "Enregistré" })}
@@ -221,5 +241,58 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
       )}
     </section>
     </>
+  );
+}
+
+const MARK: Record<CheckResult["state"], { label: Record<Lang, string> }> = {
+  bad: { label: { ja: "直す", en: "Fix", fr: "À corriger" } },
+  warn: { label: { ja: "確認", en: "Check", fr: "À vérifier" } },
+  tip: { label: { ja: "ヒント", en: "Tip", fr: "Conseil" } },
+  good: { label: { ja: "OK", en: "Good", fr: "Bien" } },
+};
+
+/**
+ * Checklist instantanée, sans IA : les règles du cours appliquées pendant la frappe.
+ * Elle repère des mots, pas le sens ; la relecture IA, plus bas, reste le vrai avis.
+ */
+function Checklist({ results, lang }: { results: CheckResult[]; lang: Lang }) {
+  if (results.length === 0) return null;
+  const title = { ja: "チェックリスト", en: "Checklist", fr: "Checklist" }[lang];
+  return (
+    <section className="checklist" aria-label={title}>
+      <ul aria-live="polite">
+        {results.map((r) => (
+          <li key={r.id} className={r.state}>
+            <span className="mark" aria-label={MARK[r.state].label[lang]}>
+              {r.state === "bad" ? <CloseIcon size={14} /> : r.state === "good" ? <CheckIcon size={14} /> : r.state === "tip" ? <LightIcon size={14} /> : "!"}
+            </span>
+            {r.text[lang]}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Début 3部構成 : choisir 1 ou 2 mots-clés (le cours : 2 au plus), puis insérer le squelette. */
+function Starter({ guide, starter, lang, onStart }: { guide: Guide; starter: { one: string; two: string }; lang: Lang; onStart: (text: string) => void }) {
+  const [picked, setPicked] = useState<string[]>([]);
+  const toggle = (k: string) =>
+    setPicked((p) => (p.includes(k) ? p.filter((x) => x !== k) : p.length < 2 ? [...p, k] : p));
+  const t = (x: Record<Lang, string>) => x[lang];
+  return (
+    <div className="starter">
+      <p><strong>{t({ ja: "3部構成で書き始める", en: "Start with the 3-part structure", fr: "Commencer avec la structure en 3 parties" })}</strong>
+        {" "}<span className="muted">{t({ ja: "キーワード → エピソード → 自分の想い。強みは1〜2つまで。", en: "Keyword → episode → what you feel. 1 or 2 strengths at most.", fr: "Mot-clé → épisode → ce que vous en pensez. 1 ou 2 qualités au plus." })}</span></p>
+      <div className="chips" role="group" aria-label={t({ ja: "強み", en: "Strengths", fr: "Qualités" })}>
+        {(guide.keywords ?? []).map((k) => (
+          <button type="button" key={k.ja} aria-pressed={picked.includes(k.ja)} title={lang === "ja" ? undefined : k[lang]}
+            disabled={!picked.includes(k.ja) && picked.length >= 2} onClick={() => toggle(k.ja)}>{k.ja}</button>
+        ))}
+      </div>
+      <button type="button" onClick={() => onStart(starterText(starter, picked))}>
+        {t({ ja: "この構成で書き始める", en: "Start writing", fr: "Commencer à écrire" })}
+      </button>
+    </div>
   );
 }

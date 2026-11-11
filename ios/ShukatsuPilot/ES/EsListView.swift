@@ -14,6 +14,15 @@ struct EsListView: View {
                         ForEach(Array(guide.steps.enumerated()), id: \.offset) { i, step in
                             Text("\(i + 1). \(step(model.language))").font(.callout)
                         }
+                        if let differences = guide.differences {
+                            Text(tr("設問の違い", "Similar questions, different answers", "Questions proches, réponses différentes")).font(.caption).foregroundStyle(.secondary)
+                            ForEach(Array(differences.enumerated()), id: \.offset) { _, d in
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(d.question(model.language)).font(.callout.bold())
+                                    Text(d.answer(model.language)).font(.callout)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -32,6 +41,8 @@ struct EsListView: View {
                             VStack(alignment: .leading) {
                                 Text(draft.company ?? ([tr("共通", "General", "Général")] + CompanyProfile.industries.filter { $0.id == draft.industry }.map(\.name)).joined(separator: " · ")).font(.headline)
                                 Text(draft.question).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                                let excerpt = draft.body.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+                                if !excerpt.isEmpty { Text(excerpt).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                             }
                         }
                     }

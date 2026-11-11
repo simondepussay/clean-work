@@ -10,6 +10,12 @@ export function Intro({ guide, lang }: { guide: Guide; lang: Lang }) {
       <summary>{pick(lang, { ja: "ESとは？", en: "What is an ES?", fr: "Qu'est-ce qu'une ES ?" })}</summary>
       <p>{guide.intro[lang]}</p>
       <ol>{guide.steps.map((s) => <li key={s.ja}>{s[lang]}</li>)}</ol>
+      {guide.differences && (
+        <>
+          <h4>{pick(lang, { ja: "設問の違い", en: "Similar questions, different answers", fr: "Questions proches, réponses différentes" })}</h4>
+          <dl>{guide.differences.map((d) => <div key={d.question.ja}><dt>{d.question[lang]}</dt><dd>{d.answer[lang]}</dd></div>)}</dl>
+        </>
+      )}
     </details>
   );
 }

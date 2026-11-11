@@ -43,6 +43,8 @@ describe("buildMessages", () => {
     const [system, user] = buildMessages({ question: "自己PR", body: "本文", charLimit: 400, company: "楽天" }, "fr");
     expect(system.content).toContain("「貴社」");
     expect(system.content).toContain("STAR");
+    expect(system.content).toContain("自己紹介になっていたら指摘する");
+    expect(system.content).toContain("「〜と思います」");
     expect(system.content).toContain("français");
     expect(system.content).toContain("Rédige summary, strengths et chaque problem entièrement en français");
     expect(user.content.trim().endsWith("Seuls quote et suggestion sont en japonais.")).toBe(true);

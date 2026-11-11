@@ -145,6 +145,22 @@ label small { color: var(--bordeaux); }
 .es .editor select { height: 2.75rem; }
 .count { font-family: ui-monospace, Menlo, monospace; text-align: right; margin: 0; }
 .count.over { color: var(--bordeaux); font-weight: 700; }
+.es aside li button .excerpt { font-size: 12px; opacity: .8; }
+.checklist ul { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.checklist li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
+.checklist .mark { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.checklist .bad .mark { background: color-mix(in srgb, var(--bordeaux) 15%, transparent); color: var(--bordeaux); }
+.checklist .warn .mark { background: color-mix(in srgb, #a4641a 15%, transparent); color: #a4641a; }
+.checklist .tip .mark { background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--muted); }
+.checklist .good .mark { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.checklist .good, .checklist .tip { color: var(--muted); }
+.starter { padding: 12px 14px; border-radius: 12px; border: 1.5px dashed color-mix(in srgb, var(--muted) 40%, transparent); display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.starter p { margin: 0; font-size: 14px; }
+.starter .chips { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; align-self: stretch; }
+.starter .chips button { padding: 4px 10px; border-radius: 999px; font-size: 13px; min-height: 0; }
+.starter .chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.starter .chips button:disabled { opacity: .4; }
+.intro dl { margin: 8px 0 0; } .intro dt { font-weight: 600; margin-top: 8px; } .intro dd { margin: 2px 0 0; }
 .review { margin-top: 24px; border-top: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); padding-top: 16px; }
 .review-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 label.inline { flex-direction: row; align-items: center; gap: 6px; margin: 0; }

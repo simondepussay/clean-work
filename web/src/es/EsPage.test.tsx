@@ -143,3 +143,34 @@ describe("EsPage", () => {
     expect(JSON.parse(post[1]!.body as string)).toMatchObject({ company: "楽天", applicationId: "a1", kind: "motivation" });
   });
 });
+
+describe("EsPage — conseils du cours", () => {
+  it("自己PR : début 3部構成 avec 2 mots-clés au plus, puis checklist instantanée", async () => {
+    api();
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: /新しいES/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /^自己PR/ }));
+    await userEvent.click(screen.getByRole("button", { name: "協調性" }));
+    await userEvent.click(screen.getByRole("button", { name: "計画性" }));
+    expect(screen.getByRole("button", { name: "行動力" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "この構成で書き始める" }));
+    expect((screen.getByLabelText(/本文/) as HTMLTextAreaElement).value).toContain("1つめは協調性、2つめは計画性です。");
+    expect(screen.queryByRole("button", { name: "この構成で書き始める" })).not.toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/本文/), "僕は頑張ったと思います。");
+    const list = screen.getByRole("region", { name: "チェックリスト" });
+    expect(list).toHaveTextContent("僕");
+    expect(list).toHaveTextContent("と思います");
+  });
+
+  it("別パターンを作る : copie non enregistrée, puis nouvelle ES", async () => {
+    const fetchMock = api([{ id: "d1", kind: "jikopr", question: "自己PR", body: "私の強みは協調性です。", createdAt: "t", updatedAt: "t" }]);
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: /自己PR/ }));
+    await userEvent.click(screen.getByRole("button", { name: /別パターンを作る/ }));
+    expect(screen.getByText(/コピーを作りました/)).toBeInTheDocument();
+    expect((screen.getByLabelText(/本文/) as HTMLTextAreaElement).value).toBe("私の強みは協調性です。");
+    await userEvent.click(screen.getByRole("button", { name: "保存" }));
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(JSON.parse(post![1]!.body as string)).toMatchObject({ kind: "jikopr", body: "私の強みは協調性です。" });
+  });
+});

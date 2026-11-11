@@ -38,12 +38,33 @@ struct EsEditorView: View {
 
             Section {
                 TextEditor(text: $model.input.body).frame(minHeight: 220)
+                if let guide = list.guide, let starter = guide.types.first(where: { $0.id == model.input.kind })?.starter,
+                   model.input.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    StarterView(keywords: guide.keywords ?? [], starter: starter, lang: list.language) { model.input.body = $0 }
+                }
             } header: {
                 Text(tr("本文", "Answer", "Réponse"))
             } footer: {
                 HStack {
                     Spacer()
                     Text(counter).monospacedDigit().foregroundStyle(model.isOver ? .red : .secondary).bold(model.isOver)
+                }
+            }
+
+            if let guide = list.guide {
+                ChecklistSection(results: guide.runChecks(kind: model.input.kind, body: model.input.body), lang: list.language)
+            }
+
+            if model.draftId != nil {
+                Section {
+                    // 別パターン : une copie non enregistrée (le cours conseille 2 ou 3 versions).
+                    NavigationLink {
+                        EsEditorView(model: EsEditorModel(api: list.api, draft: nil, input: model.input, onSaved: list.saved), list: list)
+                    } label: {
+                        Label(tr("別パターンを作る", "Make another version", "Créer une autre version"), systemImage: "doc.on.doc")
+                    }
+                } footer: {
+                    Text(tr("コピーを書き直して保存すると、別のESになります。", "Rewrite the copy and save it: it becomes a separate entry sheet.", "Réécrivez la copie et enregistrez-la : elle devient une ES à part."))
                 }
             }
 
@@ -95,6 +116,70 @@ private struct GuideSection: View {
                 }
             }
         }
+    }
+}
+
+/// Checklist instantanée, sans IA : les règles du cours appliquées pendant la frappe.
+private struct ChecklistSection: View {
+    let results: [Guide.CheckResult]
+    let lang: HelpLanguage
+
+    var body: some View {
+        if !results.isEmpty {
+            Section(tr("チェックリスト", "Checklist", "Checklist")) {
+                ForEach(results) { r in
+                    Label {
+                        Text(r.text(lang)).font(.callout).foregroundStyle(r.state == .good || r.state == .tip ? .secondary : .primary)
+                    } icon: {
+                        Image(systemName: Self.icon(r.state)).foregroundStyle(Self.color(r.state))
+                    }
+                    .accessibilityLabel("\(Self.label(r.state)) : \(r.text(lang))")
+                }
+            }
+        }
+    }
+
+    static func icon(_ s: Guide.CheckResult.State) -> String {
+        switch s { case .bad: "xmark.circle"; case .warn: "exclamationmark.circle"; case .tip: "lightbulb"; case .good: "checkmark.circle" }
+    }
+    static func color(_ s: Guide.CheckResult.State) -> Color {
+        switch s { case .bad: .red; case .warn: .orange; case .tip: .secondary; case .good: .green }
+    }
+    static func label(_ s: Guide.CheckResult.State) -> String {
+        switch s { case .bad: tr("直す", "Fix", "À corriger"); case .warn: tr("確認", "Check", "À vérifier"); case .tip: tr("ヒント", "Tip", "Conseil"); case .good: "OK" }
+    }
+}
+
+/// Début 3部構成 : 1 ou 2 mots-clés (le cours : 2 au plus), puis le squelette dans le texte.
+private struct StarterView: View {
+    let keywords: [Guide.Text]
+    let starter: Guide.Starter
+    let lang: HelpLanguage
+    let start: (String) -> Void
+    @State private var picked: [String] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(tr("3部構成で書き始める", "Start with the 3-part structure", "Commencer avec la structure en 3 parties")).font(.subheadline.bold())
+            Text(tr("キーワード → エピソード → 自分の想い。強みは1〜2つまで。", "Keyword → episode → what you feel. 1 or 2 strengths at most.", "Mot-clé → épisode → ce que vous en pensez. 1 ou 2 qualités au plus.")).font(.caption).foregroundStyle(.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack {
+                    ForEach(keywords, id: \.ja) { k in
+                        let on = picked.contains(k.ja)
+                        Button(k.ja) {
+                            if on { picked.removeAll { $0 == k.ja } } else if picked.count < 2 { picked.append(k.ja) }
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(on ? .accentColor : .secondary)
+                        .disabled(!on && picked.count >= 2)
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+            }
+            Button(tr("この構成で書き始める", "Start writing", "Commencer à écrire")) { start(starter.text(picked)) }
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(.vertical, 4)
     }
 }
 

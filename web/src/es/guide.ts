@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Check } from "./checks";
 
 /** Contenu de web/public/es-guide.json (lu aussi par l'app iOS). */
 export type Lang = "ja" | "en" | "fr";
@@ -12,8 +13,21 @@ export type GuideType = {
   structure: Text[];
   tips: Text[];
   example: string;
+  /** Début de texte 3部構成 ; {k1} et {k2} = mots-clés choisis. */
+  starter?: { one: string; two: string };
 };
-export type Guide = { intro: Text; steps: Text[]; exampleWarning: Text; types: GuideType[] };
+export type Guide = {
+  intro: Text;
+  steps: Text[];
+  exampleWarning: Text;
+  types: GuideType[];
+  /** 自己紹介 / 自己PR / 長所と短所 : trois questions différentes. */
+  differences?: { question: Text; answer: Text }[];
+  /** Mots-clés de qualités, pour choisir 1 ou 2 points forts. */
+  keywords?: Text[];
+  /** Règles de la checklist instantanée (voir checks.ts). */
+  checks?: Check[];
+};
 
 export const LANGS: { value: Lang; label: string }[] = [
   { value: "ja", label: "日本語" },

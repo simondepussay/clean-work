@@ -36,6 +36,57 @@ final class CharCountAndDiffTests: XCTestCase {
         let guide = try JSONDecoder().decode(Guide.self, from: Data(json.utf8))
         XCTAssertEqual(guide.types.first?.charLimit, 400)
         XCTAssertEqual(guide.types.first?.purpose(.fr), "but")
+        XCTAssertNil(guide.checks) // ancien format : les nouveaux champs sont facultatifs
+    }
+
+    /// Le vrai es-guide.json du site : la checklist iOS doit donner les mêmes résultats que le web (checks.test.ts).
+    private func sharedGuide() throws -> Guide {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../web/public/es-guide.json")
+        guard let data = try? Data(contentsOf: url) else { throw XCTSkip("es-guide.json introuvable") }
+        return try JSONDecoder().decode(Guide.self, from: data)
+    }
+
+    private func ids(_ g: Guide, _ kind: String, _ body: String, _ state: Guide.CheckResult.State? = nil) -> [String] {
+        g.runChecks(kind: kind, body: body).filter { state == nil || $0.state == state }.map(\.id)
+    }
+
+    func testChecklistFlagsTheClassRules() throws {
+        let g = try sharedGuide()
+        let bad = Set(ids(g, "jikopr", "私は高知県出身の田中と申します。僕は色々なことを学んだと思います。", .bad))
+        XCTAssertTrue(bad.isSuperset(of: ["introduction", "boku", "vague", "omoimasu"]))
+        XCTAssertTrue(ids(g, "jikopr", "私の強みは行動力です。以前は短所だった慎重さを克服しました。", .warn).contains("weakness"))
+        XCTAssertTrue(ids(g, "jikopr", "私の強みは協調性です。高校の部活で学びました。").contains("schoolOnly"))
+        XCTAssertFalse(ids(g, "jikopr", "私の強みは協調性です。高校とアルバイトで学びました。").contains("schoolOnly"))
+        XCTAssertTrue(ids(g, "jikopr", "私の強みは協調性と計画性と行動力です。", .warn).contains("keywords"))
+        XCTAssertTrue(ids(g, "strengths", "私の短所は心配性なところです。").contains("strengthsImprove"))
+        XCTAssertFalse(ids(g, "strengths", "私の短所は心配性なところです。改善するため、期限を決めています。").contains("strengthsImprove"))
+        XCTAssertEqual(ids(g, "free", "僕は趣味は旅行です。"), ["boku"])
+        XCTAssertEqual(g.runChecks(kind: "jikopr", body: "  "), [])
+    }
+
+    func testChecklistGoodPracticesAndOrder() throws {
+        let g = try sharedGuide()
+        XCTAssertTrue(Set(ids(g, "jikopr", "【粘り強さで目標を達成】\n私の強みは2つあります。1年でN1に合格しました。", .good)).isSuperset(of: ["title", "twoPoints", "number"]))
+        XCTAssertTrue(Set(ids(g, "jikopr", "私の強みは粘り強さです。", .tip)).isSuperset(of: ["title", "number"]))
+        let states = g.runChecks(kind: "jikopr", body: "【強み】僕の強みは2つあります。").map(\.state.rawValue)
+        XCTAssertEqual(states, states.sorted())
+        let long = "私の強みは、どんなに難しい状況でも最後まであきらめずに周りの人と協力しながら目標に向かって進み続けられる粘り強さです。"
+        let first = g.runChecks(kind: "jikopr", body: long).first { $0.id == "firstSentence" }
+        XCTAssertTrue(first?.text.ja.contains("\(charCount(Guide.firstSentence(long)))字") ?? false)
+    }
+
+    func testGuideExamplesHaveNoErrorsAndStarterFills() throws {
+        let g = try sharedGuide()
+        for t in g.types { XCTAssertEqual(ids(g, t.id, t.example, .bad), [], t.id) }
+        let starter = try XCTUnwrap(g.types.first { $0.id == "jikopr" }?.starter)
+        XCTAssertTrue(starter.text(["協調性"]).contains("私の強みは協調性です。"))
+        XCTAssertTrue(starter.text(["協調性", "計画性"]).contains("1つめは協調性、2つめは計画性です。"))
+        XCTAssertTrue(starter.text([]).contains("私の強みは〇〇です。"))
+        // Le squelette seul : 【〇〇】 n'est pas un vrai titre, 1つめ/2つめ ne sont pas des chiffres.
+        let good = ids(g, "jikopr", starter.text(["協調性", "計画性"]), .good)
+        XCTAssertFalse(good.contains("title"))
+        XCTAssertFalse(good.contains("number"))
+        XCTAssertTrue(good.contains("twoPoints"))
     }
 }
 

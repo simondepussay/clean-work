@@ -17,10 +17,21 @@ describe("es-guide.json", () => {
   });
 
   it("chaque texte d'aide existe en japonais, anglais et français", () => {
-    const texts = [guide.intro, guide.exampleWarning, ...guide.steps, ...guide.types.flatMap((t) => [t.label, t.purpose, ...t.structure, ...t.tips])];
+    const texts = [guide.intro, guide.exampleWarning, ...guide.steps, ...guide.types.flatMap((t) => [t.label, t.purpose, ...t.structure, ...t.tips]),
+      ...guide.differences.flatMap((d) => [d.question, d.answer]), ...guide.keywords,
+      ...guide.checks.flatMap((c) => [c.message, ...("missingTip" in c && c.missingTip ? [c.missingTip] : [])])];
     for (const text of texts) {
       expect(Object.keys(text).sort()).toEqual(["en", "fr", "ja"]);
       expect(Object.values(text).every((v) => v.trim().length > 0)).toBe(true);
     }
+  });
+
+  it("les règles de la checklist sont valides", () => {
+    const kinds = new Set([...guide.types.map((t) => t.id), "free"]);
+    for (const c of guide.checks) {
+      expect(c.kinds.every((k) => kinds.has(k))).toBe(true);
+      for (const re of ["pattern" in c ? c.pattern : undefined, "unless" in c ? c.unless : undefined]) if (re) expect(() => new RegExp(re, "u")).not.toThrow();
+    }
+    expect(new Set(guide.checks.map((c) => c.id)).size).toBe(guide.checks.length);
   });
 });

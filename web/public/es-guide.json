@@ -48,31 +48,36 @@
       },
       "structure": [
         {
-          "ja": "結論：私の強みは〇〇です。",
-          "en": "Conclusion: “My strength is …”",
-          "fr": "Conclusion : « Mon point fort est … »"
+          "ja": "キーワード：私の強みは〇〇です。（【タイトル】をつけてもよい）",
+          "en": "Keyword: “My strength is …” (you can add a 【title】)",
+          "fr": "Mot-clé : « Mon point fort est … » (tu peux ajouter un 【titre】)"
         },
         {
-          "ja": "根拠となるエピソード（状況・課題・行動）",
-          "en": "An episode that proves it (situation, task, action)",
-          "fr": "Un épisode qui le prouve (situation, problème, action)"
+          "ja": "エピソード：その強みを発揮した具体的な経験（数字を入れる）",
+          "en": "Episode: a concrete experience where you used it (with numbers)",
+          "fr": "Épisode : une expérience concrète où tu l'as montré (avec des chiffres)"
         },
         {
-          "ja": "結果（できれば数字で）と学び",
-          "en": "The result (with numbers if possible) and what you learned",
-          "fr": "Le résultat (chiffré si possible) et ce que tu en as appris"
-        },
-        {
-          "ja": "入社後にどう活かすか",
-          "en": "How you will use it in the company",
-          "fr": "Comment tu l'utiliseras dans l'entreprise"
+          "ja": "自分の想い：その強みを入社後にどう活かすか",
+          "en": "Your intention: how you will use it in the company",
+          "fr": "Ton intention : comment tu l'utiliseras dans l'entreprise"
         }
       ],
       "tips": [
         {
-          "ja": "強みは1つに絞る。",
-          "en": "Focus on one strength only.",
-          "fr": "Un seul point fort, pas une liste."
+          "ja": "強み（キーワード）は1〜2つに絞る。2つなら「2つあります。1つめは…」と始める。",
+          "en": "Pick one or two strengths. With two, start with “2つあります。1つめは…”.",
+          "fr": "Un ou deux points forts. Avec deux, commence par « 2つあります。1つめは… »."
+        },
+        {
+          "ja": "自己紹介（出身・趣味）にしない。短所も入れない。",
+          "en": "Not an introduction (origin, hobbies), and no weaknesses.",
+          "fr": "Ce n'est pas un 自己紹介 (origine, loisirs), et pas de défauts."
+        },
+        {
+          "ja": "「〜と思います」ではなく言い切る。一人称は「私」。",
+          "en": "State things instead of “〜と思います”. Write 私, not 僕.",
+          "fr": "Affirme au lieu de « 〜と思います ». Écris 私, pas 僕."
         },
         {
           "ja": "「頑張りました」ではなく、何をどう工夫したかを書く。",
@@ -80,12 +85,21 @@
           "fr": "Plutôt que « j'ai fait des efforts », dis concrètement ce que tu as fait."
         },
         {
-          "ja": "留学や日本語の勉強も立派なエピソードになる。",
-          "en": "Studying abroad or learning Japanese is a great episode too.",
-          "fr": "Tes études à l'étranger ou ton apprentissage du japonais sont de bons exemples."
+          "ja": "母国での経験や、日本語を習得した努力も立派なエピソードになる。",
+          "en": "Experiences in your home country, or the effort of learning Japanese, are great episodes.",
+          "fr": "Une expérience dans ton pays, ou tes efforts pour apprendre le japonais, sont de très bons épisodes."
+        },
+        {
+          "ja": "2〜3パターン用意しておくと、設問や文字数に合わせて使い分けられる。",
+          "en": "Prepare 2–3 versions to fit different questions and lengths.",
+          "fr": "Prépare 2 ou 3 versions pour t'adapter aux questions et aux longueurs."
         }
       ],
-      "example": "私の強みは、目標から逆算して行動を続ける粘り強さです。来日当初、私の日本語は日本語能力試験N3程度でしたが、日本の企業で働くためにN1合格を目標に掲げました。まず、合格までに必要な語彙と文法を洗い出し、毎日2時間の学習計画を立てました。アルバイト先では、接客中に分からなかった表現をメモし、その日のうちに復習しました。また、週に一度は日本人の友人に頼み、敬語を使った会話の練習をしました。模試の点数が伸びず悩んだ時期もありましたが、苦手な読解に絞って過去問を繰り返し解き、間違えた理由をノートにまとめました。その結果、1年半でN1に合格することができました。この経験から、高い目標でも計画を立てて一歩ずつ進めば達成できると学びました。貴社に入社後も、この粘り強さを活かし、新しい業務知識を着実に身につけて成果につなげたいと考えております。"
+      "example": "私の強みは、目標から逆算して行動を続ける粘り強さです。来日当初、私の日本語は日本語能力試験N3程度でしたが、日本の企業で働くためにN1合格を目標に掲げました。まず、合格までに必要な語彙と文法を洗い出し、毎日2時間の学習計画を立てました。アルバイト先では、接客中に分からなかった表現をメモし、その日のうちに復習しました。また、週に一度は日本人の友人に頼み、敬語を使った会話の練習をしました。模試の点数が伸びず悩んだ時期もありましたが、苦手な読解に絞って過去問を繰り返し解き、間違えた理由をノートにまとめました。その結果、1年半でN1に合格することができました。この経験から、高い目標でも計画を立てて一歩ずつ進めば達成できると学びました。貴社に入社後も、この粘り強さを活かし、新しい業務知識を着実に身につけて成果につなげたいと考えております。",
+      "starter": {
+        "one": "【〇〇（キャッチコピー）】\n私の強みは{k1}です。\n（エピソード：いつ・どこで・何をして、どうなったか。数字を入れる）\n（自分の想い：この強みを、入社後にどう活かすか）",
+        "two": "【〇〇（キャッチコピー）】\n私の強みは2つあります。1つめは{k1}、2つめは{k2}です。\n（エピソード：それぞれを発揮した経験。数字を入れる）\n（自分の想い：この強みを、入社後にどう活かすか）"
+      }
     },
     {
       "id": "motivation",
@@ -235,6 +249,11 @@
       ],
       "tips": [
         {
+          "ja": "長所は自覚しているプラスの性格、短所は改善の努力ができるものを選ぶ。",
+          "en": "Strength: a positive trait you know you have. Weakness: one you are working on.",
+          "fr": "Qualité : un trait positif que tu te connais. Défaut : un défaut que tu travailles à corriger."
+        },
+        {
           "ja": "短所は、仕事で致命的にならないものを選ぶ（「時間を守れない」などは避ける）。",
           "en": "Pick a weakness that isn't fatal at work (avoid “I'm often late”).",
           "fr": "Choisis un défaut qui n'est pas rédhibitoire au travail (évite « je suis souvent en retard »)."
@@ -251,6 +270,347 @@
         }
       ],
       "example": "私の長所は、周囲の意見を丁寧に聞き、全員が納得できる結論を導けることです。グループ課題で意見が分かれた際には、一人ひとりの考えを整理して共通点を示し、期限内に発表をまとめることができました。一方、短所は物事を慎重に考えすぎて、行動に移すまで時間がかかってしまう点です。この短所を改善するため、作業を始める前に判断の期限を決め、期限までに決めきれない場合は先輩や先生に相談するようにしています。その結果、以前より早く行動に移せるようになりました。今後も長所を活かしつつ、短所の改善を続けていきたいと考えております。"
+    }
+  ],
+  "differences": [
+    {
+      "question": {
+        "ja": "自己紹介をしてください",
+        "en": "Please introduce yourself",
+        "fr": "Présentez-vous"
+      },
+      "answer": {
+        "ja": "名前・学校・専攻など、あなたが誰かを短く伝えます。",
+        "en": "Say briefly who you are: name, school, field of study.",
+        "fr": "Dis brièvement qui tu es : nom, école, spécialité."
+      }
+    },
+    {
+      "question": {
+        "ja": "自己PRをしてください",
+        "en": "Please give your self-PR",
+        "fr": "Faites votre 自己PR"
+      },
+      "answer": {
+        "ja": "会社に貢献できる能力（強み）を伝えます。出身や趣味などの自己紹介にしない。",
+        "en": "Show an ability (strength) you can bring to the company. Not an introduction about where you are from or your hobbies.",
+        "fr": "Montre une capacité (un point fort) utile à l'entreprise. Pas une présentation de ton origine ou de tes loisirs."
+      }
+    },
+    {
+      "question": {
+        "ja": "長所と短所を教えてください",
+        "en": "What are your strengths and weaknesses?",
+        "fr": "Quelles sont vos qualités et vos défauts ?"
+      },
+      "answer": {
+        "ja": "自覚しているプラスの性格と、改善の努力をしている短所を伝えます。",
+        "en": "Give a positive trait you know you have, and a weakness you are working to improve.",
+        "fr": "Donne un trait positif que tu te connais, et un défaut que tu travailles à corriger."
+      }
+    }
+  ],
+  "keywords": [
+    {
+      "ja": "協調性",
+      "en": "Cooperation",
+      "fr": "Esprit d'équipe"
+    },
+    {
+      "ja": "コミュニケーション力",
+      "en": "Communication",
+      "fr": "Communication"
+    },
+    {
+      "ja": "リーダーシップ",
+      "en": "Leadership",
+      "fr": "Leadership"
+    },
+    {
+      "ja": "柔軟性",
+      "en": "Flexibility",
+      "fr": "Souplesse"
+    },
+    {
+      "ja": "行動力",
+      "en": "Initiative",
+      "fr": "Esprit d'initiative"
+    },
+    {
+      "ja": "実行力",
+      "en": "Execution",
+      "fr": "Capacité à réaliser"
+    },
+    {
+      "ja": "主体性",
+      "en": "Autonomy",
+      "fr": "Autonomie"
+    },
+    {
+      "ja": "忍耐力",
+      "en": "Perseverance",
+      "fr": "Persévérance"
+    },
+    {
+      "ja": "責任感",
+      "en": "Sense of responsibility",
+      "fr": "Sens des responsabilités"
+    },
+    {
+      "ja": "好奇心",
+      "en": "Curiosity",
+      "fr": "Curiosité"
+    },
+    {
+      "ja": "努力家",
+      "en": "Hard worker",
+      "fr": "Travailleur"
+    },
+    {
+      "ja": "几帳面",
+      "en": "Meticulous",
+      "fr": "Minutie"
+    },
+    {
+      "ja": "明るさ",
+      "en": "Cheerfulness",
+      "fr": "Bonne humeur"
+    },
+    {
+      "ja": "計画性",
+      "en": "Planning",
+      "fr": "Sens de l'organisation"
+    },
+    {
+      "ja": "ポジティブ",
+      "en": "Positive",
+      "fr": "Optimisme"
+    },
+    {
+      "ja": "慎重さ",
+      "en": "Carefulness",
+      "fr": "Prudence"
+    },
+    {
+      "ja": "情熱",
+      "en": "Passion",
+      "fr": "Passion"
+    },
+    {
+      "ja": "誠実さ",
+      "en": "Sincerity",
+      "fr": "Honnêteté"
+    },
+    {
+      "ja": "謙虚さ",
+      "en": "Humility",
+      "fr": "Humilité"
+    },
+    {
+      "ja": "向上心",
+      "en": "Drive to improve",
+      "fr": "Envie de progresser"
+    },
+    {
+      "ja": "状況把握力",
+      "en": "Situational awareness",
+      "fr": "Sens de la situation"
+    },
+    {
+      "ja": "臨機応変",
+      "en": "Adaptability",
+      "fr": "Réactivité"
+    },
+    {
+      "ja": "体力",
+      "en": "Stamina",
+      "fr": "Endurance"
+    }
+  ],
+  "checks": [
+    {
+      "id": "omoimasu",
+      "kinds": [
+        "jikopr",
+        "strengths",
+        "gakuchika",
+        "motivation"
+      ],
+      "level": "bad",
+      "pattern": "と思い(ます|まし)",
+      "message": {
+        "ja": "「〜と思います」は自信がなく見えます。「〜です」「〜できます」と言い切りましょう。",
+        "en": "“〜と思います” (I think…) sounds unsure. State it: “〜です”, “〜できます”.",
+        "fr": "« 〜と思います » (je pense que…) manque d'assurance. Affirme : « 〜です », « 〜できます »."
+      }
+    },
+    {
+      "id": "boku",
+      "kinds": [
+        "jikopr",
+        "strengths",
+        "gakuchika",
+        "motivation",
+        "free"
+      ],
+      "level": "bad",
+      "pattern": "僕|ぼく|俺|オレ",
+      "message": {
+        "ja": "ESでは「僕」ではなく「私」と書きます。",
+        "en": "In an ES, write 私, not 僕.",
+        "fr": "Dans une ES, on écrit 私, pas 僕."
+      }
+    },
+    {
+      "id": "vague",
+      "kinds": [
+        "jikopr",
+        "strengths",
+        "gakuchika",
+        "motivation"
+      ],
+      "level": "bad",
+      "pattern": "いろいろ|色々|様々なこと|さまざまなこと|たくさんのこと",
+      "message": {
+        "ja": "「いろいろ」はあいまいです。何をしたのか、何を学んだのかを具体的に書きましょう。",
+        "en": "“いろいろ” (various things) is vague. Say exactly what you did or learned.",
+        "fr": "« いろいろ » (plein de choses) est vague. Dis précisément ce que tu as fait ou appris."
+      }
+    },
+    {
+      "id": "introduction",
+      "kinds": [
+        "jikopr"
+      ],
+      "level": "bad",
+      "pattern": "^\\s*(【[^】]*】\\s*)?[^。]{0,25}(出身|と申します)|趣味は",
+      "message": {
+        "ja": "自己紹介になっています。自己PRでは、会社に貢献できる強みを書きます。",
+        "en": "This reads like an introduction. A self-PR shows a strength useful to the company.",
+        "fr": "On dirait un 自己紹介. Le 自己PR montre un point fort utile à l'entreprise."
+      }
+    },
+    {
+      "id": "weakness",
+      "kinds": [
+        "jikopr"
+      ],
+      "level": "warn",
+      "pattern": "短所|欠点|弱点|弱み",
+      "message": {
+        "ja": "自己PRに短所は入れません。克服して、今は強みになった話ならOKです。",
+        "en": "No weaknesses in a self-PR, unless you overcame it and it is now a strength.",
+        "fr": "Pas de défaut dans un 自己PR, sauf si tu l'as surmonté et que c'est devenu une force."
+      }
+    },
+    {
+      "id": "firstSentence",
+      "kinds": [
+        "jikopr",
+        "strengths",
+        "gakuchika",
+        "motivation"
+      ],
+      "level": "bad",
+      "firstSentenceOver": 50,
+      "message": {
+        "ja": "最初の文が長すぎます（{n}字）。結論を短く言い切りましょう。",
+        "en": "The first sentence is too long ({n} characters). Give your conclusion in a short sentence.",
+        "fr": "La première phrase est trop longue ({n} caractères). Donne ta conclusion en une phrase courte."
+      }
+    },
+    {
+      "id": "schoolOnly",
+      "kinds": [
+        "jikopr",
+        "gakuchika"
+      ],
+      "level": "bad",
+      "pattern": "中学|高校",
+      "unless": "大学|専門学校|HAL|アルバイト|バイト|インターン|日本語学校|語学学校|留学|来日|前職|仕事|会社|ゼミ|サークル|研究|制作",
+      "message": {
+        "ja": "中学・高校の話だけでは古い印象になります。最近の経験（専門学校・アルバイト・日本語の勉強など）を書きましょう。",
+        "en": "Only middle/high school stories feel old. Use a recent experience (college, part-time job, learning Japanese…).",
+        "fr": "Seulement des souvenirs de collège ou lycée, ça paraît ancien. Prends une expérience récente (école, petit boulot, apprentissage du japonais…)."
+      }
+    },
+    {
+      "id": "keywords",
+      "kinds": [
+        "jikopr"
+      ],
+      "level": "warn",
+      "maxKeywords": 2,
+      "message": {
+        "ja": "強みのキーワードが{n}つあります。2つまでに絞ると伝わりやすくなります。",
+        "en": "You list {n} strengths. Two at most is easier to remember.",
+        "fr": "Tu cites {n} qualités. Deux au maximum, c'est plus facile à retenir."
+      }
+    },
+    {
+      "id": "strengthsImprove",
+      "kinds": [
+        "strengths"
+      ],
+      "level": "bad",
+      "pattern": "短所",
+      "unless": "改善|克服|努力|心がけ|意識|気をつけ|工夫|直す|直し",
+      "message": {
+        "ja": "短所を書いたら、改善のためにしていることも書きましょう。",
+        "en": "When you give a weakness, also say what you do to improve it.",
+        "fr": "Quand tu donnes un défaut, dis aussi ce que tu fais pour le corriger."
+      }
+    },
+    {
+      "id": "number",
+      "kinds": [
+        "jikopr",
+        "strengths",
+        "gakuchika"
+      ],
+      "level": "good",
+      "pattern": "[0-9０-９]+(?![0-9０-９]|つ)|[一二三四五六七八九十百千万]+(人|件|名|割|倍|時間|日|週間|ヶ月|か月|カ月|年|回|位|%|％)",
+      "message": {
+        "ja": "数字が入っています。",
+        "en": "There is a number.",
+        "fr": "Il y a un chiffre."
+      },
+      "missingTip": {
+        "ja": "数字（人数・期間・結果・検定など）を入れると伝わりやすくなります。",
+        "en": "Add a number (people, duration, result, certification…): it makes it concrete.",
+        "fr": "Ajoute un chiffre (personnes, durée, résultat, certification…) : c'est plus concret."
+      }
+    },
+    {
+      "id": "title",
+      "kinds": [
+        "jikopr"
+      ],
+      "level": "good",
+      "pattern": "^\\s*【(?!〇〇)[^】]+】",
+      "message": {
+        "ja": "タイトル（キャッチコピー）があります。",
+        "en": "There is a title (catchphrase).",
+        "fr": "Il y a un titre (accroche)."
+      },
+      "missingTip": {
+        "ja": "最初に【タイトル】をつけると、読む人の目に止まります。",
+        "en": "A 【title】 at the top catches the reader's eye.",
+        "fr": "Un 【titre】 en tête attire l'œil du lecteur."
+      }
+    },
+    {
+      "id": "twoPoints",
+      "kinds": [
+        "jikopr"
+      ],
+      "level": "good",
+      "pattern": "(2|２|二|ふた)つあります",
+      "message": {
+        "ja": "「2つあります」で、話の全体が先に伝わります。",
+        "en": "“2つあります” tells the reader the plan up front.",
+        "fr": "« 2つあります » annonce le plan dès le début."
+      }
     }
   ]
 }
