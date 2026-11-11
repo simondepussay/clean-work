@@ -21,7 +21,7 @@ const KokoroPage = lazy(() => import("./kokoro/KokoroPage").then((m) => (loadedF
 const InfoPage = lazy(() => import("./info/InfoPage").then((m) => (loadedFine(), { default: m.InfoPage })));
 const BetaPage = lazy(() => import("./beta/BetaPage").then((m) => (loadedFine(), { default: m.BetaPage })));
 const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (loadedFine(), { default: m.ProfileEditor })));
-import { UserIcon } from "./icons";
+import { BriefcaseIcon, ChatIcon, DocIcon, HeartIcon, LightIcon, UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
 import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
@@ -45,6 +45,22 @@ const SERVICES: { view: Exclude<View, "home" | "account">; ja: string; en: strin
   { view: "documents", ja: "書類", en: "Documents", name: { ja: "書類", en: "Documents", fr: "Documents" }, text: { ja: "ES（AI添削）と履歴書・職務経歴書のPDF", en: "Entry sheets (AI review) and résumé PDFs", fr: "ES (relecture par IA) et CV japonais en PDF" } },
   { view: "info", ja: "情報", en: "Info", name: { ja: "情報", en: "Info", fr: "Infos" }, text: { ja: "就活ニュース・求人サイト・役立つリンク", en: "Job news, job sites and useful links", fr: "Actualité, sites d'offres et liens utiles" } },
 ];
+
+const SERVICE_ICONS: Partial<Record<View, typeof HeartIcon>> = { kokoro: HeartIcon, apps: BriefcaseIcon, interview: ChatIcon, documents: DocIcon, info: LightIcon };
+
+/** Nom de chaque écran : titre de l'onglet du navigateur, et titre principal pour les lecteurs d'écran. */
+const VIEW_TITLES: Record<View, T3> = {
+  home: { ja: "ホーム", en: "Home", fr: "Accueil" },
+  kokoro: { ja: "こころ", en: "Mind", fr: "Esprit" },
+  apps: { ja: "応募", en: "Applications", fr: "Candidatures" },
+  es: { ja: "エントリーシート", en: "Entry sheets", fr: "Entry sheets" },
+  interview: { ja: "面接", en: "Interview", fr: "Entretiens" },
+  documents: { ja: "書類", en: "Documents", fr: "Documents" },
+  info: { ja: "情報", en: "Info", fr: "Infos" },
+  account: { ja: "アカウント", en: "Account", fr: "Compte" },
+  beta: { ja: "βテストに参加", en: "Join the beta", fr: "Rejoindre la bêta" },
+};
+const SITE_TITLE = "Clean Work — 就活アプリ / Job hunting in Japan";
 
 /** Marque « Clean Work » : un trait de vague, rappel des lignes du fond. */
 function Logo() {
@@ -128,6 +144,19 @@ function SignedOut() {
       )}
       {auth.state.status === "disabled" && <p className="muted">{tr({ ja: "サインインは準備中です", en: "Sign-in coming soon", fr: "Connexion bientôt disponible" })}</p>}
       {auth.state.status === "loading" && <Loader />}
+      {/* Ce que fait l'app, visible sans compte (visiteurs et moteurs de recherche). */}
+      <ul className="welcome-services" aria-label={tr({ ja: "Clean Work でできること", en: "What Clean Work does", fr: "Ce que fait Clean Work" })}>
+        {SERVICES.map((s) => {
+          const ServiceIcon = SERVICE_ICONS[s.view] ?? LightIcon;
+          return (
+            <li key={s.view}>
+              <ServiceIcon size={22} />
+              <h2>{tr(s.name)}</h2>
+              <p>{tr(s.text)}</p>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
@@ -209,6 +238,12 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
+  // L'onglet du navigateur (et l'historique) porte le nom de l'écran ouvert.
+  useEffect(() => {
+    document.title = signedIn || view === "beta" ? (view === "home" ? SITE_TITLE : `${tr(VIEW_TITLES[view])} — Clean Work`) : SITE_TITLE;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tr change à chaque rendu ; seule la langue compte
+  }, [view, signedIn, tr.lang]);
+
   const open = (v: View) => {
     setView(v);
     if (viewFromHash() !== v) history.pushState(null, "", v === "home" ? `${location.pathname}${location.search}` : `#${v}`);
@@ -252,6 +287,9 @@ export default function App() {
             message={tr({ ja: "このページを表示できませんでした。新しいバージョンが公開された可能性があります。", en: "This page could not be displayed. A new version may have been published.", fr: "Cette page n'a pas pu s'afficher. Une nouvelle version a peut-être été mise en ligne." })}
             action={tr({ ja: "再読み込み", en: "Reload", fr: "Recharger" })}>
             {signedIn && !dataReady && view !== "beta" ? (view === "kokoro" ? <KokoroLoading label={tr({ ja: "読み込み中", en: "Loading", fr: "Chargement" })} /> : <Loader />) : (
+            <>
+            {/* Les écrans sans grand titre visible en ont un pour les lecteurs d'écran. */}
+            {signedIn && view !== "home" && view !== "beta" && <h1 className="sr-only">{tr(VIEW_TITLES[view])}</h1>}
             <Suspense fallback={view === "kokoro" ? <KokoroLoading label={tr({ ja: "読み込み中", en: "Loading", fr: "Chargement" })} /> : <Loader />}>
               {/* La page de la bêta est ouverte à tous, connecté ou non. */}
               {view === "beta" && <BetaPage />}
@@ -281,6 +319,7 @@ export default function App() {
               )}
               {signedIn && view === "info" && <InfoPage />}
             </Suspense>
+            </>
             )}
           </PageErrorBoundary>
         </main>
@@ -293,10 +332,10 @@ export default function App() {
         <a href="#beta" className="footer-beta" onClick={(e) => { e.preventDefault(); open("beta"); }}>
           {tr({ ja: "βテストに参加", en: "Join the beta", fr: "Rejoindre la bêta" })}
         </a>
-        <span className="status" role="status">
-          {health.kind === "loading" && "API…"}
-          {health.kind === "offline" && `API: ${tr({ ja: "オフライン", en: "offline", fr: "hors ligne" })}`}
-          {health.kind === "ready" && `API: ${health.health.status} · DB: ${health.health.database} · v${health.health.version}`}
+        {/* Rien tant que tout va bien ; la version déployée reste lisible dans le code de la page. */}
+        <span className="status" role="status" data-version={health.kind === "ready" ? health.health.version : undefined}>
+          {health.kind === "offline" && tr({ ja: "サーバーに接続できません", en: "Cannot reach the server", fr: "Serveur injoignable" })}
+          {health.kind === "ready" && (health.health.status !== "ok" || health.health.database !== "ok") && tr({ ja: "サーバーに問題が発生しています", en: "The server is having trouble", fr: "Le serveur rencontre un problème" })}
         </span>
       </footer>
     </div>

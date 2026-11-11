@@ -1,15 +1,16 @@
 import { HttpRequest, InvocationContext } from "@azure/functions";
 import { describe, expect, it } from "vitest";
-import { betaDigestHandler, betaSignupHandler } from "../src/functions/beta";
+import { betaDigestHandler, betaSignupHandler, clientIp } from "../src/functions/beta";
 import { MemoryStore } from "../src/lib/store";
 
 const ctx = new InvocationContext({ logHandler: () => {} });
 const SECRET = "s".repeat(40);
 const NOW = new Date("2026-10-26T01:00:00Z");
 
-function send(store: MemoryStore, body: unknown, ip = "203.0.113.7") {
+// Azure ajoute la vraie adresse (avec le port) à la fin de X-Forwarded-For.
+function send(store: MemoryStore, body: unknown, ip = "203.0.113.7", forged = "") {
   return betaSignupHandler({ store: () => store, now: () => NOW })(
-    new HttpRequest({ url: "https://x/api/beta", method: "POST", headers: { "x-azure-clientip": ip }, body: { string: JSON.stringify(body) } }), ctx);
+    new HttpRequest({ url: "https://x/api/beta", method: "POST", headers: { "x-forwarded-for": `${forged}${ip}:51234`, "x-azure-clientip": forged ? "10.9.9.9" : "" }, body: { string: JSON.stringify(body) } }), ctx);
 }
 const ok = { email: "Student@Example.com", device: "iphone", lang: "ja", consent: true, website: "" };
 
@@ -39,6 +40,20 @@ describe("bêta TestFlight", () => {
     for (let i = 0; i < 5; i++) expect((await send(store, { ...ok, email: `a${i}@example.com` })).status).toBe(201);
     expect((await send(store, { ...ok, email: "a5@example.com" })).status).toBe(429);
     expect((await send(store, { ...ok, email: "b@example.com" }, "198.51.100.2")).status).toBe(201);
+  });
+
+  it("de fausses adresses écrites par l'expéditeur ne contournent pas la limite", async () => {
+    const store = new MemoryStore();
+    for (let i = 0; i < 5; i++) expect((await send(store, { ...ok, email: `a${i}@example.com` }, "203.0.113.7", `10.0.0.${i}, `)).status).toBe(201);
+    expect((await send(store, { ...ok, email: "a5@example.com" }, "203.0.113.7", "10.0.0.99, ")).status).toBe(429);
+  });
+
+  it("lit l'adresse ajoutée par Azure, IPv4 ou IPv6, sans le port", () => {
+    const from = (xff: string) => clientIp(new HttpRequest({ url: "https://x/api/beta", method: "POST", headers: { "x-forwarded-for": xff } }));
+    expect(from("1.2.3.4, 203.0.113.7:51234")).toBe("203.0.113.7");
+    expect(from("[2001:db8::1]:443")).toBe("2001:db8::1");
+    expect(from("2001:db8::1")).toBe("2001:db8::1");
+    expect(clientIp(new HttpRequest({ url: "https://x/api/beta", method: "POST" }))).toBeNull();
   });
 
   it("le matin : les nouvelles demandes une seule fois, et seulement avec le secret", async () => {

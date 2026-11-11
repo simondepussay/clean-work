@@ -977,3 +977,30 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 
 /* Fiche d'une candidature : les actions en haut, sous le nom de l'entreprise. */
 .app-editor .editor-top { margin: 4px 0 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+
+/* ------------------------------------------------------------------ accessibilité et mobile */
+/* Présent pour les lecteurs d'écran et les moteurs de recherche, invisible à l'écran. */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* Accueil sans compte : ce que fait l'app, en cinq cartes sobres. */
+.welcome-services { list-style: none; margin: 44px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; text-align: left; }
+.welcome-services li { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; color: var(--blue-700); }
+.welcome-services h2 { font-size: 16px; margin: 8px 0 4px; color: var(--blue-800); }
+.welcome-services p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+/* Liens du pied de page : une hauteur confortable au doigt. */
+.footer a { display: inline-flex; align-items: center; min-height: 32px; }
+
+@media (max-width: 760px) {
+  /* Safari iOS zoome sur tout champ dont le texte fait moins de 16 px, et ne dézoome pas ensuite.
+     !important : plusieurs écrans fixent 13–14 px par des règles plus précises. */
+  input, select, textarea { font-size: 16px !important; }
+  /* Cibles tactiles : au moins ~40 px de haut. */
+  .apps-table select { padding: 8px 6px; min-height: 40px; }
+  .month-nav button, .month-nav .icon-button { padding: 10px 14px; min-height: 40px; }
+  .footer a { min-height: 44px; }
+}
+/* Petits téléphones : les six onglets tiennent sans défilement. */
+@media (max-width: 400px) {
+  .tabs button { padding-left: 10px; padding-right: 10px; font-size: 15px; }
+}

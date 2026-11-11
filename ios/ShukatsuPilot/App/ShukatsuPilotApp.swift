@@ -62,4 +62,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .sound, .list]
     }
+
+    /// L'utilisateur a touché une notification : ouvrir l'onglet qui la concerne.
+    /// Rappel d'entretien → 面接, お守りの言葉 → こころ, échéance (locale ou envoyée par le serveur) → 応募.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        let id = response.notification.request.identifier
+        let tab: MainTab = id.hasPrefix(InterviewReminders.prefix) ? .interview : id.hasPrefix(CharmReminders.prefix) ? .kokoro : .apps
+        await MainActor.run { TabRouter.shared.requested = tab }
+    }
 }

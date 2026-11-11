@@ -36,6 +36,8 @@
 	<string>声の回答を文字にするために音声認識を使います。音声は本アプリのサーバーには送られません。/ Speech recognition turns your spoken answers into text. Your voice is not sent to our servers.</string>
 	<key>SupportEmail</key>
 	<string>depussay.simon@icloud.com</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

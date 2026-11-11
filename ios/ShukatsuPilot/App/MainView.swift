@@ -14,6 +14,13 @@ enum MainTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// Onglet demandé de l'extérieur : une notification touchée (voir AppDelegate). Gardé ici jusqu'à ce que
+/// l'écran principal existe, car au lancement à froid la notification arrive avant lui.
+@MainActor @Observable final class TabRouter {
+    static let shared = TabRouter()
+    var requested: MainTab?
+}
+
 /// Écran principal une fois connecté : en-tête, intercalaires de classeur, puis la « feuille » de l'onglet choisi.
 struct MainView: View {
     @Environment(AppModel.self) private var model
@@ -40,6 +47,14 @@ struct MainView: View {
         .id(language)
         .sheet(isPresented: $showingAccount) {
             NavigationStack { AccountView() }
+        }
+        // Léger retour haptique au changement d'onglet.
+        .sensoryFeedback(.selection, trigger: tab)
+        // Une notification touchée ouvre son onglet (initial : aussi quand l'app vient d'être lancée par elle).
+        .onChange(of: TabRouter.shared.requested, initial: true) { _, requested in
+            guard let requested else { return }
+            tab = requested
+            TabRouter.shared.requested = nil
         }
     }
 

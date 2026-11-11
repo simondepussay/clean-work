@@ -43,6 +43,8 @@ targets:
           UIImageName: LaunchLogo
           UIColorName: LaunchBackground
           UIImageRespectsSafeAreaInsets: false
+        # Mode clair imposé : les couleurs de l'app sont fixes et claires (en sombre, le texte système devenait illisible).
+        UIUserInterfaceStyle: Light
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         # iPad : toutes les orientations (exigé par l'App Store pour une app iPad en plein écran).
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]

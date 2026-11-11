@@ -7,9 +7,20 @@ import { cronSecretFromEnv, invalid, tooLarge, withCron } from "../lib/http";
 type Deps = { store?: () => DocStore; secret?: () => string | undefined; now?: () => Date };
 
 
-/** Adresse de la connexion (pour limiter les envois répétés) : Static Web Apps la transmet dans ces en-têtes. */
-const clientIp = (req: HttpRequest) =>
-  req.headers.get("x-azure-clientip") ?? req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? null;
+/**
+ * Adresse de la connexion (pour limiter les envois répétés). L'app appelle l'API directement : le seul
+ * élément fiable est le dernier de X-Forwarded-For, ajouté par Azure lui-même. Tout ce qui le précède
+ * (et un en-tête comme x-azure-clientip) est écrit par l'expéditeur, qui pourrait changer de fausse
+ * adresse à chaque envoi pour contourner la limite.
+ */
+export function clientIp(req: HttpRequest): string | null {
+  const last = req.headers.get("x-forwarded-for")?.split(",").pop()?.trim();
+  if (!last) return null;
+  // Azure ajoute le port : « 203.0.113.7:51234 » ou « [2001:db8::1]:51234 ».
+  const v6 = /^\[([^\]]+)\](?::\d+)?$/.exec(last);
+  if (v6) return v6[1];
+  return /^[\d.]+:\d+$/.test(last) ? last.slice(0, last.lastIndexOf(":")) : last;
+}
 
 /**
  * POST /api/beta { email, device, message?, lang, consent, website } — demande de participation à la bêta,

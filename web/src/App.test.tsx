@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deleteAccount, fetchHealth, fetchMe, TOKEN_HEADER } from "./api";
@@ -51,13 +51,15 @@ describe("App", () => {
     stubApi();
     renderWith({});
     expect(screen.getByRole("heading", { name: "Clean Work" })).toBeInTheDocument();
-    expect(await screen.findByText("API: ok · DB: ok · vabc123")).toBeInTheDocument();
+    // Tout va bien : rien d'affiché, la version reste dans le code de la page.
+    await waitFor(() => expect(screen.getByRole("status")).toHaveAttribute("data-version", "abc123"));
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   it("indique quand l'API est hors ligne", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     renderWith({});
-    expect(await screen.findByText("API: オフライン")).toBeInTheDocument();
+    expect(await screen.findByText("サーバーに接続できません")).toBeInTheDocument();
   });
 
   it("annonce la connexion à venir tant que l'annuaire n'est pas configuré", async () => {
