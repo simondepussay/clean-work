@@ -1,0 +1,8 @@
+{
+  "tenantId": "8b36fa73-5876-491f-a486-65bdbf79c252",
+  "jlptClientId": "1b8ac33f-bc78-41db-bc12-9e5cf869a387",
+  "origins": [
+    "https://jlpt.simondepussay.com",
+    "http://localhost:8766"
+  ]
+}
