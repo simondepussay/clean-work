@@ -44,6 +44,13 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/drafts"): body = [] as [Any]
         case ("GET", "/api/interviews"): body = [] as [Any]
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
+        case ("GET", "/api/email-usage"): body = ["today": 10, "month": 38]
+        case ("POST", _) where path.hasSuffix("/email"):
+            body = ["subject": "一次面接のお礼（HAL東京 シモン）",
+                    "body": "ソニーグループ株式会社\n採用ご担当 〇〇様\n\nお世話になっております。\nHAL東京のシモンと申します。\n\n本日はお忙しい中、一次面接のお時間をいただき、誠にありがとうございました。\nお話を伺い、貴社で働きたいという気持ちがいっそう強くなりました。\n\n取り急ぎ、面接のお礼を申し上げます。\n今後ともよろしくお願いいたします。\n\n――――――――――\nHAL東京\nシモン\nsimon@example.com",
+                    "points": [["expression": "お世話になっております", "meaning": "ビジネスメールの書き出しの決まり文句です。"],
+                               ["expression": "取り急ぎ", "meaning": "「まずは急いで」という意味。お礼をすぐ伝えたいときに使います。"]],
+                    "remaining": ["today": 9, "month": 37]] as [String: Any]
         case ("GET", "/api/info"): body = Self.info
         case ("GET", "/api/kokoro"): body = Self.kokoro
         case ("GET", "/api/kokoro/journal"): body = ["entries": [

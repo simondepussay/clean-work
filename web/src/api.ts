@@ -199,6 +199,30 @@ export const listReviews = (token: string, id: string, f?: typeof fetch) =>
   call<Review[]>(token, "GET", `/api/drafts/${encodeURIComponent(id)}/reviews`, undefined, f);
 export const getUsage = (token: string, f?: typeof fetch) => call<Usage>(token, "GET", "/api/usage", undefined, f);
 
+// ------------------------------------------------------------------ mails de 就活 rédigés par l'IA
+
+export type EmailKind = "thanks" | "schedule" | "reschedule" | "inquiry" | "decline" | "acceptOffer" | "declineOffer";
+export type EmailDraft = { subject: string; body: string; points: { expression: string; meaning: string }[]; remaining?: Usage };
+export type EmailOutcome =
+  | { ok: true; email: EmailDraft }
+  | { ok: false; error: "limit"; reason: "day" | "month" | "budget"; retryAfter: string }
+  | { ok: false; error: "ai_failed" | "ai_not_configured" };
+
+/** Un mail (お礼, 日程調整, 辞退…) pour une candidature. Rien n'est enregistré côté serveur. */
+export async function writeEmail(token: string, applicationId: string, request: { kind: EmailKind; language: string; stepId?: string; details?: string }, fetcher: typeof fetch = fetch): Promise<EmailOutcome> {
+  const res = await fetcher(`${API_BASE}/api/applications/${encodeURIComponent(applicationId)}/email`, {
+    method: "POST",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (res.ok && typeof body.body === "string") return { ok: true, email: body as EmailDraft };
+  if (res.status === 429 || body.error === "limit") return { ok: false, error: "limit", reason: body.reason, retryAfter: body.retryAfter };
+  if (body.error === "ai_not_configured") return { ok: false, error: "ai_not_configured" };
+  return { ok: false, error: "ai_failed" };
+}
+export const getEmailUsage = (token: string, f?: typeof fetch) => call<Usage>(token, "GET", "/api/email-usage", undefined, f);
+
 // ------------------------------------------------------------------ 履歴書 PDF (S11)
 
 export type ResumeTemplate = "standard" | "student" | "baito";

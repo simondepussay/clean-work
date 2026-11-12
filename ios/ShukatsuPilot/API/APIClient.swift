@@ -282,6 +282,11 @@ struct APIClient {
         try await send(method, path, body: body)
     }
 
+    /// Pour les appels dont un refus (limite de l'IA…) a un corps à lire : données et code HTTP tels quels.
+    func sendUnchecked(_ method: String, _ path: String, body: Data? = nil) async throws -> (Data, Int) {
+        try await raw(method, path, body: body)
+    }
+
     @discardableResult
     private func send(_ method: String, _ path: String, body: Data? = nil) async throws -> Data {
         let (data, status) = try await raw(method, path, body: body)

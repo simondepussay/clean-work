@@ -11,7 +11,8 @@ import { CLOSED, COLUMNS, COMPANY_TYPES, GROUPS, INDUSTRIES, daysUntil, deadline
 import { apiMessage, useTr } from "../i18n";
 import { CalendarMenu } from "./CalendarMenu";
 import { CompanyFacts } from "./CompanyFacts";
-import { ClockIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { ClockIcon, FlagIcon, MailIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { EmailPanel } from "./EmailPanel";
 import { ymd } from "../home/agenda";
 import type { SavedJob } from "./savedJob";
 import { SaveFromBrowser } from "./SaveFromBrowser";
@@ -70,6 +71,9 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   /** Filtre d'étape (« 進行中 » par défaut) et tri de la liste. */
   const [stage, setStage] = useState<GroupId>("active");
   const [sort, setSort] = useState<"deadline" | "company" | "updated">("deadline");
+  /** Rédaction d'un mail (お礼, 日程調整…) pour la candidature ouverte. */
+  const [mailing, setMailing] = useState(false);
+  useEffect(() => { setMailing(false); }, [editing?.id]);
 
   async function token() {
     const t = await auth.getToken();
@@ -283,8 +287,12 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
             {editing.id && onPractice && (
               <button type="button" onClick={() => onPractice({ id: editing.id! })}><MicIcon size={16} /> {tr({ ja: "面接を練習する", en: "Practise the interview", fr: "S'entraîner à l'entretien" })}</button>
             )}
+            {editing.id && (
+              <button type="button" aria-expanded={mailing} onClick={() => setMailing((m) => !m)}><MailIcon size={16} /> {tr({ ja: "メールを書く", en: "Write an email", fr: "Écrire un mail" })}</button>
+            )}
             {editing.id && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
           </div>
+          {editing.id && mailing && <EmailPanel applicationId={editing.id} steps={editing.form.steps} />}
           {!editing.id && fromBrowser !== null && (
             <p className="from-browser" role="status">{tr({
               ja: `${fromBrowser ? `${fromBrowser}から` : "ブラウザから"}追加された求人です。内容を確かめて、保存してください。`,

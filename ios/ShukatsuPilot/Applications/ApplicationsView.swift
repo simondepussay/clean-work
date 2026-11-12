@@ -193,6 +193,11 @@ struct ApplicationEditor: View {
                     } label: {
                         Label(tr("面接を練習する", "Practise the interview", "S'entraîner pour l'entretien"), systemImage: "mic")
                     }
+                    NavigationLink {
+                        EmailWriterView(api: api, application: app)
+                    } label: {
+                        Label(tr("メールを書く", "Write an email", "Écrire un mail"), systemImage: "envelope")
+                    }
                 }
                 Section {
                     Button(tr("削除", "Delete", "Supprimer"), role: .destructive) { Task { await onDelete(app); dismiss() } }
@@ -289,6 +294,112 @@ private struct WaitingList: View {
         .searchable(text: $query, prompt: tr("企業名・職種・メモで検索", "Search company, position, notes", "Chercher entreprise, poste, notes"))
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
+        }
+    }
+}
+
+/// Mail de 就活 rédigé par l'IA pour une candidature : type de mail, étape concernée, quelques précisions.
+/// Le texte reste modifiable, puis se copie ou se partage vers l'app Mail.
+private struct EmailWriterView: View {
+    let api: APIClient
+    let application: JobApplication
+    @State private var kind = EmailKind.thanks
+    @State private var stepId: String?
+    @State private var details = ""
+    @State private var usage: Usage?
+    @State private var draft: EmailDraft?
+    @State private var busy = false
+    @State private var message: String?
+    @State private var copied = 0
+
+    var body: some View {
+        Form {
+            Section {
+                Picker(tr("メールの種類", "Type of email", "Type de mail"), selection: $kind) {
+                    ForEach(EmailKind.allCases) { Text($0.name).tag($0) }
+                }
+                if kind.needsStep, !application.steps.isEmpty {
+                    Picker(tr("対象の選考", "Which step", "Étape concernée"), selection: $stepId) {
+                        Text("—").tag(String?.none)
+                        ForEach(application.steps) { step in
+                            Text([SelectionStage.name(step.type), step.dueDate.map { String($0.dropFirst(5)).replacingOccurrences(of: "-", with: "/") }, step.time].compactMap { $0 }.joined(separator: " "))
+                                .tag(Optional(step.id))
+                        }
+                    }
+                }
+                TextField(kind.hint, text: $details, axis: .vertical).lineLimit(2...5)
+            }
+            Section {
+                Button {
+                    Task { await write() }
+                } label: {
+                    Label(busy ? tr("作成中…", "Writing…", "Rédaction…") : draft == nil ? tr("AIで作成", "Write with AI", "Rédiger avec l'IA") : tr("もう一度作成", "Write again", "Réécrire"), systemImage: "sparkles")
+                }
+                .disabled(busy || usage?.today == 0)
+                if let message { Text(message).font(.footnote).foregroundStyle(.red) }
+            } footer: {
+                if let usage { Text(tr("残り：今日 \(usage.today) · 今月 \(usage.month)", "Left: \(usage.today) today · \(usage.month) this month", "Reste : \(usage.today) aujourd'hui · \(usage.month) ce mois-ci")) }
+            }
+            if let draft {
+                Section(tr("件名", "Subject", "Objet")) {
+                    TextField("", text: binding(\.subject), axis: .vertical)
+                }
+                Section {
+                    TextEditor(text: binding(\.body)).frame(minHeight: 320)
+                } header: {
+                    Text(tr("本文", "Message", "Message"))
+                } footer: {
+                    if draft.body.contains("〇〇") {
+                        Text(tr("「〇〇」は送る前に書きかえてください（担当者名・日時など）。", "Replace every 「〇〇」 before sending (recruiter's name, dates…).", "Remplacez chaque « 〇〇 » avant l'envoi (nom du recruteur, dates…)."))
+                    }
+                }
+                Section {
+                    Button {
+                        UIPasteboard.general.string = draft.body
+                        copied += 1
+                    } label: { Label(tr("本文をコピー", "Copy the message", "Copier le message"), systemImage: "doc.on.doc") }
+                    Button {
+                        UIPasteboard.general.string = draft.subject
+                        copied += 1
+                    } label: { Label(tr("件名をコピー", "Copy the subject", "Copier l'objet"), systemImage: "doc.on.doc") }
+                    ShareLink(item: draft.body, subject: Text(draft.subject)) {
+                        Label(tr("メールアプリで開く・共有", "Open in Mail or share", "Ouvrir dans Mail ou partager"), systemImage: "square.and.arrow.up")
+                    }
+                }
+                if !draft.points.isEmpty {
+                    Section(tr("覚えておきたい表現", "Expressions worth remembering", "Expressions à retenir")) {
+                        ForEach(draft.points) { point in
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(point.expression).font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+                                Text(point.meaning).font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle(tr("メールを書く", "Write an email", "Écrire un mail"))
+        .navigationBarTitleDisplayMode(.inline)
+        .cleanList()
+        .sensoryFeedback(.success, trigger: copied)
+        .task { usage = try? await api.emailUsage() }
+    }
+
+    private func binding(_ path: WritableKeyPath<EmailDraft, String>) -> Binding<String> {
+        Binding(get: { draft?[keyPath: path] ?? "" }, set: { draft?[keyPath: path] = $0 })
+    }
+
+    private func write() async {
+        busy = true
+        message = nil
+        defer { busy = false }
+        let text = details.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch await api.writeEmail(applicationId: application.id, kind: kind, stepId: kind.needsStep ? stepId : nil, details: text.isEmpty ? nil : text, language: HelpLanguage.saved) {
+        case .success(let written):
+            draft = written
+            if let remaining = written.remaining { usage = remaining }
+        case .failure(let refusal):
+            message = refusal.message
         }
     }
 }

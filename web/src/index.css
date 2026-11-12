@@ -1004,3 +1004,15 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 @media (max-width: 400px) {
   .tabs button { padding-left: 10px; padding-right: 10px; font-size: 15px; }
 }
+
+/* ------------------------------------------------------------------ mail rédigé par l'IA (fiche d'une candidature) */
+.email-panel { margin: 4px 0 20px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--blue-50); display: grid; gap: 12px; }
+.email-panel label { margin: 0; }
+.email-result { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.email-result textarea { font-family: inherit; line-height: 1.7; }
+.email-result h4 { margin: 4px 0 0; font-size: 14px; color: var(--blue-800); }
+a.button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--blue-300); background: var(--white); color: var(--blue-800); text-decoration: none; }
+a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
+.email-points { margin: 0; display: grid; gap: 8px; }
+.email-points dt { font-weight: 700; color: var(--blue-800); }
+.email-points dd { margin: 2px 0 0; color: var(--muted); font-size: 14px; }

@@ -27,6 +27,10 @@ export const INTERVIEWS: Counter = { monthField: "interviews", dayPrefix: "iday_
 /** Une séance d'entretien coûte 5 à 10 appels au modèle : moins de séances que de relectures. */
 export const INTERVIEW_LIMITS = { ...LIMITS, perDay: 3, perMonth: 20 };
 
+/** Mails de 就活 rédigés par l'IA : un seul appel court par mail. */
+export const EMAILS: Counter = { monthField: "emails", dayPrefix: "eday_" };
+export const EMAIL_LIMITS = { ...LIMITS, perDay: 10, perMonth: 40 };
+
 export type Refusal = { reason: "day" | "month" | "budget"; retryAfter: string };
 export type Reservation = { release(): Promise<void> };
 

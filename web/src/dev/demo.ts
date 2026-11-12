@@ -140,6 +140,17 @@ const routes: Record<string, unknown> = {
   "GET /api/interviews": [{ id: "i0", company: "ソニーグループ", applicationId: "a2", stage: "interview1", status: "finished", score: 68, questions: 6, createdAt: today.toISOString() }],
   "GET /api/interview-usage": { today: 3, month: 19 },
   "POST /api/interviews": interview,
+  "GET /api/email-usage": { today: 10, month: 38 },
+  // Mail rédigé par l'IA (seule route POST sous /api/applications/{id}/…).
+  "POST /api/applications/*": {
+    subject: "一次面接のお礼（HAL東京 シモン）",
+    body: "ソニーグループ株式会社\n採用ご担当 〇〇様\n\nお世話になっております。\nHAL東京のシモンと申します。\n\n本日はお忙しい中、一次面接のお時間をいただき、誠にありがとうございました。\nお話を伺い、貴社で働きたいという気持ちがいっそう強くなりました。\n\n取り急ぎ、面接のお礼を申し上げます。\n今後ともよろしくお願いいたします。\n\n――――――――――\nHAL東京\nシモン\nsimon@example.com",
+    points: [
+      { expression: "お世話になっております", meaning: "ビジネスメールの書き出しの決まり文句です。" },
+      { expression: "取り急ぎ", meaning: "「まずは急いで」という意味。お礼をすぐ伝えたいときに使います。" },
+    ],
+    remaining: { today: 9, month: 37 },
+  },
   // Données ouvertes (exemples ; « * » = préfixe).
   "GET /api/holidays": { "2026-11-03": "文化の日", "2026-11-23": "勤労感謝の日", "2027-01-01": "元日", "2027-01-11": "成人の日", "2027-02-11": "建国記念の日" },
   "GET /api/weather*": { date: "", prefecture: "東京都", kind: "rain", rainChance: 70, tMax: 18, tMin: 12 },
