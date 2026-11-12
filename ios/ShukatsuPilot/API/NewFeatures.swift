@@ -132,8 +132,8 @@ enum EmailRefusal: Error, Equatable {
             let day = date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? ""
             return reason == "budget"
                 ? tr("今月のAI機能は終了しました（\(day)から再開）", "AI features are paused until \(day)", "Les fonctions IA reprennent le \(day)")
-                : tr("メール作成の回数の上限です（\(day)から）", "Email limit reached, available again on \(day)", "Limite atteinte, de nouveau disponible le \(day)")
-        case .notConfigured: return tr("メール作成は準備中です", "Email writing is not available yet", "La rédaction de mails n'est pas encore disponible")
+                : tr("回数の上限です（\(day)から使えます）", "Limit reached, available again on \(day)", "Limite atteinte, de nouveau disponible le \(day)")
+        case .notConfigured: return tr("この機能は準備中です", "This feature is not available yet", "Cette fonction n'est pas encore disponible")
         case .failed: return tr("作成に失敗しました。回数は使われていません", "Writing failed; it was not counted", "La rédaction a échoué ; elle n'a pas été comptée")
         }
     }
@@ -152,6 +152,41 @@ extension APIClient {
             let body = try JSONEncoder().encode(Body(kind: kind.rawValue, language: language.rawValue, stepId: stepId, details: details))
             let (data, status) = try await sendUnchecked("POST", "api/applications/\(applicationId)/email", body: body)
             if (200..<300).contains(status), let draft = try? JSONDecoder().decode(EmailDraft.self, from: data) { return .success(draft) }
+            let refusal = try? JSONDecoder().decode(Refusal.self, from: data)
+            switch refusal?.error {
+            case "limit":
+                let date = refusal?.retryAfter.flatMap { ISO8601DateFormatter.withFractions.date(from: $0) }
+                return .failure(.limit(reason: refusal?.reason ?? "day", retryAfter: date))
+            case "ai_not_configured": return .failure(.notConfigured)
+            default: return .failure(.failed)
+            }
+        } catch {
+            return .failure(.failed)
+        }
+    }
+}
+
+// MARK: 面接の振り返り (bilan après un vrai entretien)
+
+extension APIClient {
+    func debriefUsage() async throws -> Usage {
+        try JSONDecoder().decode(Usage.self, from: try await sendRaw("GET", "api/debrief-usage"))
+    }
+
+    /// Enregistre les bilans d'une candidature, sans toucher au reste de la fiche.
+    func saveDebriefs(applicationId: String, _ debriefs: [Debrief]) async throws -> JobApplication {
+        let body = try JSONEncoder().encode(["debriefs": debriefs])
+        return try JSONDecoder().decode(JobApplication.self, from: try await sendRaw("PUT", "api/applications/\(applicationId)", body: body))
+    }
+
+    /// Conseils de l'IA pour un bilan déjà enregistré ; ils reviennent rangés dans la candidature.
+    func adviseDebrief(applicationId: String, debriefId: String, language: HelpLanguage) async -> Result<(application: JobApplication, remaining: Usage?), EmailRefusal> {
+        struct Reply: Decodable { let application: JobApplication; let remaining: Usage? }
+        struct Refusal: Decodable { let error: String?; let reason: String?; let retryAfter: String? }
+        do {
+            let body = try JSONEncoder().encode(["language": language.rawValue])
+            let (data, status) = try await sendUnchecked("POST", "api/applications/\(applicationId)/debriefs/\(debriefId)/advice", body: body)
+            if (200..<300).contains(status), let reply = try? JSONDecoder().decode(Reply.self, from: data) { return .success((reply.application, reply.remaining)) }
             let refusal = try? JSONDecoder().decode(Refusal.self, from: data)
             switch refusal?.error {
             case "limit":

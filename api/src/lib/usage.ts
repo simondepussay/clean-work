@@ -31,6 +31,10 @@ export const INTERVIEW_LIMITS = { ...LIMITS, perDay: 3, perMonth: 20 };
 export const EMAILS: Counter = { monthField: "emails", dayPrefix: "eday_" };
 export const EMAIL_LIMITS = { ...LIMITS, perDay: 10, perMonth: 40 };
 
+/** Conseils de l'IA après un vrai entretien (面接の振り返り). */
+export const DEBRIEFS: Counter = { monthField: "debriefs", dayPrefix: "dday_" };
+export const DEBRIEF_LIMITS = { ...LIMITS, perDay: 5, perMonth: 30 };
+
 export type Refusal = { reason: "day" | "month" | "budget"; retryAfter: string };
 export type Reservation = { release(): Promise<void> };
 

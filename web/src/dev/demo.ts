@@ -141,7 +141,8 @@ const routes: Record<string, unknown> = {
   "GET /api/interview-usage": { today: 3, month: 19 },
   "POST /api/interviews": interview,
   "GET /api/email-usage": { today: 10, month: 38 },
-  // Mail rédigé par l'IA (seule route POST sous /api/applications/{id}/…).
+  "GET /api/debrief-usage": { today: 5, month: 30 },
+  // Mail rédigé par l'IA (« * » = préfixe ; les conseils après entretien sont traités plus bas).
   "POST /api/applications/*": {
     subject: "一次面接のお礼（HAL東京 シモン）",
     body: "ソニーグループ株式会社\n採用ご担当 〇〇様\n\nお世話になっております。\nHAL東京のシモンと申します。\n\n本日はお忙しい中、一次面接のお時間をいただき、誠にありがとうございました。\nお話を伺い、貴社で働きたいという気持ちがいっそう強くなりました。\n\n取り急ぎ、面接のお礼を申し上げます。\n今後ともよろしくお願いいたします。\n\n――――――――――\nHAL東京\nシモン\nsimon@example.com",
@@ -192,6 +193,21 @@ export function installDemoApi() {
       return new Response(JSON.stringify({ entry }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (key === "PUT /api/kokoro/values") kokoro.values = (sent.values as string[]).filter(Boolean);
+    // Candidature modifiée : gardée pendant la démo (statut, bilans d'entretien…).
+    const demoApp = (applications as Record<string, unknown>[]).find((a) => new RegExp(`/api/applications/${a.id}(/|$)`).test(url));
+    if (demoApp && method === "PUT") Object.assign(demoApp, sent);
+    if (demoApp && method === "POST" && url.endsWith("/advice")) {
+      const debriefId = url.split("/").at(-2);
+      demoApp.debriefs = ((demoApp.debriefs ?? []) as { id: string }[]).map((d) => (d.id !== debriefId ? d : { ...d, advice: {
+        language: sent.language ?? "ja", createdAt: new Date().toISOString(),
+        summary: "自己PRを落ち着いて話せたのは大きな強みです。次は、志望動機を「なぜこの会社か」まで言い切ることと、逆質問の準備が課題です。",
+        tips: ["志望動機は「結論 → 理由 → 入社後にしたいこと」の順で、1分にまとめて声に出して練習しましょう。", "逆質問を3つ用意しましょう（仕事内容、チーム、入社までに学ぶこと）。", "答えに詰まったら「少し考えてもよろしいでしょうか」と言って、落ち着いて話し始めましょう。"],
+        practice: ["当社でなければならない理由を教えてください。", "入社後、5年後にはどんな仕事をしていたいですか。", "他社の選考状況を教えてください。", "最後に、何か質問はありますか。"],
+      } }));
+      await new Promise((r) => setTimeout(r, 400));
+      return new Response(JSON.stringify({ application: demoApp, remaining: { today: 4, month: 29 } }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (demoApp && method === "PUT") return new Response(JSON.stringify(demoApp), { status: 200, headers: { "content-type": "application/json" } });
     const echo = { id: crypto.randomUUID(), done: false, createdAt: "", updatedAt: "", ...plans.find((p) => url.endsWith(p.id)), ...sent };
     const prefix = Object.keys(routes).find((k) => k.endsWith("*") && key.startsWith(k.slice(0, -1)));
     const body = key in routes ? routes[key] : prefix ? routes[prefix] : method === "GET" ? [] : echo;

@@ -45,6 +45,22 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/interviews"): body = [] as [Any]
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
         case ("GET", "/api/email-usage"): body = ["today": 10, "month": 38]
+        case ("GET", "/api/debrief-usage"): body = ["today": 5, "month": 30]
+        case ("PUT", _) where path.hasPrefix("/api/applications/"):
+            // La candidature d'exemple, avec ce qui vient d'être envoyé (statut, bilans d'entretien…).
+            let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
+            body = Self.demoApplication(path).merging(sent) { _, new in new }
+        case ("POST", _) where path.hasSuffix("/advice"):
+            let debriefId = path.split(separator: "/").dropLast().last.map(String.init) ?? ""
+            let advice: [String: Any] = [
+                "language": "ja", "createdAt": "2026-11-12T10:00:00.000Z",
+                "summary": "自己PRを落ち着いて話せたのは大きな強みです。次は、志望動機を「なぜこの会社か」まで言い切ることと、逆質問の準備が課題です。",
+                "tips": ["志望動機は「結論 → 理由 → 入社後にしたいこと」の順で、1分にまとめて声に出して練習しましょう。", "逆質問を3つ用意しましょう（仕事内容、チーム、入社までに学ぶこと）。"],
+                "practice": ["当社でなければならない理由を教えてください。", "入社後、5年後にはどんな仕事をしていたいですか。", "最後に、何か質問はありますか。"],
+            ]
+            var app = Self.demoApplication(path)
+            app["debriefs"] = [["id": debriefId, "date": Self.day(-1), "questions": "志望動機を教えてください", "advice": advice] as [String: Any]]
+            body = ["application": app, "remaining": ["today": 4, "month": 29]] as [String: Any]
         case ("POST", _) where path.hasSuffix("/email"):
             body = ["subject": "一次面接のお礼（HAL東京 シモン）",
                     "body": "ソニーグループ株式会社\n採用ご担当 〇〇様\n\nお世話になっております。\nHAL東京のシモンと申します。\n\n本日はお忙しい中、一次面接のお時間をいただき、誠にありがとうございました。\nお話を伺い、貴社で働きたいという気持ちがいっそう強くなりました。\n\n取り急ぎ、面接のお礼を申し上げます。\n今後ともよろしくお願いいたします。\n\n――――――――――\nHAL東京\nシモン\nsimon@example.com",
@@ -93,6 +109,12 @@ private final class DemoURLProtocol: URLProtocol {
         var data = Data(); var buffer = [UInt8](repeating: 0, count: 4096)
         while stream.hasBytesAvailable { let n = stream.read(&buffer, maxLength: buffer.count); if n <= 0 { break }; data.append(buffer, count: n) }
         return data
+    }
+
+    /// La candidature d'exemple dont l'identifiant figure dans le chemin (/api/applications/{id}/…).
+    private static func demoApplication(_ path: String) -> [String: Any] {
+        let id = path.split(separator: "/").dropFirst(2).first.map(String.init)
+        return applications.first { $0["id"] as? String == id } ?? applications.first ?? [:]
     }
 
     private static func day(_ offset: Int) -> String {

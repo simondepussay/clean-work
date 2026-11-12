@@ -272,9 +272,12 @@ export type EventKind = "email" | "call" | "seminar" | "ob" | "meeting" | "other
 export type AppEvent = { id: string; date: string; kind: EventKind; note?: string };
 /** フォローアップ : une relance datée, rappelée comme une échéance. */
 export type FollowUp = { id: string; date: string; note: string; done: boolean };
+/** 面接の振り返り : notes prises après un vrai entretien, et les conseils que l'IA en a tirés. */
+export type DebriefAdvice = { language: string; summary: string; tips: string[]; practice: string[]; createdAt: string };
+export type Debrief = { id: string; stepId?: string; date: string; questions: string; good?: string; improve?: string; advice?: DebriefAdvice };
 export type ApplicationInput = {
   company: string; position?: string; url?: string; status: AppStatus; steps: Step[];
-  events?: AppEvent[]; followUps?: FollowUp[];
+  events?: AppEvent[]; followUps?: FollowUp[]; debriefs?: Debrief[];
   /** null : effacer le champ (l'API garde sinon l'ancienne valeur). */
   industry?: Industry | null; companyType?: CompanyType | null; notes?: string;
   /** 法人番号 et adresse du siège : la candidature est reliée à la fiche officielle (gBizINFO). */
@@ -289,6 +292,28 @@ export const updateApplication = (token: string, id: string, a: Partial<Applicat
   call<Application>(token, "PUT", `/api/applications/${encodeURIComponent(id)}`, a, f);
 export const deleteApplication = (token: string, id: string, f?: typeof fetch) =>
   call<null>(token, "DELETE", `/api/applications/${encodeURIComponent(id)}`, undefined, f);
+
+export type AdviceOutcome =
+  | { ok: true; application: Application; remaining?: Usage }
+  | { ok: false; error: "limit"; reason: "day" | "month" | "budget"; retryAfter: string }
+  | { ok: false; error: "ai_failed" | "ai_not_configured" | "empty" };
+
+/** Conseils de l'IA pour un bilan d'entretien déjà enregistré ; ils sont rangés dans la candidature rendue. */
+export async function adviseDebrief(token: string, applicationId: string, debriefId: string, language: string, fetcher: typeof fetch = fetch): Promise<AdviceOutcome> {
+  clearApiCache();
+  const res = await fetcher(`${API_BASE}/api/applications/${encodeURIComponent(applicationId)}/debriefs/${encodeURIComponent(debriefId)}/advice`, {
+    method: "POST",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify({ language }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (res.ok && body.application) return { ok: true, application: body.application as Application, remaining: body.remaining };
+  if (res.status === 429 || body.error === "limit") return { ok: false, error: "limit", reason: body.reason, retryAfter: body.retryAfter };
+  if (res.status === 400) return { ok: false, error: "empty" };
+  if (body.error === "ai_not_configured") return { ok: false, error: "ai_not_configured" };
+  return { ok: false, error: "ai_failed" };
+}
+export const getDebriefUsage = (token: string, f?: typeof fetch) => call<Usage>(token, "GET", "/api/debrief-usage", undefined, f);
 
 // ------------------------------------------------------------------ entretiens (S17–S19)
 

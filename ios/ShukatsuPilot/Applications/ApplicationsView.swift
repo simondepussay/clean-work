@@ -97,6 +97,8 @@ struct ApplicationEditor: View {
     @State private var input = JobApplicationInput()
     @State private var issues: [Issue] = []
     @State private var failed = false
+    /// 面接の振り返り : enregistrés à part de la fiche, gardés ici pour les retrouver en rouvrant l'écran.
+    @State private var debriefs: [Debrief] = []
 
     var body: some View {
         Form {
@@ -194,6 +196,15 @@ struct ApplicationEditor: View {
                         Label(tr("面接を練習する", "Practise the interview", "S'entraîner pour l'entretien"), systemImage: "mic")
                     }
                     NavigationLink {
+                        DebriefsView(api: api, application: app, debriefs: $debriefs, onSaved: onSaved)
+                    } label: {
+                        HStack {
+                            Label(tr("面接の振り返り", "Interview debrief", "Bilan d'entretien"), systemImage: "text.bubble")
+                            Spacer()
+                            if !debriefs.isEmpty { Text("\(debriefs.count)").foregroundStyle(.secondary) }
+                        }
+                    }
+                    NavigationLink {
                         EmailWriterView(api: api, application: app)
                     } label: {
                         Label(tr("メールを書く", "Write an email", "Écrire un mail"), systemImage: "envelope")
@@ -210,7 +221,7 @@ struct ApplicationEditor: View {
             ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
             ToolbarItem(placement: .confirmationAction) { Button(tr("保存", "Save", "Enregistrer")) { Task { await save() } } }
         }
-        .onAppear { if let app { input = JobApplicationInput(app) } }
+        .onAppear { if let app, input == JobApplicationInput() { input = JobApplicationInput(app); debriefs = app.debriefs ?? [] } }
     }
 
     private func save() async {
@@ -401,5 +412,149 @@ private struct EmailWriterView: View {
         case .failure(let refusal):
             message = refusal.message
         }
+    }
+}
+
+/// 面接の振り返り : après un vrai entretien, noter les questions posées, ce qui a marché et ce qui a coincé.
+/// L'IA en tire des conseils et les questions à préparer pour le tour suivant ; l'entretien simulé s'en sert aussi.
+private struct DebriefsView: View {
+    let api: APIClient
+    let application: JobApplication
+    @Binding var debriefs: [Debrief]
+    let onSaved: (JobApplication) -> Void
+    @State private var usage: Usage?
+    @State private var busy: String?
+    @State private var message: String?
+    /// Ce qui est enregistré sur le serveur : sert à savoir s'il reste des notes à enregistrer.
+    @State private var savedCopy: [Debrief] = []
+    @State private var done = 0
+
+    private var interviews: [JobApplication.Step] { application.steps.filter { ["interview1", "interview2", "final"].contains($0.type) } }
+    private var today: String { ISO8601DateFormatter.dayOnly.string(from: .now) }
+
+    var body: some View {
+        Form {
+            Section {
+                Button { add() } label: { Label(tr("振り返りを書く", "Write a debrief", "Écrire un bilan"), systemImage: "plus") }
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if debriefs.isEmpty {
+                        Text(tr("面接が終わったら、聞かれた質問をすぐメモしましょう。次の選考の準備に使えます。", "Right after an interview, note the questions you were asked. They prepare you for the next round.", "Juste après un entretien, notez les questions posées : elles préparent le tour suivant."))
+                    }
+                    if let usage { Text(tr("AIアドバイス 残り：今日 \(usage.today) · 今月 \(usage.month)", "AI advice left: \(usage.today) today · \(usage.month) this month", "Conseils IA restants : \(usage.today) aujourd'hui · \(usage.month) ce mois-ci")) }
+                    if let message { Text(message).foregroundStyle(.red) }
+                }
+            }
+            ForEach($debriefs) { $d in
+                Section {
+                    DatePicker(tr("日付", "Date", "Date"), selection: day($d.date), displayedComponents: .date)
+                    if !interviews.isEmpty {
+                        Picker(tr("どの面接", "Which interview", "Quel entretien"), selection: $d.stepId) {
+                            Text("—").tag(String?.none)
+                            ForEach(interviews) { step in
+                                Text([SelectionStage.name(step.type), step.dueDate.map { String($0.dropFirst(5)).replacingOccurrences(of: "-", with: "/") }].compactMap { $0 }.joined(separator: " ")).tag(Optional(step.id))
+                            }
+                        }
+                    }
+                    TextField(tr("聞かれた質問（1行に1つ）", "Questions you were asked (one per line)", "Questions posées (une par ligne)"), text: $d.questions, axis: .vertical).lineLimit(3...8)
+                    TextField(tr("うまくいったこと", "What went well", "Ce qui a bien marché"), text: optional($d.good), axis: .vertical).lineLimit(1...4)
+                    TextField(tr("うまく答えられなかったこと", "What was hard to answer", "Ce qui a été difficile"), text: optional($d.improve), axis: .vertical).lineLimit(1...4)
+                    Button {
+                        Task { await advise(d.id) }
+                    } label: {
+                        Label(busy == d.id ? tr("作成中…", "Working…", "En cours…") : d.advice == nil ? tr("AIのアドバイス", "AI advice", "Conseils de l'IA") : tr("アドバイスを更新", "Refresh the advice", "Actualiser les conseils"), systemImage: "lightbulb")
+                    }
+                    .disabled(busy != nil || d.isEmpty || usage?.today == 0)
+                    if let advice = d.advice {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(advice.summary)
+                            if !advice.tips.isEmpty {
+                                Text(tr("次に向けて", "For next time", "Pour la prochaine fois")).font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+                                ForEach(advice.tips, id: \.self) { Text("・" + $0) }
+                            }
+                            if !advice.practice.isEmpty {
+                                Text(tr("準備しておきたい質問", "Questions to prepare", "Questions à préparer")).font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+                                ForEach(Array(advice.practice.enumerated()), id: \.offset) { i, q in Text("\(i + 1). \(q)") }
+                            }
+                        }
+                        .font(.footnote)
+                        .textSelection(.enabled)
+                        NavigationLink {
+                            InterviewView(model: InterviewModel(api: api, applicationId: application.id))
+                        } label: {
+                            Label(tr("この内容で面接を練習する", "Practise with this", "S'entraîner avec ce bilan"), systemImage: "mic")
+                        }
+                    }
+                    Button(tr("削除", "Delete", "Supprimer"), role: .destructive) { Task { await remove(d.id) } }
+                        .disabled(busy != nil)
+                }
+            }
+        }
+        .navigationTitle(tr("面接の振り返り", "Interview debrief", "Bilan d'entretien"))
+        .navigationBarTitleDisplayMode(.inline)
+        .cleanList()
+        .sensoryFeedback(.success, trigger: done)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(tr("保存", "Save", "Enregistrer")) { Task { await save() } }.disabled(busy != nil || debriefs == savedCopy)
+            }
+        }
+        .task {
+            savedCopy = debriefs
+            usage = try? await api.debriefUsage()
+        }
+    }
+
+    private func add() {
+        // Par défaut : le dernier entretien déjà passé.
+        let last = interviews.filter { ($0.dueDate ?? "9999") <= today }.max { ($0.dueDate ?? "") < ($1.dueDate ?? "") }
+        debriefs.insert(Debrief(stepId: last?.id, date: last?.dueDate ?? today), at: 0)
+    }
+
+    /// Enregistre les notes ; false si le serveur n'a pas répondu.
+    @discardableResult
+    private func save() async -> Bool {
+        message = nil
+        guard let saved = try? await api.saveDebriefs(applicationId: application.id, debriefs) else {
+            message = tr("保存できませんでした", "Could not save", "Enregistrement impossible")
+            return false
+        }
+        debriefs = saved.debriefs ?? debriefs
+        savedCopy = debriefs
+        onSaved(saved)
+        done += 1
+        return true
+    }
+
+    private func remove(_ id: String) async {
+        debriefs.removeAll { $0.id == id }
+        await save()
+    }
+
+    private func advise(_ id: String) async {
+        busy = id
+        defer { busy = nil }
+        // Les notes sont enregistrées d'abord : l'IA lit ce qui est sur le serveur.
+        if debriefs != savedCopy, await !save() { return }
+        message = nil
+        switch await api.adviseDebrief(applicationId: application.id, debriefId: id, language: HelpLanguage.saved) {
+        case .success(let reply):
+            debriefs = reply.application.debriefs ?? debriefs
+            savedCopy = debriefs
+            onSaved(reply.application)
+            if let remaining = reply.remaining { usage = remaining }
+            done += 1
+        case .failure(let refusal):
+            message = refusal.message
+        }
+    }
+
+    private func optional(_ value: Binding<String?>) -> Binding<String> {
+        Binding(get: { value.wrappedValue ?? "" }, set: { value.wrappedValue = $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 })
+    }
+
+    private func day(_ value: Binding<String>) -> Binding<Date> {
+        Binding(get: { ISO8601DateFormatter.dayOnly.date(from: value.wrappedValue) ?? .now },
+                set: { value.wrappedValue = ISO8601DateFormatter.dayOnly.string(from: $0) })
     }
 }

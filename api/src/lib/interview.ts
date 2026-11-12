@@ -113,6 +113,15 @@ export function buildContext(input: { application: Application | null; profile: 
       ...(app.companyType ? [`企業の種類：${TYPE_NAMES[app.companyType] ?? app.companyType}`] : []),
       ...(app.notes ? [`学生のメモ（募集要項を含む場合あり）：${cut(app.notes, 3000)}`] : []),
     );
+    // Les vrais entretiens déjà passés chez cette entreprise : l'entraînement y revient.
+    const debriefs = [...(app.debriefs ?? [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 2);
+    if (debriefs.length > 0) {
+      lines.push("## この企業で実際に受けた面接の振り返り（学生のメモ）");
+      for (const d of debriefs) {
+        if (d.questions.trim()) lines.push(`${d.date} に聞かれた質問：${cut(d.questions.replace(/\s*\n\s*/g, " ／ "), 600)}`);
+        if (d.improve?.trim()) lines.push(`${d.date} にうまく答えられなかったこと：${cut(d.improve, 400)}`);
+      }
+    }
   } else {
     lines.push("## 企業", "特定の企業なし（一般的な日本企業の面接として）");
   }
@@ -174,6 +183,7 @@ export function questionMessages(context: string, language: ExplanationLanguage)
 ## 学生に合わせる
 - プロフィールと提出したESから質問を作る。ESに書いたことは本番で必ず聞かれる。
 - 留学生によく聞かれる質問（なぜ日本で働きたいか、日本語の勉強など）を1つ入れてよい。
+- 「実際に受けた面接の振り返り」があれば、うまく答えられなかった質問を1〜2問、言い方を変えてもう一度聞く。次の選考段階なら、前回の質問を深掘りする。
 
 ${FAIRNESS}
 

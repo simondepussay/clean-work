@@ -1016,3 +1016,14 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
 .email-points { margin: 0; display: grid; gap: 8px; }
 .email-points dt { font-weight: 700; color: var(--blue-800); }
 .email-points dd { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+
+/* ------------------------------------------------------------------ 面接の振り返り (fiche d'une candidature) */
+.debrief-panel { margin: 4px 0 20px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--blue-50); display: grid; gap: 14px; }
+.debrief-panel label { margin: 0; }
+.debrief { display: grid; gap: 12px; padding: 14px 16px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); }
+.debrief-advice { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.debrief-advice p, .debrief-advice ul, .debrief-advice ol { margin: 0; }
+.debrief-advice ul, .debrief-advice ol { padding-left: 20px; display: grid; gap: 4px; }
+.debrief-advice h4 { margin: 6px 0 0; font-size: 14px; color: var(--blue-800); }
+.debrief-advice > button { justify-self: start; margin-top: 4px; }
+.app-editor .count { margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--blue-100); font-size: 12px; }

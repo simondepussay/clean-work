@@ -19,6 +19,8 @@ struct JobApplication: Codable, Equatable, Identifiable {
     /// やりとり (journal des échanges) et フォローアップ (relances datées) ; absents des anciennes candidatures.
     var events: [AppEvent]?
     var followUps: [FollowUp]?
+    /// 面接の振り返り : enregistrés à part de la fiche (voir DebriefsView).
+    var debriefs: [Debrief]?
 
     struct Step: Codable, Equatable, Identifiable {
         var id = UUID().uuidString
@@ -49,6 +51,26 @@ struct AppEvent: Codable, Equatable, Identifiable {
         ("ob", "OB・OG訪問", "Alumni visit", "Rencontre avec un ancien"), ("meeting", "面談", "Meeting", "Rendez-vous"), ("other", "その他", "Other", "Autre"),
     ]
     static func kindName(_ id: String) -> String { kinds.first { $0.id == id }.map { tr($0.ja, $0.en, $0.fr) } ?? id }
+}
+
+/// 面接の振り返り : notes prises après un vrai entretien, et les conseils que l'IA en a tirés.
+struct Debrief: Codable, Equatable, Identifiable {
+    struct Advice: Codable, Equatable {
+        let language: String
+        let summary: String
+        let tips: [String]
+        let practice: [String]
+        let createdAt: String
+    }
+    var id = UUID().uuidString
+    var stepId: String?
+    var date: String
+    var questions = ""
+    var good: String?
+    var improve: String?
+    var advice: Advice?
+
+    var isEmpty: Bool { [questions, good ?? "", improve ?? ""].allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
 }
 
 /// Une relance datée (« 人事にお礼メール »), rappelée comme une échéance.

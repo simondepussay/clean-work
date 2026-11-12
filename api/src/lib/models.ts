@@ -145,6 +145,31 @@ export const followUpSchema = z.object({
   done: z.boolean().default(false),
 });
 
+/**
+ * 面接の振り返り : ce qui s'est dit pendant un vrai entretien, noté juste après. L'IA en tire des
+ * conseils pour le tour suivant (advice), et l'entretien simulé repose ensuite ces questions.
+ */
+export const debriefAdviceSchema = z.object({
+  language: z.enum(["ja", "en", "fr"]),
+  summary: z.string().max(1200),
+  /** Ce qu'il faut améliorer, concrètement. */
+  tips: z.array(z.string().max(500)).max(6),
+  /** Questions à préparer pour le prochain tour (en japonais). */
+  practice: z.array(z.string().max(300)).max(6),
+  createdAt: z.string(),
+});
+export const debriefSchema = z.object({
+  id: z.string().min(1),
+  /** L'entretien concerné, s'il figure dans les étapes. */
+  stepId: z.string().min(1).optional(),
+  date: isoDate,
+  /** Les questions posées, comme l'étudiant s'en souvient (une par ligne). */
+  questions: text(1500).default(""),
+  good: text(800).optional(),
+  improve: text(800).optional(),
+  advice: debriefAdviceSchema.optional(),
+});
+
 /** 業界 : IT・通信, メーカー, 商社, 金融, コンサル, 小売・流通, サービス・人材, 広告・マスコミ, インフラ・交通, 官公庁・団体, その他. */
 export const industries = ["it", "maker", "trading", "finance", "consulting", "retail", "service", "media", "infrastructure", "public", "other"] as const;
 /** Type d'entreprise : 大手, 中小企業, ベンチャー, 外資系. */
@@ -171,11 +196,14 @@ export const applicationInputSchema = z.object({
   steps: z.array(stepSchema).max(20).default([]),
   events: z.array(eventSchema).max(200).default([]),
   followUps: z.array(followUpSchema).max(30).default([]),
+  debriefs: z.array(debriefSchema).max(20).default([]),
 });
 
 export type Step = z.infer<typeof stepSchema>;
 export type AppEvent = z.infer<typeof eventSchema>;
 export type FollowUp = z.infer<typeof followUpSchema>;
+export type Debrief = z.infer<typeof debriefSchema>;
+export type DebriefAdvice = z.infer<typeof debriefAdviceSchema>;
 export type ApplicationInput = z.infer<typeof applicationInputSchema>;
 export type Application = ApplicationInput & {
   id: string;
