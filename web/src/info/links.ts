@@ -7,8 +7,13 @@ export type InfoLink = { name: string; url: string; text: T3 };
 export const PARTNERS: InfoLink[] = [
   {
     name: "JLPT Étude",
-    url: "https://jlpt.simondepussay.com",
-    text: { ja: "JLPT N1 の語彙・漢字・文法を勉強するサイト", en: "Study JLPT N1 vocabulary, kanji and grammar", fr: "Réviser le vocabulaire, les kanji et la grammaire du JLPT N1" },
+    // « #cleanwork » : JLPT Étude ouvre la session avec le compte Clean Work, sans rien redemander.
+    url: "https://jlpt.simondepussay.com/#cleanwork",
+    text: {
+      ja: "JLPT N1 の語彙・漢字・文法・読解。Clean Work のアカウントでそのまま使えます",
+      en: "JLPT N1 vocabulary, kanji, grammar and reading. Your Clean Work account signs you in",
+      fr: "Vocabulaire, kanji, grammaire et lecture du JLPT N1. Ton compte Clean Work suffit pour te connecter",
+    },
   },
   {
     name: "JLPT Kanji Otter Adventure",

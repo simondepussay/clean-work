@@ -29,7 +29,7 @@ describe("InfoPage (情報)", () => {
   it("liens partenaires (JLPT, Kanji Otter) et sites d'offres, ouverts dans un nouvel onglet", async () => {
     renderPage();
     const side = screen.getByRole("complementary", { name: "リンク" });
-    expect(within(side).getByRole("link", { name: /JLPT Étude/ })).toHaveAttribute("href", "https://jlpt.simondepussay.com");
+    expect(within(side).getByRole("link", { name: /JLPT Étude/ })).toHaveAttribute("href", "https://jlpt.simondepussay.com/#cleanwork");
     expect(within(side).getByRole("link", { name: /Kanji Otter/ })).toHaveAttribute("href", expect.stringContaining("apps.apple.com"));
     expect(within(side).getByRole("link", { name: /ハローワーク/ })).toHaveAttribute("target", "_blank");
   });
