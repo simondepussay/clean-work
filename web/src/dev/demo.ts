@@ -28,6 +28,7 @@ const applications = [
   { id: "a4", company: "LINEヤフー", status: "test", steps: [{ id: "s4", type: "test", dueDate: inDays(12), done: false }], nextDeadline: inDays(12), createdAt: "", updatedAt: "" },
   { id: "a5", company: "メルカリ", position: "バックエンドエンジニア", status: "applied", steps: [], nextDeadline: null, createdAt: "", updatedAt: "2026-10-22" },
   { id: "a6", company: "トヨタ自動車", position: "ソフトウェア開発", status: "applied", steps: [], nextDeadline: null, createdAt: "", updatedAt: "2026-10-20" },
+  { id: "a7", company: "任天堂", position: "ソフトウェアエンジニア", status: "offer", steps: [], nextDeadline: null, createdAt: "", updatedAt: "2026-11-10", offerChecklist: ["accept"] },
 ];
 
 const drafts = [

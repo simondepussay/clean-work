@@ -278,6 +278,8 @@ export type Debrief = { id: string; stepId?: string; date: string; questions: st
 export type ApplicationInput = {
   company: string; position?: string; url?: string; status: AppStatus; steps: Step[];
   events?: AppEvent[]; followUps?: FollowUp[]; debriefs?: Debrief[];
+  /** 内定後の手続き : étapes cochées (identifiants de naitei-guide.json). */
+  offerChecklist?: string[];
   /** null : effacer le champ (l'API garde sinon l'ancienne valeur). */
   industry?: Industry | null; companyType?: CompanyType | null; notes?: string;
   /** 法人番号 et adresse du siège : la candidature est reliée à la fiche officielle (gBizINFO). */

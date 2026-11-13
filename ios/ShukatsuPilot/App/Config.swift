@@ -8,6 +8,15 @@ enum AppConfig {
     static var entraTenantSubdomain: String? { string("EntraTenantSubdomain") }
     static var entraAPIScope: String? { string("EntraAPIScope") }
     static var apiBaseURL: URL? { string("APIBaseURL").flatMap(URL.init(string:)) }
+    /// Le site (guides partagés avec le web, pages légales). L'API est sur un autre domaine depuis
+    /// son passage sur Azure Functions : ces fichiers ne sont plus à l'adresse de l'API.
+    static var siteURL: URL {
+        #if DEBUG
+        // Pour essayer un guide pas encore en ligne : argument de lancement « -siteURL http://localhost:5174 ».
+        if let local = UserDefaults.standard.string(forKey: "siteURL").flatMap(URL.init(string:)) { return local }
+        #endif
+        return string("SiteURL").flatMap(URL.init(string:)) ?? URL(string: "https://cleanwork.simondepussay.com")!
+    }
     static var supportEmail: String { string("SupportEmail") ?? "" }
     /// Délai avant la suppression définitive ; identique à RETENTION_DAYS dans l'API.
     static let retentionDays = 30

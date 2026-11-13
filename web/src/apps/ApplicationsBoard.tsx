@@ -11,9 +11,10 @@ import { CLOSED, COLUMNS, COMPANY_TYPES, GROUPS, INDUSTRIES, daysUntil, deadline
 import { apiMessage, useTr } from "../i18n";
 import { CalendarMenu } from "./CalendarMenu";
 import { CompanyFacts } from "./CompanyFacts";
-import { ChatIcon, ClockIcon, FlagIcon, MailIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { ChatIcon, CheckIcon, ClockIcon, FlagIcon, MailIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
 import { EmailPanel } from "./EmailPanel";
 import { DebriefPanel } from "./DebriefPanel";
+import { OfferGuidePanel } from "./OfferGuidePanel";
 import { ymd } from "../home/agenda";
 import type { SavedJob } from "./savedJob";
 import { SaveFromBrowser } from "./SaveFromBrowser";
@@ -76,7 +77,9 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   const [mailing, setMailing] = useState(false);
   /** 面接の振り返り de la candidature ouverte. */
   const [debriefing, setDebriefing] = useState(false);
-  useEffect(() => { setMailing(false); setDebriefing(false); }, [editing?.id]);
+  /** 内定後の手続き (statut « 内定 » seulement). */
+  const [afterOffer, setAfterOffer] = useState(false);
+  useEffect(() => { setMailing(false); setDebriefing(false); setAfterOffer(false); }, [editing?.id]);
 
   async function token() {
     const t = await auth.getToken();
@@ -301,9 +304,15 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
                 {(saved?.debriefs?.length ?? 0) > 0 && <span className="count">{saved!.debriefs!.length}</span>}
               </button>
             )}
+            {saved?.status === "offer" && (
+              <button type="button" aria-expanded={afterOffer} onClick={() => setAfterOffer((o) => !o)}>
+                <CheckIcon size={16} /> {tr({ ja: "内定後の手続き", en: "After the offer", fr: "Après l'offre" })}
+              </button>
+            )}
             {editing.id && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
           </div>
           {editing.id && mailing && <EmailPanel applicationId={editing.id} steps={editing.form.steps} />}
+          {saved && afterOffer && <OfferGuidePanel application={saved} onChange={replace} />}
           {saved && debriefing && <DebriefPanel application={saved} onChange={replace} onPractice={onPractice && (() => onPractice({ id: saved.id }))} />}
           {!editing.id && fromBrowser !== null && (
             <p className="from-browser" role="status">{tr({

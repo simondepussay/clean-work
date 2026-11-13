@@ -4,13 +4,11 @@ import SwiftUI
 /// pages du site (web/public/privacy.html et terms.html), en anglais si l'iPhone n'est pas en japonais.
 struct LegalLinks: View {
     var body: some View {
-        if let base = AppConfig.apiBaseURL {
-            HStack(spacing: 16) {
-                Link(tr("プライバシーポリシー", "Privacy", "Confidentialité"), destination: Self.url(base, "privacy.html"))
-                Link(tr("利用規約", "Terms", "Conditions"), destination: Self.url(base, "terms.html"))
-            }
-            .font(.footnote)
+        HStack(spacing: 16) {
+            Link(tr("プライバシーポリシー", "Privacy", "Confidentialité"), destination: Self.url(AppConfig.siteURL, "privacy.html"))
+            Link(tr("利用規約", "Terms", "Conditions"), destination: Self.url(AppConfig.siteURL, "terms.html"))
         }
+        .font(.footnote)
     }
 
     static func url(_ base: URL, _ page: String) -> URL {

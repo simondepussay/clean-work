@@ -23,7 +23,7 @@ struct DocumentsView: View {
             case .es:
                 NavigationStack {
                     // Le commutateur ES / CV sert déjà de titre : pas de barre en double.
-                    EsListView(model: EsModel(api: api, guideURL: AppConfig.apiBaseURL?.appending(path: "es-guide.json")))
+                    EsListView(model: EsModel(api: api, guideURL: AppConfig.siteURL.appending(path: "es-guide.json")))
                         .toolbar(.hidden, for: .navigationBar)
                 }
             case .pdf:

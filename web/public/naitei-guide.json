@@ -1,0 +1,335 @@
+{
+  "updated": "2026-11",
+  "intro": {
+    "ja": "内定おめでとうございます。入社までに、在留資格を「留学」から働くための資格（多くは「技術・人文知識・国際業務」）に変える手続きが必要です。",
+    "en": "Congratulations on your offer. Before you start, your status of residence must change from Student to a work status (most often Engineer / Specialist in Humanities / International Services).",
+    "fr": "Félicitations pour votre offre. Avant l'entrée dans l'entreprise, votre statut de résidence doit passer d'étudiant à un statut de travail (le plus souvent « Ingénieur / Spécialiste en sciences humaines / Services internationaux »)."
+  },
+  "disclaimer": {
+    "ja": "これは一般的な案内です。必要な書類や手数料は人や時期によって変わります。申請の前に、出入国在留管理庁の公式ページか学校の担当窓口で必ず確認してください。",
+    "en": "This is general guidance. Documents and fees depend on your case and change over time. Before applying, always check the Immigration Services Agency's official pages or your school's office.",
+    "fr": "Ceci est une information générale. Les documents et les frais dépendent de votre situation et changent avec le temps. Avant de déposer la demande, vérifiez toujours sur les pages officielles de l'Agence des services d'immigration ou auprès de votre école."
+  },
+  "steps": [
+    {
+      "id": "accept",
+      "title": {
+        "ja": "内定を承諾し、条件を確認する",
+        "en": "Accept the offer and check the conditions",
+        "fr": "Accepter l'offre et vérifier les conditions"
+      },
+      "when": {
+        "ja": "内定の連絡から1週間以内が目安",
+        "en": "Usually within a week of the offer",
+        "fr": "En général dans la semaine qui suit l'offre"
+      },
+      "detail": {
+        "ja": "承諾の返事をして、内定承諾書を出します。入社日・仕事内容・給与が書かれた「労働条件通知書」か「雇用契約書」を受け取ってください。在留資格の申請に使います。",
+        "en": "Reply to accept and return the acceptance form. Ask for the written working conditions (労働条件通知書) or the employment contract, stating start date, duties and salary: you need it for the application.",
+        "fr": "Répondez pour accepter et renvoyez le formulaire d'acceptation. Demandez le document écrit des conditions de travail (労働条件通知書) ou le contrat, avec la date d'entrée, les missions et le salaire : il sert à la demande."
+      },
+      "items": [
+        {
+          "ja": "内定承諾の返事（メール）",
+          "en": "Reply accepting the offer (email)",
+          "fr": "Réponse d'acceptation (mail)"
+        },
+        {
+          "ja": "内定承諾書",
+          "en": "Signed acceptance form",
+          "fr": "Formulaire d'acceptation signé"
+        },
+        {
+          "ja": "労働条件通知書 または 雇用契約書",
+          "en": "Written working conditions or employment contract",
+          "fr": "Conditions de travail écrites ou contrat"
+        }
+      ]
+    },
+    {
+      "id": "company",
+      "title": {
+        "ja": "会社に、在留資格の変更が必要だと伝える",
+        "en": "Tell the company you need to change your status",
+        "fr": "Prévenir l'entreprise du changement de statut"
+      },
+      "when": {
+        "ja": "承諾したらすぐ",
+        "en": "As soon as you have accepted",
+        "fr": "Dès que vous avez accepté"
+      },
+      "detail": {
+        "ja": "申請には会社が用意する書類が必要です。必要な書類は会社の規模（カテゴリー1〜4）で変わり、小さい会社や新しい会社ほど多くなります。会社が行政書士に依頼する場合もあるので、誰が申請するかも確認しましょう。",
+        "en": "The application needs documents only the company can provide. Which ones depends on the company's category (1 to 4): the smaller or newer the company, the more documents. Some companies use an immigration lawyer, so also ask who files the application.",
+        "fr": "La demande exige des documents que seule l'entreprise peut fournir. Lesquels dépend de sa catégorie (1 à 4) : plus elle est petite ou récente, plus il en faut. Certaines passent par un juriste spécialisé : demandez aussi qui dépose la demande."
+      },
+      "items": [
+        {
+          "ja": "カテゴリーを証明する書類（法定調書合計表の写しなど）",
+          "en": "Proof of the company's category (e.g. copy of the statutory withholding summary)",
+          "fr": "Justificatif de la catégorie de l'entreprise (ex. : récapitulatif légal des retenues)"
+        },
+        {
+          "ja": "カテゴリー3・4：登記事項証明書、会社案内、直近の決算書の写しなど",
+          "en": "Categories 3 and 4: registry certificate, company brochure, latest financial statements…",
+          "fr": "Catégories 3 et 4 : extrait du registre, présentation de l'entreprise, derniers comptes…"
+        }
+      ],
+      "links": [
+        {
+          "label": {
+            "ja": "技術・人文知識・国際業務の提出書類（出入国在留管理庁）",
+            "en": "Documents for this status (Immigration Services Agency)",
+            "fr": "Documents pour ce statut (Agence des services d'immigration)"
+          },
+          "url": "https://www.moj.go.jp/isa/applications/status/gijinkoku.html"
+        }
+      ]
+    },
+    {
+      "id": "school",
+      "title": {
+        "ja": "学校で証明書をもらう",
+        "en": "Get certificates from your school",
+        "fr": "Obtenir les attestations de l'école"
+      },
+      "when": {
+        "ja": "申請の2〜3週間前",
+        "en": "Two or three weeks before applying",
+        "fr": "Deux à trois semaines avant la demande"
+      },
+      "detail": {
+        "ja": "卒業前に申請するときは「卒業見込証明書」を出し、卒業後に「卒業証明書」を見せます。専門学校の場合は、専門士の称号の証明が必要で、学んだ内容と仕事内容の関係が特に見られます。",
+        "en": "If you apply before graduating, you submit a certificate of expected graduation, then show the graduation certificate once you have it. Vocational school (専門学校) students need proof of the 専門士 title, and the link between what you studied and the job is examined closely.",
+        "fr": "Si vous déposez avant le diplôme, vous fournissez une attestation de fin d'études prévue, puis le diplôme une fois obtenu. Pour une école professionnelle (専門学校), il faut la preuve du titre 専門士, et le lien entre vos études et le poste est examiné de près."
+      },
+      "items": [
+        {
+          "ja": "卒業見込証明書（卒業後は卒業証明書）",
+          "en": "Certificate of expected graduation (then the graduation certificate)",
+          "fr": "Attestation de fin d'études prévue (puis le diplôme)"
+        },
+        {
+          "ja": "成績証明書",
+          "en": "Academic transcript",
+          "fr": "Relevé de notes"
+        },
+        {
+          "ja": "専門学校：専門士の称号の証明書（見込み）",
+          "en": "Vocational school: certificate of the 専門士 title (expected)",
+          "fr": "École professionnelle : attestation du titre 専門士 (prévu)"
+        }
+      ]
+    },
+    {
+      "id": "documents",
+      "title": {
+        "ja": "自分の書類をそろえる",
+        "en": "Prepare your own documents",
+        "fr": "Préparer vos propres documents"
+      },
+      "when": {
+        "ja": "申請の前",
+        "en": "Before applying",
+        "fr": "Avant la demande"
+      },
+      "detail": {
+        "ja": "申請書は出入国在留管理庁のページからダウンロードできます。会社が書く欄もあるので、早めに会社へ渡しましょう。",
+        "en": "The application form is on the Immigration Services Agency's site. Part of it is filled in by the company, so send it to them early.",
+        "fr": "Le formulaire est sur le site de l'Agence des services d'immigration. Une partie est remplie par l'entreprise : transmettez-le-lui tôt."
+      },
+      "items": [
+        {
+          "ja": "在留資格変更許可申請書",
+          "en": "Application for change of status of residence",
+          "fr": "Formulaire de demande de changement de statut"
+        },
+        {
+          "ja": "写真 1枚（縦4cm×横3cm）",
+          "en": "One photo (4 cm × 3 cm)",
+          "fr": "Une photo (4 cm × 3 cm)"
+        },
+        {
+          "ja": "パスポートと在留カード",
+          "en": "Passport and residence card",
+          "fr": "Passeport et carte de résident"
+        },
+        {
+          "ja": "履歴書",
+          "en": "Résumé (履歴書)",
+          "fr": "CV japonais (履歴書)"
+        }
+      ],
+      "links": [
+        {
+          "label": {
+            "ja": "在留資格変更許可申請（出入国在留管理庁）",
+            "en": "Change of status application (Immigration Services Agency)",
+            "fr": "Demande de changement de statut (Agence des services d'immigration)"
+          },
+          "url": "https://www.moj.go.jp/isa/applications/procedures/16-2.html"
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "title": {
+        "ja": "出入国在留管理局に申請する",
+        "en": "File the application at immigration",
+        "fr": "Déposer la demande à l'immigration"
+      },
+      "when": {
+        "ja": "4月入社なら12月〜1月末",
+        "en": "For an April start: December to the end of January",
+        "fr": "Pour une entrée en avril : de décembre à fin janvier"
+      },
+      "detail": {
+        "ja": "住んでいる地域の出入国在留管理局に出します（オンライン申請もできます）。4月入社の場合、東京の本庁は前年12月から受け付け、1月〜3月はとても混みます。審査は1〜2か月が目安なので、1月末までの申請をおすすめします。受付開始日は年によって変わるので、公式ページで確認してください。",
+        "en": "File at the immigration office for where you live (online filing is also possible). For an April start, the Tokyo main office accepts applications from December of the previous year, and January to March is very busy. Processing takes about one to two months, so apply by the end of January. The first acceptance day changes each year: check the official page.",
+        "fr": "Déposez au bureau d'immigration de votre lieu de résidence (le dépôt en ligne est possible). Pour une entrée en avril, le bureau principal de Tokyo accepte les demandes dès décembre de l'année précédente, et janvier à mars est très chargé. L'examen prend un à deux mois : déposez avant fin janvier. La date d'ouverture change chaque année : vérifiez sur la page officielle."
+      },
+      "links": [
+        {
+          "label": {
+            "ja": "地方出入国在留管理官署の一覧",
+            "en": "List of regional immigration offices",
+            "fr": "Liste des bureaux d'immigration"
+          },
+          "url": "https://www.moj.go.jp/isa/about/region/index.html"
+        },
+        {
+          "label": {
+            "ja": "在留申請のオンライン手続",
+            "en": "Online residence applications",
+            "fr": "Demandes de résidence en ligne"
+          },
+          "url": "https://www.moj.go.jp/isa/applications/online/onlineshinsei.html"
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "title": {
+        "ja": "結果を待つあいだに気をつけること",
+        "en": "While you wait for the result",
+        "fr": "En attendant le résultat"
+      },
+      "when": {
+        "ja": "申請から1〜2か月",
+        "en": "One to two months after filing",
+        "fr": "Un à deux mois après le dépôt"
+      },
+      "detail": {
+        "ja": "在留カードの期限を確認してください。結果が出る前に「留学」の期限が切れそうなときは、学校か出入国在留管理局に早めに相談します。追加の書類を求められたら、すぐに出しましょう。卒業した後は、新しい在留資格が出るまでアルバイトはできません。",
+        "en": "Check the expiry date on your residence card. If your Student status may expire before the result, ask your school or the immigration office early. If you are asked for more documents, send them quickly. After you graduate, you cannot work part-time until the new status is granted.",
+        "fr": "Vérifiez la date d'expiration de votre carte de résident. Si le statut étudiant risque d'expirer avant le résultat, consultez tôt votre école ou l'immigration. Si l'on vous demande des pièces supplémentaires, envoyez-les vite. Après le diplôme, vous ne pouvez plus faire de petit boulot tant que le nouveau statut n'est pas accordé."
+      }
+    },
+    {
+      "id": "receive",
+      "title": {
+        "ja": "新しい在留カードを受け取る",
+        "en": "Collect your new residence card",
+        "fr": "Retirer la nouvelle carte de résident"
+      },
+      "when": {
+        "ja": "卒業後・入社の前",
+        "en": "After graduating, before you start",
+        "fr": "Après le diplôme, avant l'entrée"
+      },
+      "detail": {
+        "ja": "結果の通知が届いたら、卒業証明書・パスポート・今の在留カードを持って受け取りに行きます。手数料は許可される在留期間によって変わり、2026年10月に改定されました。金額は公式ページで確認してください。",
+        "en": "When the notice arrives, go with your graduation certificate, passport and current residence card. The fee depends on the period of stay granted and was revised in October 2026: check the amount on the official page.",
+        "fr": "À réception de l'avis, présentez-vous avec le diplôme, le passeport et la carte actuelle. Les frais dépendent de la durée de séjour accordée et ont été révisés en octobre 2026 : vérifiez le montant sur la page officielle."
+      },
+      "items": [
+        {
+          "ja": "結果の通知（はがき）",
+          "en": "The result notice (postcard)",
+          "fr": "L'avis de résultat (carte postale)"
+        },
+        {
+          "ja": "卒業証明書",
+          "en": "Graduation certificate",
+          "fr": "Diplôme (attestation)"
+        },
+        {
+          "ja": "パスポートと在留カード",
+          "en": "Passport and residence card",
+          "fr": "Passeport et carte de résident"
+        },
+        {
+          "ja": "手数料",
+          "en": "The fee",
+          "fr": "Les frais"
+        }
+      ],
+      "links": [
+        {
+          "label": {
+            "ja": "手数料（在留資格変更許可申請のページ）",
+            "en": "Fees (change of status page)",
+            "fr": "Frais (page du changement de statut)"
+          },
+          "url": "https://www.moj.go.jp/isa/applications/procedures/16-2.html"
+        }
+      ]
+    },
+    {
+      "id": "start",
+      "title": {
+        "ja": "入社の準備をする",
+        "en": "Get ready for your first day",
+        "fr": "Préparer le premier jour"
+      },
+      "when": {
+        "ja": "入社の前",
+        "en": "Before you start",
+        "fr": "Avant l'entrée"
+      },
+      "detail": {
+        "ja": "新しい在留カードを会社に見せます。引っ越したときは、14日以内に市区町村の役所で住所の届出をしてください。",
+        "en": "Show your new residence card to the company. If you move, register your new address at the city office within 14 days.",
+        "fr": "Présentez la nouvelle carte à l'entreprise. Si vous déménagez, déclarez la nouvelle adresse à la mairie dans les 14 jours."
+      },
+      "items": [
+        {
+          "ja": "新しい在留カード（会社に提示）",
+          "en": "New residence card (to show the company)",
+          "fr": "Nouvelle carte de résident (à présenter)"
+        },
+        {
+          "ja": "会社から求められた入社書類",
+          "en": "Joining documents requested by the company",
+          "fr": "Documents d'entrée demandés par l'entreprise"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "title": {
+        "ja": "卒業までに就職先が決まらないとき",
+        "en": "If you have no job by graduation",
+        "fr": "Sans emploi à la fin des études"
+      },
+      "detail": {
+        "ja": "学校の推薦があれば、在留資格を「特定活動」に変えて、卒業後も就職活動を続けられる場合があります（最長およそ1年）。対象は学校の種類によって違うので、卒業の前に学校へ相談してください。",
+        "en": "With your school's recommendation, you may be able to switch to Designated Activities and keep job hunting after graduation (up to about a year). Eligibility depends on the type of school: ask your school before you graduate.",
+        "fr": "Avec la recommandation de l'école, il est parfois possible de passer en « Activités désignées » pour continuer à chercher après le diplôme (un an environ au maximum). Cela dépend du type d'école : consultez la vôtre avant la fin des études."
+      }
+    },
+    {
+      "title": {
+        "ja": "困ったとき",
+        "en": "If you are stuck",
+        "fr": "En cas de difficulté"
+      },
+      "detail": {
+        "ja": "外国人在留総合インフォメーションセンター（電話 0570-013904）で、日本語以外でも相談できます。",
+        "en": "The Foreign Residents Support Information Center (0570-013904) answers in several languages.",
+        "fr": "Le centre d'information pour les résidents étrangers (0570-013904) répond en plusieurs langues."
+      }
+    }
+  ]
+}

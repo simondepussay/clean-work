@@ -197,6 +197,8 @@ export const applicationInputSchema = z.object({
   events: z.array(eventSchema).max(200).default([]),
   followUps: z.array(followUpSchema).max(30).default([]),
   debriefs: z.array(debriefSchema).max(20).default([]),
+  /** 内定後の手続き : étapes cochées du parcours après l'offre (identifiants de web/public/naitei-guide.json). */
+  offerChecklist: z.array(z.string().min(1).max(40)).max(30).default([]),
 });
 
 export type Step = z.infer<typeof stepSchema>;

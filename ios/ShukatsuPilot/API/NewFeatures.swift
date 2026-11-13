@@ -179,6 +179,12 @@ extension APIClient {
         return try JSONDecoder().decode(JobApplication.self, from: try await sendRaw("PUT", "api/applications/\(applicationId)", body: body))
     }
 
+    /// Enregistre les étapes cochées du parcours après l'offre, sans toucher au reste de la fiche.
+    func saveOfferChecklist(applicationId: String, _ done: [String]) async throws -> JobApplication {
+        let body = try JSONEncoder().encode(["offerChecklist": done])
+        return try JSONDecoder().decode(JobApplication.self, from: try await sendRaw("PUT", "api/applications/\(applicationId)", body: body))
+    }
+
     /// Conseils de l'IA pour un bilan déjà enregistré ; ils reviennent rangés dans la candidature.
     func adviseDebrief(applicationId: String, debriefId: String, language: HelpLanguage) async -> Result<(application: JobApplication, remaining: Usage?), EmailRefusal> {
         struct Reply: Decodable { let application: JobApplication; let remaining: Usage? }

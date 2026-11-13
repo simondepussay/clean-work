@@ -21,6 +21,8 @@ struct JobApplication: Codable, Equatable, Identifiable {
     var followUps: [FollowUp]?
     /// 面接の振り返り : enregistrés à part de la fiche (voir DebriefsView).
     var debriefs: [Debrief]?
+    /// 内定後の手続き : étapes cochées (identifiants de naitei-guide.json).
+    var offerChecklist: [String]?
 
     struct Step: Codable, Equatable, Identifiable {
         var id = UUID().uuidString
@@ -71,6 +73,31 @@ struct Debrief: Codable, Equatable, Identifiable {
     var advice: Advice?
 
     var isEmpty: Bool { [questions, good ?? "", improve ?? ""].allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
+}
+
+/// 内定後の手続き : le même fichier que le web (web/public/naitei-guide.json), téléchargé depuis le site.
+struct OfferGuide: Decodable, Equatable {
+    struct Step: Decodable, Equatable, Identifiable {
+        let id: String
+        let title: Text3
+        let when: Text3
+        let detail: Text3
+        let items: [Text3]?
+        let links: [Link]?
+    }
+    struct Link: Decodable, Equatable {
+        let label: Text3
+        let url: URL
+    }
+    struct Note: Decodable, Equatable {
+        let title: Text3
+        let detail: Text3
+    }
+    let updated: String
+    let intro: Text3
+    let disclaimer: Text3
+    let steps: [Step]
+    let notes: [Note]
 }
 
 /// Une relance datée (« 人事にお礼メール »), rappelée comme une échéance.

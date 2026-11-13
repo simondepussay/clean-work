@@ -132,6 +132,7 @@ private final class DemoURLProtocol: URLProtocol {
          "steps": [["id": "s4", "type": "test", "dueDate": day(12), "done": false]], "nextDeadline": day(12)],
         ["id": "a5", "company": "メルカリ", "position": "バックエンドエンジニア", "status": "applied", "steps": [] as [Any]],
         ["id": "a6", "company": "トヨタ自動車", "position": "ソフトウェア開発", "status": "applied", "steps": [] as [Any]],
+        ["id": "a7", "company": "任天堂", "position": "ソフトウェアエンジニア", "status": "offer", "steps": [] as [Any], "offerChecklist": ["accept"]],
     ]}
 
     /// Onglet « こころ » : 3 jours de pluie cette semaine (palier « often »).

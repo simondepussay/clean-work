@@ -99,6 +99,8 @@ struct ApplicationEditor: View {
     @State private var failed = false
     /// 面接の振り返り : enregistrés à part de la fiche, gardés ici pour les retrouver en rouvrant l'écran.
     @State private var debriefs: [Debrief] = []
+    /// 内定後の手続き : étapes cochées, enregistrées à part elles aussi.
+    @State private var offerDone: [String] = []
 
     var body: some View {
         Form {
@@ -195,6 +197,13 @@ struct ApplicationEditor: View {
                     } label: {
                         Label(tr("面接を練習する", "Practise the interview", "S'entraîner pour l'entretien"), systemImage: "mic")
                     }
+                    if app.status == "offer" {
+                        NavigationLink {
+                            OfferGuideView(api: api, application: app, done: $offerDone, onSaved: onSaved)
+                        } label: {
+                            Label(tr("内定後の手続き", "After the offer", "Après l'offre"), systemImage: "checklist")
+                        }
+                    }
                     NavigationLink {
                         DebriefsView(api: api, application: app, debriefs: $debriefs, onSaved: onSaved)
                     } label: {
@@ -221,7 +230,7 @@ struct ApplicationEditor: View {
             ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
             ToolbarItem(placement: .confirmationAction) { Button(tr("保存", "Save", "Enregistrer")) { Task { await save() } } }
         }
-        .onAppear { if let app, input == JobApplicationInput() { input = JobApplicationInput(app); debriefs = app.debriefs ?? [] } }
+        .onAppear { if let app, input == JobApplicationInput() { input = JobApplicationInput(app); debriefs = app.debriefs ?? []; offerDone = app.offerChecklist ?? [] } }
     }
 
     private func save() async {
@@ -556,5 +565,90 @@ private struct DebriefsView: View {
     private func day(_ value: Binding<String>) -> Binding<Date> {
         Binding(get: { ISO8601DateFormatter.dayOnly.date(from: value.wrappedValue) ?? .now },
                 set: { value.wrappedValue = ISO8601DateFormatter.dayOnly.string(from: $0) })
+    }
+}
+
+/// 内定後の手続き : le parcours entre l'offre et le premier jour, surtout le changement de statut de résidence.
+/// Contenu relu à la main (pas d'IA), avec les liens officiels ; les étapes cochées sont gardées dans la candidature.
+private struct OfferGuideView: View {
+    let api: APIClient
+    let application: JobApplication
+    @Binding var done: [String]
+    let onSaved: (JobApplication) -> Void
+    @State private var guide: OfferGuide?
+    @State private var loadFailed = false
+    @State private var saveFailed = false
+
+    var body: some View {
+        Form {
+            if let guide {
+                Section {
+                    Text(guide.intro.current)
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        let count = guide.steps.filter { done.contains($0.id) }.count
+                        Text(tr("\(guide.steps.count)つのうち \(count)つ完了", "\(count) of \(guide.steps.count) done", "\(count) sur \(guide.steps.count) faites"))
+                        if saveFailed { Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).foregroundStyle(.red) }
+                    }
+                }
+                ForEach(guide.steps) { step in
+                    Section {
+                        Toggle(isOn: Binding(get: { done.contains(step.id) }, set: { _ in Task { await toggle(step.id) } })) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(step.title.current).font(.headline).foregroundStyle(Color.cwBlue800)
+                                Text(step.when.current).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        Text(step.detail.current).font(.subheadline)
+                        if let items = step.items {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(items, id: \.ja) { Text("・" + $0.current) }
+                            }
+                            .font(.footnote)
+                        }
+                        ForEach(step.links ?? [], id: \.url) { link in
+                            Link(destination: link.url) { Label(link.label.current, systemImage: "link").font(.footnote) }
+                        }
+                    }
+                }
+                Section {
+                    ForEach(guide.notes, id: \.title.ja) { note in
+                        DisclosureGroup(note.title.current) { Text(note.detail.current).font(.subheadline) }
+                    }
+                } footer: {
+                    Text("\(guide.disclaimer.current) (\(guide.updated))")
+                }
+            } else if loadFailed {
+                Text(tr("読み込めませんでした", "Could not load", "Chargement impossible")).foregroundStyle(.secondary)
+            } else {
+                ProgressView()
+            }
+        }
+        .navigationTitle(tr("内定後の手続き", "After the offer", "Après l'offre"))
+        .navigationBarTitleDisplayMode(.inline)
+        .cleanList()
+        .sensoryFeedback(.selection, trigger: done)
+        .task {
+            guard guide == nil else { return }
+            let url = AppConfig.siteURL.appending(path: "naitei-guide.json")
+            if let (data, _) = try? await URLSession.shared.data(from: url), let decoded = try? JSONDecoder().decode(OfferGuide.self, from: data) {
+                guide = decoded
+            } else {
+                loadFailed = true
+            }
+        }
+    }
+
+    private func toggle(_ id: String) async {
+        let before = done
+        done = done.contains(id) ? done.filter { $0 != id } : done + [id]
+        saveFailed = false
+        if let saved = try? await api.saveOfferChecklist(applicationId: application.id, done) {
+            onSaved(saved)
+        } else {
+            // La case revient à son état : ce qui est affiché est ce qui est enregistré.
+            done = before
+            saveFailed = true
+        }
     }
 }
