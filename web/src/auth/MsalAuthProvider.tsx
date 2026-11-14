@@ -84,7 +84,7 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
     // à la page d'accueil (connexion / création de compte), sans passer par la page « Choisir un compte »
     // de l'annuaire.
     signOut: async () => {
-      await pca.logoutRedirect({ account: account ?? undefined, onRedirectNavigate: () => false });
+      await pca.clearCache({ account: account ?? undefined });
       clearApiCache();
       window.history.replaceState(null, "", "/");
       setAccount(null);
@@ -98,7 +98,7 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
         // dans ce navigateur et on revient à l'accueil avec un message. Avant, on renvoyait vers Microsoft,
         // qui pouvait refuser à nouveau : une boucle de connexion sans fin.
         if (e instanceof InteractionRequiredAuthError) {
-          await pca.logoutRedirect({ account, onRedirectNavigate: () => false }).catch(() => {});
+          await pca.clearCache({ account }).catch(() => {});
           clearApiCache();
           setError("session_expired");
           setAccount(null);
