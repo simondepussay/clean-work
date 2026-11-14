@@ -29,6 +29,8 @@ struct MainView: View {
     @State private var showingAccount = false
     /// Entretien prévu à préparer (bouton « 練習する » d'un entretien du calendrier).
     @State private var practice: InterviewTarget?
+    /// Nouveau compte sans profil : l'écran de bienvenue passe devant, jusqu'au profil ou à « あとで ».
+    @State private var welcome: Me?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +50,15 @@ struct MainView: View {
         .sheet(isPresented: $showingAccount) {
             NavigationStack { AccountView() }
         }
+        .task { await checkWelcome() }
+        .fullScreenCover(item: $welcome) { me in
+            if let api = model.apiClient {
+                WelcomeSetupView(api: api, me: me, onProfileSaved: { await model.refreshMe() }) { go in
+                    welcome = nil
+                    if let go { tab = go }
+                }
+            }
+        }
         // Léger retour haptique au changement d'onglet.
         .sensoryFeedback(.selection, trigger: tab)
         // Une notification touchée ouvre son onglet (initial : aussi quand l'app vient d'être lancée par elle).
@@ -56,6 +67,13 @@ struct MainView: View {
             tab = requested
             TabRouter.shared.requested = nil
         }
+    }
+
+    /// Le compte est lu une fois à l'arrivée ; sans profil (et sans « あとで » déjà choisi), on accueille.
+    private func checkWelcome() async {
+        if case .loaded = model.me {} else { await model.refreshMe() }
+        guard case .loaded(let me) = model.me, !me.hasProfile, !WelcomeSetupView.postponed(me) else { return }
+        welcome = me
     }
 
     @ViewBuilder private var sheetContent: some View {
@@ -195,5 +213,110 @@ struct BinderTabBar: View {
             }
         }
         .padding(.horizontal, 10)
+    }
+}
+
+extension Me: Identifiable {
+    var id: String { userId }
+}
+
+/// Écran de bienvenue d'un nouveau compte : la langue, puis le profil complet (en commençant par l'import
+/// d'un CV), puis une première action. Le profil est la base du 履歴書, de la relecture des ES et de
+/// l'entretien simulé. « あとで » laisse passer : le profil reste accessible depuis l'icône du compte.
+struct WelcomeSetupView: View {
+    let api: APIClient
+    let me: Me
+    let onProfileSaved: () async -> Void
+    /// Onglet à ouvrir en sortant (nil : rester sur l'accueil).
+    let onDone: (MainTab?) -> Void
+    @AppStorage(HelpLanguage.storageKey) private var language = HelpLanguage.deviceDefault.rawValue
+    @State private var path: [Step] = []
+
+    enum Step: Hashable { case profile, done }
+
+    private static func key(_ me: Me) -> String { "welcome-later:\(me.userId)" }
+    /// « あとで » déjà choisi sur cet iPhone : l'écran ne revient pas à chaque ouverture.
+    static func postponed(_ me: Me) -> Bool { UserDefaults.standard.bool(forKey: key(me)) }
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 10) {
+                        LogoMark(size: 30)
+                        Text("Clean Work").font(.title3.bold()).foregroundStyle(Color.cwBlue800)
+                    }
+                    Text(me.name.map { tr("\($0)さん、ようこそ", "Welcome, \($0)", "Bienvenue, \($0)") } ?? tr("ようこそ", "Welcome", "Bienvenue"))
+                        .font(.largeTitle.bold()).foregroundStyle(Color.cwBlue700)
+                    Text(tr("最初にプロフィールを登録しましょう。履歴書の作成、ESの添削、面接の練習は、すべてこのプロフィールをもとにします。",
+                            "Let's set up your profile first. Your résumé, entry-sheet reviews and interview practice are all built on it.",
+                            "Commençons par votre profil. Le CV japonais, la relecture des ES et l'entraînement aux entretiens s'appuient tous dessus."))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(tr("説明のことば", "Language for explanations", "Langue des explications")).font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+                        Picker(tr("表示言語", "Language", "Langue"), selection: $language) {
+                            ForEach(HelpLanguage.allCases) { Text($0.label).tag($0.rawValue) }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    Button { path = [.profile] } label: {
+                        Text(tr("プロフィールを登録する", "Set up my profile", "Remplir mon profil")).font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent).tint(Color.cwBordeaux)
+                    Button(tr("あとで登録する", "Do it later", "Plus tard")) { later() }
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(24)
+            }
+            .background(WaveBackground())
+            .navigationDestination(for: Step.self) { step in
+                switch step {
+                case .profile:
+                    ProfileView(model: ProfileModel(api: api), onSaved: {
+                        await onProfileSaved()
+                        path = [.done]
+                    }, cvHint: true)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button(tr("あとで", "Later", "Plus tard")) { later() } }
+                    }
+                case .done:
+                    done
+                }
+            }
+        }
+        // Changer de langue redessine l'écran dans la nouvelle langue.
+        .id(language)
+        .interactiveDismissDisabled()
+    }
+
+    private var done: some View {
+        List {
+            Section {
+                Text(tr("準備ができました", "You are all set", "Tout est prêt")).font(.title.bold()).foregroundStyle(Color.cwBlue700)
+                Text(tr("まず何から始めますか？", "Where would you like to start?", "Par quoi voulez-vous commencer ?"))
+            }
+            Section {
+                next(tr("応募を追加する", "Add an application", "Ajouter une candidature"), tr("選考の進み具合と締切をまとめます", "Track progress and deadlines", "Suivre l'avancement et les échéances"), "briefcase", .apps)
+                next(tr("履歴書を作る", "Make my résumé", "Créer mon CV japonais"), tr("登録したプロフィールからPDFを作ります", "A PDF built from your profile", "Un PDF tiré de votre profil"), "doc.text", .documents)
+                next(tr("ホームを見る", "Go to the home page", "Voir l'accueil"), tr("カレンダーと今日の予定", "Calendar and today's plans", "Calendrier et programme du jour"), "house", nil)
+            }
+        }
+        .cleanList()
+        .navigationBarBackButtonHidden()
+    }
+
+    private func next(_ title: String, _ detail: String, _ icon: String, _ tab: MainTab?) -> some View {
+        Button { onDone(tab) } label: {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.headline).foregroundStyle(Color.cwBlue800)
+                    Text(detail).font(.footnote).foregroundStyle(.secondary)
+                }
+            } icon: { Image(systemName: icon) }
+        }
+    }
+
+    private func later() {
+        UserDefaults.standard.set(true, forKey: Self.key(me))
+        onDone(nil)
     }
 }

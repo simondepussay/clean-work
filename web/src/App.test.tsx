@@ -9,6 +9,7 @@ import { setHelpLanguage } from "./es/guide";
 afterEach(() => {
   vi.unstubAllGlobals();
   history.replaceState(null, "", "/");
+  localStorage.removeItem("welcome-later:simon@example.com");
 });
 
 const json = (body: unknown, ok = true) => ({ ok, json: async () => body });
@@ -60,6 +61,28 @@ describe("App", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     renderWith({});
     expect(await screen.findByText("サーバーに接続できません")).toBeInTheDocument();
+  });
+
+  it("nouveau compte sans profil : l'écran de bienvenue remplace le classeur, sauf après « あとで »", async () => {
+    setHelpLanguage("ja");
+    stubApi();
+    const signedIn = { state: { status: "signedIn" as const, email: "simon@example.com", name: "Simon" }, getToken: async () => "jeton" };
+    const first = renderWith(signedIn);
+    expect(await screen.findByRole("heading", { name: "Simonさん、ようこそ" })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist")).toBeNull();
+    // Le compte reste accessible (se déconnecter) pendant la bienvenue.
+    expect(screen.getByRole("button", { name: /アカウント/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "あとで登録する" }));
+    expect(await screen.findByRole("tablist")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Simonさん、ようこそ" })).toBeNull();
+    expect(first.signOut).not.toHaveBeenCalled();
+  });
+
+  it("un compte qui a déjà un profil arrive directement sur le classeur", async () => {
+    stubApi({ userId: "u1", email: "simon@example.com", name: "Simon", hasProfile: true });
+    renderWith({ state: { status: "signedIn", email: "simon@example.com", name: "Simon" }, getToken: async () => "jeton" });
+    expect(await screen.findByRole("tablist")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("heading", { name: /ようこそ/ })).toBeNull());
   });
 
   it("annonce la connexion à venir tant que l'annuaire n'est pas configuré", async () => {

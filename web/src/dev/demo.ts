@@ -64,6 +64,7 @@ const moodDays: ["sunny" | "cloudy" | "rainy", string?][] = [
   ["sunny"], ["cloudy"], ["sunny", "ほっとした"], ["cloudy"], ["rainy", "不安"], ["sunny"], ["cloudy", "疲れた"], ["sunny"], ["cloudy"],
   ["sunny", "ワクワク"], ["rainy", "焦り"], ["cloudy"], ["rainy", "疲れた"], ["rainy", "不安"],
 ];
+const demoNew = new URLSearchParams(location.search).has("new");
 // « ?demo&mood=sunny » : choisir la météo du jour pour comparer les ciels (captures).
 const demoMood = new URLSearchParams(location.search).get("mood");
 if (demoMood === "sunny" || demoMood === "cloudy" || demoMood === "rainy") moodDays[moodDays.length - 1] = [demoMood];
@@ -133,8 +134,9 @@ const routes: Record<string, unknown> = {
   "GET /api/calendar-link?lang=en": { url: "https://example.test/api/calendar/demo.token.ics?lang=en" },
   "GET /api/calendar-link?lang=fr": { url: "https://example.test/api/calendar/demo.token.ics?lang=fr" },
   "GET /api/health": { status: "ok", version: "demo", database: "ok", resume: "ok", push: "ok" },
-  "GET /api/me": { userId: "demo", email: "simon@example.com", name: "Simon", hasProfile: true },
-  "GET /api/profile": profile,
+  // « ?demo&new » : un compte tout neuf, pour voir l'écran de bienvenue.
+  "GET /api/me": { userId: "demo", email: "simon@example.com", name: "Simon", hasProfile: !demoNew },
+  "GET /api/profile": demoNew ? null : profile,
   "GET /api/applications": applications,
   "GET /api/drafts": drafts,
   "GET /api/usage": { today: 9, month: 28 },
@@ -195,6 +197,12 @@ export function installDemoApi() {
     }
     if (key === "PUT /api/kokoro/values") kokoro.values = (sent.values as string[]).filter(Boolean);
     // Candidature modifiée : gardée pendant la démo (statut, bilans d'entretien…).
+    // Profil enregistré pendant la démo « nouveau compte » : le compte a désormais un profil.
+    if (key === "PUT /api/profile") {
+      routes["GET /api/me"] = { ...(routes["GET /api/me"] as object), hasProfile: true };
+      routes["GET /api/profile"] = sent;
+      return new Response(JSON.stringify(sent), { status: 200, headers: { "content-type": "application/json" } });
+    }
     const demoApp = (applications as Record<string, unknown>[]).find((a) => new RegExp(`/api/applications/${a.id}(/|$)`).test(url));
     if (demoApp && method === "PUT") Object.assign(demoApp, sent);
     if (demoApp && method === "POST" && url.endsWith("/advice")) {

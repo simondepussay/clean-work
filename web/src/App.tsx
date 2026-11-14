@@ -20,9 +20,11 @@ const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => (load
 const KokoroPage = lazy(() => import("./kokoro/KokoroPage").then((m) => (loadedFine(), { default: m.KokoroPage })));
 const InfoPage = lazy(() => import("./info/InfoPage").then((m) => (loadedFine(), { default: m.InfoPage })));
 const BetaPage = lazy(() => import("./beta/BetaPage").then((m) => (loadedFine(), { default: m.BetaPage })));
+const WelcomeSetup = lazy(() => import("./welcome/WelcomeSetup").then((m) => (loadedFine(), { default: m.WelcomeSetup })));
 const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (loadedFine(), { default: m.ProfileEditor })));
 import { BriefcaseIcon, ChatIcon, DocIcon, HeartIcon, LightIcon, UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
+import { welcomePostponed } from "./welcome/postponed";
 import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
 
@@ -182,6 +184,19 @@ export default function App() {
   /** Les écrans attendent que le cache soit rempli (copie de l'appareil, sinon une seule requête). */
   const [dataReady, setDataReady] = useState(false);
 
+  /** Nouveau compte sans profil : l'écran de bienvenue remplace le classeur, jusqu'au profil ou à « あとで ». */
+  const [welcomeClosed, setWelcomeClosed] = useState(false);
+  // La page du compte reste accessible (se déconnecter, supprimer le compte), la bêta aussi.
+  const welcomeAllowed = view !== "beta" && view !== "account";
+  const welcoming = !!signedIn && dataReady && welcomeAllowed && !welcomeClosed
+    && !!me && me !== "error" && !me.hasProfile && !welcomePostponed(owner);
+  /** Reste vrai pendant l'étape « 準備ができました », alors que le profil vient d'être enregistré. */
+  const [welcomeStarted, setWelcomeStarted] = useState(false);
+  useEffect(() => { if (welcoming) setWelcomeStarted(true); }, [welcoming]);
+  // Un autre compte sur la même page repart de zéro.
+  useEffect(() => { if (auth.state.status !== "signedIn") { setWelcomeClosed(false); setWelcomeStarted(false); } }, [auth.state.status]);
+  const showWelcome = !!signedIn && welcomeAllowed && !welcomeClosed && (welcoming || welcomeStarted);
+
   const refreshMe = () =>
     auth.getToken()
       .then((token) => (token ? fetchMe(token) : null))
@@ -273,7 +288,13 @@ export default function App() {
 
       {/* Le menu en intercalaires de classeur : chaque page est une feuille, l'onglet actif tient à la feuille. */}
       <div className="binder">
-        {signedIn && (
+        {showWelcome && (
+          <Suspense fallback={<Loader />}>
+            <WelcomeSetup name={signedIn?.name ?? null} owner={owner} onProfileSaved={refreshMe}
+              onDone={(go) => { setWelcomeClosed(true); open(go); }} />
+          </Suspense>
+        )}
+        {signedIn && !showWelcome && (
           <nav className="tabs" role="tablist" aria-label={tr({ ja: "メニュー", en: "Menu", fr: "Menu" })}>
             {[{ view: "home" as View, ja: "ホーム", en: "Home" }, ...SERVICES].map((s) => (
               <button key={s.view} data-view={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && view === "es")} onClick={() => open(s.view)}>
@@ -282,7 +303,7 @@ export default function App() {
             ))}
           </nav>
         )}
-        <main className={signedIn ? "shell sheet" : "shell"}>
+        {!showWelcome && <main className={signedIn ? "shell sheet" : "shell"}>
           <PageErrorBoundary key={view}
             message={tr({ ja: "このページを表示できませんでした。新しいバージョンが公開された可能性があります。", en: "This page could not be displayed. A new version may have been published.", fr: "Cette page n'a pas pu s'afficher. Une nouvelle version a peut-être été mise en ligne." })}
             action={tr({ ja: "再読み込み", en: "Reload", fr: "Recharger" })}>
@@ -322,7 +343,7 @@ export default function App() {
             </>
             )}
           </PageErrorBoundary>
-        </main>
+        </main>}
       </div>
 
       <footer className="footer">

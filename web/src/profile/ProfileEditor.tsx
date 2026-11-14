@@ -12,7 +12,7 @@ const emptyProfile: ProfileInput = { nameKanji: "", nameKana: "", education: [],
 type Status = { kind: "loading" } | { kind: "ready" } | { kind: "saving" } | { kind: "saved" } | { kind: "error" } | { kind: "imported" };
 
 /** Formulaire du profil (S05) : base du 履歴書 (S11). */
-export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
+export function ProfileEditor({ onSaved, cvFirst = false }: { onSaved?: () => void; /** Import de CV déjà déplié (écran de bienvenue). */ cvFirst?: boolean }) {
   const auth = useAuth();
   const tr = useTr();
   const lang = tr.lang;
@@ -162,7 +162,7 @@ export function ProfileEditor({ onSaved }: { onSaved?: () => void }) {
     <form className="profile" onSubmit={submit} noValidate>
       <div className="profile-head">
         <h2>{tr({ ja: "プロフィール", en: "Profile", fr: "Profil" })}</h2>
-        <CvImportPanel onImported={applyCv} />
+        <CvImportPanel onImported={applyCv} defaultOpen={cvFirst} />
       </div>
       {status.kind === "imported" && (
         <p role="status" className="notice">{tr({

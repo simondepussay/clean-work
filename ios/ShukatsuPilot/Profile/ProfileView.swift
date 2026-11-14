@@ -4,6 +4,8 @@ import SwiftUI
 struct ProfileView: View {
     @State var model: ProfileModel
     var onSaved: () async -> Void = {}
+    /// Écran de bienvenue : une phrase invite à commencer par le CV.
+    var cvHint = false
     @State private var importing = false
 
     var body: some View {
@@ -13,6 +15,12 @@ struct ProfileView: View {
                 ProgressView()
             default:
                 Section {
+                    if cvHint, !model.imported {
+                        Text(tr("CVがあれば、読み込むだけで入力できます。内容を確かめて、足りないところを書き足してから保存してください。",
+                                "If you have a CV, importing it fills the form. Check it, add what is missing, then save.",
+                                "Si vous avez un CV, l'importer remplit le formulaire. Vérifiez, complétez ce qui manque, puis enregistrez."))
+                            .font(.callout)
+                    }
                     Button(tr("CVから入力", "Fill in from a CV", "Remplir depuis un CV"), systemImage: "doc.text.viewfinder") { importing = true }
                     if model.imported {
                         Text(tr("CVの内容を入力しました。確認してから「保存」を押してください。",

@@ -37,8 +37,16 @@ private final class DemoURLProtocol: URLProtocol {
         let path = request.url?.path ?? ""
         let method = request.httpMethod ?? "GET"
         let body: Any
+        var status = method == "POST" ? 201 : 200
+        // « -demo -newAccount » : un compte tout neuf, pour voir l'écran de bienvenue.
+        let newAccount = ProcessInfo.processInfo.arguments.contains("-newAccount")
         switch (method, path) {
-        case ("GET", "/api/me"): body = ["userId": "demo", "email": "simon@example.com", "name": "Simon", "hasProfile": true]
+        case ("GET", "/api/me"): body = ["userId": "demo", "email": "simon@example.com", "name": "Simon", "hasProfile": !newAccount]
+        case ("GET", "/api/profile") where newAccount:
+            status = 404
+            body = ["error": "not_found"]
+        case ("PUT", "/api/profile"):
+            body = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) ?? [:]
         case ("GET", "/api/applications"): body = Self.applications
         case ("GET", "/api/plans"): body = Self.plans
         case ("GET", "/api/drafts"): body = [] as [Any]
@@ -87,7 +95,7 @@ private final class DemoURLProtocol: URLProtocol {
         default: body = [:] as [String: Any]
         }
         let data = (try? JSONSerialization.data(withJSONObject: body)) ?? Data()
-        let response = HTTPURLResponse(url: request.url!, statusCode: method == "POST" ? 201 : 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: data)
         client?.urlProtocolDidFinishLoading(self)

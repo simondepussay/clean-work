@@ -9,10 +9,10 @@ import { Loader } from "../Loader";
  * « Importer un CV » : un PDF (texte extrait dans le navigateur) ou le texte collé ; l'IA range
  * les informations dans le profil, puis le formulaire est rempli — l'utilisateur vérifie et enregistre.
  */
-export function CvImportPanel({ onImported }: { onImported: (cv: CvImport) => void }) {
+export function CvImportPanel({ onImported, defaultOpen = false }: { onImported: (cv: CvImport) => void; /** Déjà déplié : à la création du compte, c'est la première chose proposée. */ defaultOpen?: boolean }) {
   const auth = useAuth();
   const tr = useTr();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<"reading" | "sorting" | null>(null);
   const [message, setMessage] = useState<string | null>(null);

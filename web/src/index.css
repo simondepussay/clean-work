@@ -1044,3 +1044,26 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
 .offer-guide summary { cursor: pointer; font-weight: 600; color: var(--blue-800); }
 .offer-guide details p { margin-top: 6px; }
 .offer-disclaimer { font-size: 13px; }
+
+/* ------------------------------------------------------------------ écran de bienvenue d'un nouveau compte */
+.welcome-setup { max-width: 860px; margin: 28px auto 48px; display: grid; gap: 18px; }
+.welcome-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px 22px; flex-wrap: wrap; justify-content: center; font-size: 14px; color: var(--muted); }
+.welcome-steps li { display: inline-flex; align-items: center; gap: 8px; }
+.welcome-steps li span { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--blue-100); color: var(--blue-800); font-size: 13px; font-weight: 700; }
+.welcome-steps li[aria-current="step"] { color: var(--blue-800); font-weight: 700; }
+.welcome-steps li[aria-current="step"] span { background: var(--bordeaux); color: #fff; }
+.welcome-steps li.done span { background: var(--blue-700); color: #fff; }
+.welcome-card { display: grid; gap: 14px; justify-items: start; }
+.welcome-card h1 { margin: 0; font-size: clamp(26px, 5vw, 36px); color: var(--blue-700); }
+.welcome-card p { margin: 0; max-width: 62ch; }
+.welcome-langs { display: flex; gap: 8px; flex-wrap: wrap; border: 0; padding: 0; margin: 0; background: none; }
+.welcome-langs legend { padding: 0; margin-bottom: 8px; font-weight: 600; color: var(--blue-800); font-size: 14px; }
+.welcome-langs button[aria-pressed="true"] { background: var(--blue-700); border-color: var(--blue-700); color: #fff; }
+.welcome-profile { display: grid; gap: 18px; }
+.welcome-next { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; width: 100%; }
+.welcome-next button { display: grid; gap: 6px; justify-items: start; text-align: left; padding: 16px 18px; border-radius: var(--radius); color: var(--blue-700); }
+.welcome-next strong { color: var(--blue-800); }
+.welcome-next span { font-size: 14px; color: var(--muted); }
+
+/* Bienvenue : le titre du formulaire ferait doublon avec celui de la carte au-dessus. */
+.welcome-profile .profile > h2 { display: none; }
