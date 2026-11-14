@@ -23,7 +23,9 @@ export function MsalAuthProvider({ config, children }: { config: IdentityConfig;
       new PublicClientApplication({
         auth: {
           clientId: config.webClientId,
-          authority: `https://${config.tenantSubdomain}.ciamlogin.com/`,
+          // MSAL 5 vérifie que l'« issuer » de l'annuaire correspond à l'autorité : l'issuer d'External ID contient
+          // l'identifiant de l'annuaire (GUID), pas son nom, donc on le met dans l'adresse.
+          authority: `https://${config.tenantSubdomain}.ciamlogin.com/${config.tenantId}/`,
           redirectUri: `${window.location.origin}/`,
           postLogoutRedirectUri: `${window.location.origin}/`,
         },
