@@ -23,6 +23,7 @@ function server(initial: Application[]) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     const body = init?.body ? JSON.parse(init.body as string) : undefined;
     if (init?.method === "PUT") {
+      if (body.url === "https://refusee.example") return new Response(JSON.stringify({ issues: [{ path: "url", message: "URLが正しくありません / Invalid URL" }] }), { status: 400 });
       const i = store.findIndex((a) => url.endsWith(a.id));
       store[i] = { ...store[i], ...body };
       return new Response(JSON.stringify(store[i]));
@@ -205,6 +206,7 @@ describe("ES et candidatures", () => {
     render(<AuthContext.Provider value={auth}><ApplicationsBoard onWriteEs={onWriteEs} /></AuthContext.Provider>);
     expect(await screen.findByText("ES 2")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "楽天" }));
+    await userEvent.click(screen.getByRole("tab", { name: "準備と連絡" }));
     await userEvent.click(screen.getByRole("button", { name: /この企業のESを書く/ }));
     expect(onWriteEs).toHaveBeenCalledWith({ id: "a1", company: "楽天" });
   });
@@ -220,6 +222,56 @@ describe("fiche d'une candidature", () => {
     expect(row).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(row);
     expect(screen.queryByRole("form", { name: "応募" })).toBeNull();
+  });
+});
+
+describe("fiche en trois volets", () => {
+  const openSheet = async () => {
+    server([app({ id: "a1", company: "楽天", status: "offer", steps: [{ id: "s1", type: "interview1", dueDate: "2026-11-01", done: true }] })]);
+    render(<AuthContext.Provider value={auth}><ApplicationsBoard onWriteEs={vi.fn()} onPractice={vi.fn()} /></AuthContext.Provider>);
+    await userEvent.click(await screen.findByRole("button", { name: /楽天/, expanded: false }));
+    return screen.getByRole("form", { name: "応募" });
+  };
+
+  it("s'ouvre sur 選考 ; 企業情報 et les outils sont dans leurs volets", async () => {
+    const form = await openSheet();
+    expect(within(form).getByRole("tab", { name: "選考" })).toHaveAttribute("aria-selected", "true");
+    expect(within(form).getByRole("group", { name: "選考ステップ・締切" })).toBeInTheDocument();
+    expect(within(form).queryByLabelText(/企業名/)).toBeNull();
+    expect(within(form).queryByRole("button", { name: /メールを書く/ })).toBeNull();
+
+    await userEvent.click(within(form).getByRole("tab", { name: "企業情報" }));
+    expect(within(form).getByLabelText(/企業名/)).toHaveValue("楽天");
+    expect(within(form).queryByRole("group", { name: "選考ステップ・締切" })).toBeNull();
+    expect(within(form).getByRole("button", { name: "この応募を削除" })).toBeInTheDocument();
+  });
+
+  it("準備と連絡 : les outils rangés par moment, un seul déplié à la fois ; 内定後 seulement au statut 内定", async () => {
+    const form = await openSheet();
+    await userEvent.click(within(form).getByRole("tab", { name: "準備と連絡" }));
+    expect(["知る", "準備する", "連絡する", "振り返る"].map((n) => within(form).getByRole("region", { name: n }))).toHaveLength(4);
+    expect(within(form).getByRole("button", { name: /内定後の手続き/ })).toBeInTheDocument();
+    const mail = within(form).getByRole("button", { name: /メールを書く/ });
+    await userEvent.click(mail);
+    expect(mail).toHaveAttribute("aria-expanded", "true");
+    expect(within(form).getByRole("region", { name: "メールを書く" })).toBeInTheDocument();
+    await userEvent.click(within(form).getByRole("button", { name: /面接の振り返り/ }));
+    expect(mail).toHaveAttribute("aria-expanded", "false");
+    expect(within(form).queryByRole("region", { name: "メールを書く" })).toBeNull();
+  });
+
+  it("signale les modifications non enregistrées, et ouvre le volet du champ en erreur", async () => {
+    const form = await openSheet();
+    expect(within(form).queryByText("未保存の変更があります")).toBeNull();
+    await userEvent.click(within(form).getByRole("tab", { name: "企業情報" }));
+    await userEvent.type(within(form).getByLabelText(/採用ページのURL/), "https://refusee.example");
+    expect(within(form).getByText("未保存の変更があります")).toBeInTheDocument();
+    // Le serveur de test refuse cette adresse : l'erreur est dans 企業情報, qui se rouvre tout seul.
+    await userEvent.click(within(form).getByRole("tab", { name: "選考" }));
+    expect(within(form).queryByLabelText(/採用ページのURL/)).toBeNull();
+    await userEvent.click(within(form).getByRole("button", { name: /保存/ }));
+    expect(await within(form).findByText("URLが正しくありません")).toBeInTheDocument();
+    expect(within(form).getByRole("tab", { name: "企業情報" })).toHaveAttribute("aria-selected", "true");
   });
 });
 

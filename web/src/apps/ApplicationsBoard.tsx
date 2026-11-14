@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Loader } from "../Loader";
 import {
   createApplication, deleteApplication, listApplications, listDrafts, updateApplication,
@@ -21,6 +21,14 @@ import type { SavedJob } from "./savedJob";
 import { SaveFromBrowser } from "./SaveFromBrowser";
 import { useFreshData } from "../useFreshData";
 import { ImportPanel } from "./ImportPanel";
+
+type Pane = "selection" | "tools" | "info";
+type Tool = "research" | "mail" | "debrief" | "offer";
+const PANES: ({ id: Pane } & Record<"ja" | "en" | "fr", string>)[] = [
+  { id: "selection", ja: "選考", en: "Selection", fr: "Sélection" },
+  { id: "tools", ja: "準備と連絡", en: "Prepare and contact", fr: "Préparer et contacter" },
+  { id: "info", ja: "企業情報", en: "Company", fr: "Entreprise" },
+];
 
 const blank: ApplicationInput = { company: "", status: "interested", steps: [] };
 
@@ -74,15 +82,21 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   /** Filtre d'étape (« 進行中 » par défaut) et tri de la liste. */
   const [stage, setStage] = useState<GroupId>("active");
   const [sort, setSort] = useState<"deadline" | "company" | "updated">("deadline");
-  /** Rédaction d'un mail (お礼, 日程調整…) pour la candidature ouverte. */
-  const [mailing, setMailing] = useState(false);
-  /** 面接の振り返り de la candidature ouverte. */
-  const [debriefing, setDebriefing] = useState(false);
-  /** 企業研究 de la candidature ouverte. */
-  const [researching, setResearching] = useState(false);
-  /** 内定後の手続き (statut « 内定 » seulement). */
-  const [afterOffer, setAfterOffer] = useState(false);
-  useEffect(() => { setMailing(false); setDebriefing(false); setAfterOffer(false); setResearching(false); }, [editing?.id]);
+  /** Volet ouvert d'une candidature enregistrée, et outil déplié dans « 準備と連絡 ». */
+  const [pane, setPane] = useState<Pane>("selection");
+  const [tool, setTool] = useState<Tool | null>(null);
+  // L'outil déplié s'affiche sous les cartes : on l'amène à l'écran (sur un téléphone, il serait hors champ).
+  const toolPanel = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (tool) toolPanel.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" }); }, [tool]);
+  /** Le formulaire tel qu'il a été ouvert ou enregistré : sert à signaler les modifications non enregistrées. */
+  const [pristine, setPristine] = useState("");
+  useEffect(() => {
+    setPane("selection");
+    setTool(null);
+    setPristine(editing ? JSON.stringify(editing.form) : "");
+    // À l'ouverture d'une autre fiche seulement, pas à chaque frappe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing?.id]);
 
   async function token() {
     const t = await auth.getToken();
@@ -145,7 +159,11 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
     try {
       const t = await token();
       const r = editing.id ? await updateApplication(t, editing.id, editing.form) : await createApplication(t, editing.form);
-      if (!r.ok) return setIssues(r.issues);
+      if (!r.ok) {
+        // Le champ en erreur est peut-être dans un autre volet : on l'ouvre.
+        if (r.issues.length > 0) setPane(/^(steps|followUps|events)/.test(r.issues[0].path) ? "selection" : "info");
+        return setIssues(r.issues);
+      }
       replace(r.value);
       setEditing(null);
       setFromBrowser(null);
@@ -197,6 +215,33 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
     sort === "company" ? x.company.localeCompare(y.company, lang)
       : sort === "updated" ? y.updatedAt.localeCompare(x.updatedAt)
       : (x.nextDeadline ?? "9999").localeCompare(y.nextDeadline ?? "9999") || x.company.localeCompare(y.company, lang));
+  const dirty = !!editing && JSON.stringify(editing.form) !== pristine;
+  const toggle = (t: Tool) => () => setTool((current) => (current === t ? null : t));
+  type ToolCard = { id: string; icon: typeof PenIcon; title: string; hint: string; run: () => void; panel?: boolean; count?: number };
+  /** Les outils d'une candidature, dans l'ordre où l'on en a besoin pendant la sélection. */
+  const toolGroups: { title: string; tools: ToolCard[] }[] = !editing?.id ? [] : [
+    { title: tr({ ja: "知る", en: "Learn", fr: "Connaître" }), tools: [
+      { id: "research", icon: SearchIcon, panel: true, run: toggle("research"), title: tr({ ja: "企業研究", en: "Company research", fr: "Recherche sur l'entreprise" }),
+        hint: tr({ ja: "会社のまとめ、志望動機の切り口、逆質問", en: "Summary, angles for your motivation, questions to ask", fr: "Résumé, pistes pour le 志望動機, questions à poser" }) },
+    ] },
+    { title: tr({ ja: "準備する", en: "Prepare", fr: "Préparer" }), tools: [
+      ...(onWriteEs ? [{ id: "es", icon: PenIcon, run: () => onWriteEs({ id: editing.id!, company: editing.form.company }), title: tr({ ja: "この企業のESを書く", en: "Write an ES for this company", fr: "Écrire une ES pour cette entreprise" }),
+        hint: tr({ ja: "書類タブでESを書き、AIに添削してもらう", en: "Write it in Documents and get an AI review", fr: "L'écrire dans Documents et la faire relire par l'IA" }), count: esCount(editing.id) }] : []),
+      ...(onPractice ? [{ id: "practice", icon: MicIcon, run: () => onPractice({ id: editing.id! }), title: tr({ ja: "面接を練習する", en: "Practise the interview", fr: "S'entraîner à l'entretien" }),
+        hint: tr({ ja: "この企業に合わせた模擬面接", en: "A mock interview tailored to this company", fr: "Un entretien simulé adapté à cette entreprise" }) }] : []),
+    ] },
+    { title: tr({ ja: "連絡する", en: "Contact", fr: "Contacter" }), tools: [
+      { id: "mail", icon: MailIcon, panel: true, run: toggle("mail"), title: tr({ ja: "メールを書く", en: "Write an email", fr: "Écrire un mail" }),
+        hint: tr({ ja: "お礼、日程調整、辞退、内定承諾", en: "Thank-you, scheduling, withdrawal, accepting an offer", fr: "Remerciement, date, retrait, acceptation d'une offre" }) },
+    ] },
+    { title: tr({ ja: "振り返る", en: "Look back", fr: "Faire le point" }), tools: [
+      { id: "debrief", icon: ChatIcon, panel: true, run: toggle("debrief"), title: tr({ ja: "面接の振り返り", en: "Interview debrief", fr: "Bilan d'entretien" }),
+        hint: tr({ ja: "聞かれた質問をメモして、次の選考に備える", en: "Note the questions asked and prepare the next round", fr: "Noter les questions posées et préparer le tour suivant" }), count: saved?.debriefs?.length ?? 0 },
+      ...(saved?.status === "offer" ? [{ id: "offer", icon: CheckIcon, panel: true, run: toggle("offer"), title: tr({ ja: "内定後の手続き", en: "After the offer", fr: "Après l'offre" }),
+        hint: tr({ ja: "在留資格の変更から入社まで", en: "From the change of status to your first day", fr: "Du changement de statut au premier jour" }), count: saved.offerChecklist?.length ?? 0 }] : []),
+    ] },
+  ].filter((g) => g.tools.length > 0);
+
   const sortButton = (key: typeof sort, label: string) => (
     <button type="button" className={`sort${sort === key ? " active" : ""}`} aria-pressed={sort === key} onClick={() => setSort(key)}>{label}</button>
   );
@@ -284,45 +329,19 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
 
       {editing && (
         <form className="app-editor" onSubmit={save} noValidate aria-label={tr({ ja: "応募", en: "Application", fr: "Candidature" })}>
-          <h3>{editing.id ? editing.form.company : tr({ ja: "新しい応募", en: "New application", fr: "Nouvelle candidature" })}</h3>
-          <div className="actions editor-top">
-            <button className="primary" type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
-            {/* L'erreur s'affiche là où l'on vient de cliquer, pas en haut de la page. */}
-            {error && <span role="alert" className="notice save-error">{tr({ ja: "保存できませんでした。もう一度お試しください。", en: "Could not save. Please try again.", fr: "Enregistrement impossible. Réessayez." })}</span>}
-            <button type="button" onClick={() => setEditing(null)}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>
-            {editing.id && onWriteEs && (
-              <button type="button" onClick={() => onWriteEs({ id: editing.id!, company: editing.form.company })}>
-                <PenIcon size={16} /> {tr({ ja: "この企業のESを書く", en: "Write an ES for this company", fr: "Écrire une ES pour cette entreprise" })}
-              </button>
-            )}
-            {editing.id && onPractice && (
-              <button type="button" onClick={() => onPractice({ id: editing.id! })}><MicIcon size={16} /> {tr({ ja: "面接を練習する", en: "Practise the interview", fr: "S'entraîner à l'entretien" })}</button>
-            )}
-            {editing.id && (
-              <button type="button" aria-expanded={researching} onClick={() => setResearching((r) => !r)}>
-                <SearchIcon size={16} /> {tr({ ja: "企業研究", en: "Company research", fr: "Recherche sur l'entreprise" })}
-              </button>
-            )}
-            {editing.id && (
-              <button type="button" aria-expanded={mailing} onClick={() => setMailing((m) => !m)}><MailIcon size={16} /> {tr({ ja: "メールを書く", en: "Write an email", fr: "Écrire un mail" })}</button>
-            )}
-            {editing.id && (
-              <button type="button" aria-expanded={debriefing} onClick={() => setDebriefing((d) => !d)}>
-                <ChatIcon size={16} /> {tr({ ja: "面接の振り返り", en: "Interview debrief", fr: "Bilan d'entretien" })}
-                {(saved?.debriefs?.length ?? 0) > 0 && <span className="count">{saved!.debriefs!.length}</span>}
-              </button>
-            )}
-            {saved?.status === "offer" && (
-              <button type="button" aria-expanded={afterOffer} onClick={() => setAfterOffer((o) => !o)}>
-                <CheckIcon size={16} /> {tr({ ja: "内定後の手続き", en: "After the offer", fr: "Après l'offre" })}
-              </button>
-            )}
-            {editing.id && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
+          <div className="editor-head">
+            <div>
+              <h3>{editing.id ? editing.form.company : tr({ ja: "新しい応募", en: "New application", fr: "Nouvelle candidature" })}</h3>
+              {editing.id && editing.form.position && <p className="muted">{editing.form.position}</p>}
+            </div>
+            <div className="actions">
+              {/* L'erreur s'affiche là où l'on vient de cliquer, pas en haut de la page. */}
+              {error && <span role="alert" className="notice save-error">{tr({ ja: "保存できませんでした。もう一度お試しください。", en: "Could not save. Please try again.", fr: "Enregistrement impossible. Réessayez." })}</span>}
+              {dirty && !error && <span className="unsaved" role="status">{tr({ ja: "未保存の変更があります", en: "Unsaved changes", fr: "Modifications non enregistrées" })}</span>}
+              <button className="primary" type="submit">{tr({ ja: "保存", en: "Save", fr: "Enregistrer" })}</button>
+              <button type="button" onClick={() => setEditing(null)}>{tr({ ja: "閉じる", en: "Close", fr: "Fermer" })}</button>
+            </div>
           </div>
-          {editing.id && mailing && <EmailPanel applicationId={editing.id} steps={editing.form.steps} />}
-          {saved && researching && <ResearchPanel application={saved} onChange={replace} />}
-          {saved && afterOffer && <OfferGuidePanel application={saved} onChange={replace} />}
-          {saved && debriefing && <DebriefPanel application={saved} onChange={replace} onPractice={onPractice && (() => onPractice({ id: saved.id }))} />}
           {!editing.id && fromBrowser !== null && (
             <p className="from-browser" role="status">{tr({
               ja: `${fromBrowser ? `${fromBrowser}から` : "ブラウザから"}追加された求人です。内容を確かめて、保存してください。`,
@@ -330,63 +349,112 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
               fr: `Offre ajoutée depuis ${fromBrowser || "le navigateur"}. Vérifiez puis enregistrez.`,
             })}</p>
           )}
-          <div className="grid">
-            <label className={errors.has("company") ? "invalid" : undefined}>
-              <span>{tr({ ja: "企業名", en: "Company", fr: "Entreprise" })} *</span>
-              <input value={editing.form.company} onChange={(e) => set({ company: e.target.value })} />
-              {errors.has("company") && <small role="alert">{errors.get("company")}</small>}
+          {/* Une candidature enregistrée se lit en trois volets ; une nouvelle se remplit d'une traite. */}
+          {editing.id && (
+            <div className="editor-tabs" role="tablist" aria-label={tr({ ja: "応募の内容", en: "Sections", fr: "Rubriques" })}>
+              {PANES.map((p) => (
+                <button key={p.id} type="button" role="tab" aria-selected={pane === p.id} onClick={() => setPane(p.id)}>{tr(p)}</button>
+              ))}
+            </div>
+          )}
+
+          {editing.id && pane === "tools" && (
+            <div className="editor-pane">
+              <div className="tool-groups">
+              {toolGroups.map((g) => (
+                <section key={g.title} className="tool-group" aria-label={g.title}>
+                  <h4>{g.title}</h4>
+                  <div className="tool-cards">
+                    {g.tools.map((t) => (
+                      <button key={t.id} type="button" className="tool-card" onClick={t.run}
+                        {...(t.panel ? { "aria-expanded": tool === t.id } : {})}>
+                        <t.icon size={20} />
+                        <strong>{t.title}{t.count ? <span className="count">{t.count}</span> : null}</strong>
+                        <span>{t.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
+              </div>
+              <div ref={toolPanel}>
+              {tool === "mail" && <EmailPanel applicationId={editing.id} steps={editing.form.steps} />}
+              {saved && tool === "research" && <ResearchPanel application={saved} onChange={replace} />}
+              {saved && tool === "offer" && <OfferGuidePanel application={saved} onChange={replace} />}
+              {saved && tool === "debrief" && <DebriefPanel application={saved} onChange={replace} onPractice={onPractice && (() => onPractice({ id: saved.id }))} />}
+              </div>
+            </div>
+          )}
+
+          {(!editing.id || pane === "info") && (
+            <div className="editor-pane">
+            <div className="grid">
+              <label className={errors.has("company") ? "invalid" : undefined}>
+                <span>{tr({ ja: "企業名", en: "Company", fr: "Entreprise" })} *</span>
+                <input value={editing.form.company} onChange={(e) => set({ company: e.target.value })} />
+                {errors.has("company") && <small role="alert">{errors.get("company")}</small>}
+              </label>
+              <label>
+                <span>{tr({ ja: "職種", en: "Position", fr: "Poste" })}</span>
+                <input value={editing.form.position ?? ""} onChange={(e) => set({ position: e.target.value })} />
+              </label>
+              <label className={errors.has("url") ? "invalid" : undefined}>
+                <span>{tr({ ja: "採用ページのURL", en: "Careers page URL", fr: "Page recrutement (URL)" })}</span>
+                <input type="url" value={editing.form.url ?? ""} onChange={(e) => set({ url: e.target.value })} />
+                {errors.has("url") && <small role="alert">{errors.get("url")}</small>}
+              </label>
+              <label>
+                <span>{tr({ ja: "業界", en: "Industry", fr: "Secteur" })}</span>
+                <select value={editing.form.industry ?? ""} onChange={(e) => set({ industry: (e.target.value || null) as Industry | null })}>
+                  <option value="">—</option>
+                  {INDUSTRIES.map((i) => <option key={i.value} value={i.value}>{i[lang]}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>{tr({ ja: "企業の種類", en: "Company type", fr: "Type d'entreprise" })}</span>
+                <select value={editing.form.companyType ?? ""} onChange={(e) => set({ companyType: (e.target.value || null) as CompanyType | null })}>
+                  <option value="">—</option>
+                  {COMPANY_TYPES.map((t) => <option key={t.value} value={t.value}>{t[lang]}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>{tr({ ja: "状況", en: "Status", fr: "Statut" })}</span>
+                <select value={editing.form.status} onChange={(e) => set({ status: e.target.value as AppStatus })}>
+                  {[...COLUMNS, ...CLOSED].map((c) => <option key={c.status} value={c.status}>{c[lang]}</option>)}
+                </select>
+              </label>
+            </div>
+            <CompanyFacts company={editing.form.company} corporateNumber={editing.form.corporateNumber}
+              onLink={(m) => set({ corporateNumber: m?.corporateNumber ?? null, location: m?.location ?? null })} />
+            <label className={errors.has("notes") ? "invalid" : undefined}>
+              <span>{tr({ ja: "企業メモ・求人票", en: "Notes and job offer", fr: "Notes et offre d'emploi" })}</span>
+              <textarea rows={6} maxLength={5000} value={editing.form.notes ?? ""} onChange={(e) => set({ notes: e.target.value })}
+                placeholder={tr({
+                  ja: "求人票・募集要項をそのまま貼り付けられます。事業・製品、企業理念、説明会で聞いたこと、惹かれた点なども。面接練習の質問に使います。",
+                  en: "You can paste the job offer as it is. Add products, values, what you heard at events, what attracts you… Used to tailor interview practice.",
+                  fr: "Vous pouvez coller l'offre d'emploi telle quelle. Ajoutez produits, valeurs, ce que vous avez appris aux présentations, ce qui vous attire… Utilisé pour l'entraînement aux entretiens.",
+                })} />
+              {errors.has("notes") && <small role="alert">{errors.get("notes")}</small>}
             </label>
-            <label>
-              <span>{tr({ ja: "職種", en: "Position", fr: "Poste" })}</span>
-              <input value={editing.form.position ?? ""} onChange={(e) => set({ position: e.target.value })} />
-            </label>
-            <label className={errors.has("url") ? "invalid" : undefined}>
-              <span>{tr({ ja: "採用ページのURL", en: "Careers page URL", fr: "Page recrutement (URL)" })}</span>
-              <input type="url" value={editing.form.url ?? ""} onChange={(e) => set({ url: e.target.value })} />
-              {errors.has("url") && <small role="alert">{errors.get("url")}</small>}
-            </label>
-            <label>
-              <span>{tr({ ja: "業界", en: "Industry", fr: "Secteur" })}</span>
-              <select value={editing.form.industry ?? ""} onChange={(e) => set({ industry: (e.target.value || null) as Industry | null })}>
-                <option value="">—</option>
-                {INDUSTRIES.map((i) => <option key={i.value} value={i.value}>{i[lang]}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>{tr({ ja: "企業の種類", en: "Company type", fr: "Type d'entreprise" })}</span>
-              <select value={editing.form.companyType ?? ""} onChange={(e) => set({ companyType: (e.target.value || null) as CompanyType | null })}>
-                <option value="">—</option>
-                {COMPANY_TYPES.map((t) => <option key={t.value} value={t.value}>{t[lang]}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>{tr({ ja: "状況", en: "Status", fr: "Statut" })}</span>
-              <select value={editing.form.status} onChange={(e) => set({ status: e.target.value as AppStatus })}>
-                {[...COLUMNS, ...CLOSED].map((c) => <option key={c.status} value={c.status}>{c[lang]}</option>)}
-              </select>
-            </label>
-          </div>
-          <CompanyFacts company={editing.form.company} corporateNumber={editing.form.corporateNumber}
-            onLink={(m) => set({ corporateNumber: m?.corporateNumber ?? null, location: m?.location ?? null })} />
-          <label className={errors.has("notes") ? "invalid" : undefined}>
-            <span>{tr({ ja: "企業メモ・求人票", en: "Notes and job offer", fr: "Notes et offre d'emploi" })}</span>
-            <textarea rows={6} maxLength={5000} value={editing.form.notes ?? ""} onChange={(e) => set({ notes: e.target.value })}
-              placeholder={tr({
-                ja: "求人票・募集要項をそのまま貼り付けられます。事業・製品、企業理念、説明会で聞いたこと、惹かれた点なども。面接練習の質問に使います。",
-                en: "You can paste the job offer as it is. Add products, values, what you heard at events, what attracts you… Used to tailor interview practice.",
-                fr: "Vous pouvez coller l'offre d'emploi telle quelle. Ajoutez produits, valeurs, ce que vous avez appris aux présentations, ce qui vous attire… Utilisé pour l'entraînement aux entretiens.",
-              })} />
-            {errors.has("notes") && <small role="alert">{errors.get("notes")}</small>}
-          </label>
-          <ListEditor title={tr({ ja: "選考ステップ・締切", en: "Steps and deadlines", fr: "Étapes et échéances" })} name="steps" items={editing.form.steps} fields={stepFields}
-            empty={{ id: crypto.randomUUID(), type: "es", done: false } as Step} errors={errors}
-            onChange={(steps) => set({ steps: steps.map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })) })} />
-          <ListEditor title={tr({ ja: "フォローアップ", en: "Follow-ups", fr: "Relances" })} name="followUps" items={editing.form.followUps ?? []} fields={followUpFields}
-            empty={{ id: crypto.randomUUID(), date: ymd(new Date()), note: "", done: false }} errors={errors}
-            onChange={(followUps) => set({ followUps: followUps.map((f) => (f.id ? f : { ...f, id: crypto.randomUUID() })) })} />
-          <ListEditor title={tr({ ja: "やりとりの記録", en: "Contact history", fr: "Historique des échanges" })} name="events" items={editing.form.events ?? []} fields={eventFields}
-            empty={{ id: crypto.randomUUID(), date: ymd(new Date()), kind: "email", note: "" }} errors={errors}
-            onChange={(events) => set({ events: events.map((ev) => (ev.id ? ev : { ...ev, id: crypto.randomUUID() })) })} />
+              {editing.id && (
+                <p className="editor-danger"><button type="button" className="danger" onClick={remove}>{tr({ ja: "この応募を削除", en: "Delete this application", fr: "Supprimer cette candidature" })}</button></p>
+              )}
+            </div>
+          )}
+
+          {(!editing.id || pane === "selection") && (
+            <div className="editor-pane">
+            <ListEditor title={tr({ ja: "選考ステップ・締切", en: "Steps and deadlines", fr: "Étapes et échéances" })} name="steps" items={editing.form.steps} fields={stepFields}
+              empty={{ id: crypto.randomUUID(), type: "es", done: false } as Step} errors={errors}
+              onChange={(steps) => set({ steps: steps.map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() })) })} />
+            <ListEditor title={tr({ ja: "フォローアップ", en: "Follow-ups", fr: "Relances" })} name="followUps" items={editing.form.followUps ?? []} fields={followUpFields}
+              empty={{ id: crypto.randomUUID(), date: ymd(new Date()), note: "", done: false }} errors={errors}
+              onChange={(followUps) => set({ followUps: followUps.map((f) => (f.id ? f : { ...f, id: crypto.randomUUID() })) })} />
+            <ListEditor title={tr({ ja: "やりとりの記録", en: "Contact history", fr: "Historique des échanges" })} name="events" items={editing.form.events ?? []} fields={eventFields}
+              empty={{ id: crypto.randomUUID(), date: ymd(new Date()), kind: "email", note: "" }} errors={errors}
+              onChange={(events) => set({ events: events.map((ev) => (ev.id ? ev : { ...ev, id: crypto.randomUUID() })) })} />
+            </div>
+          )}
         </form>
       )}
     </section>

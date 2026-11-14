@@ -103,131 +103,28 @@ struct ApplicationEditor: View {
     @State private var offerDone: [String] = []
     /// 企業研究 : écrite par le serveur, gardée ici pour la retrouver en rouvrant l'écran.
     @State private var research: CompanyResearch?
+    @State private var pane = Pane.selection
 
     var body: some View {
         Form {
-            Section {
-                TextField(tr("企業名", "Company *", "Entreprise *"), text: $input.company)
-                if let e = error("company") { Text(e).font(.caption).foregroundStyle(.red) }
-                TextField(tr("職種", "Position", "Poste"), text: optional($input.position))
-                TextField(tr("採用ページ", "Careers page URL", "Page recrutement (URL)"), text: optional($input.url))
-                    .keyboardType(.URL).textInputAutocapitalization(.never)
-                if let e = error("url") { Text(e).font(.caption).foregroundStyle(.red) }
-                Picker(tr("状況", "Status", "Statut"), selection: $input.status) {
-                    ForEach(SelectionStage.all) { Text($0.name).tag($0.id) }
-                }
-            }
-            Section {
-                Picker(tr("業界", "Industry", "Secteur"), selection: $input.industry) {
-                    Text("—").tag(String?.none)
-                    ForEach(CompanyProfile.industries) { Text($0.name).tag(Optional($0.id)) }
-                }
-                Picker(tr("企業の種類", "Company type", "Type d'entreprise"), selection: $input.companyType) {
-                    Text("—").tag(String?.none)
-                    ForEach(CompanyProfile.types) { Text($0.name).tag(Optional($0.id)) }
-                }
-                TextField(tr("企業メモ", "Notes on the company", "Notes sur l'entreprise"), text: optional($input.notes), axis: .vertical)
-                    .lineLimit(3...8)
-                if let e = error("notes") { Text(e).font(.caption).foregroundStyle(.red) }
-            } header: {
-                Text(tr("企業について", "About the company", "À propos de l'entreprise"))
-            } footer: {
-                Text(tr("面接練習の質問に使います", "Used to tailor interview practice", "Sert à adapter l'entraînement aux entretiens"))
-            }
-            CompanyFactsSection(api: api, company: input.company, corporateNumber: $input.corporateNumber, location: $input.location)
-            Section(tr("選考ステップ・締切", "Steps and deadlines", "Étapes et échéances")) {
-                ForEach($input.steps) { $step in
-                    VStack(alignment: .leading) {
-                        Picker(tr("選考", "Step", "Étape"), selection: $step.type) {
-                            ForEach(SelectionStage.stepTypes) { Text($0.name).tag($0.id) }
-                        }
-                        DatePicker(tr("締切・日程", "Date", "Date"), selection: date($step.dueDate), displayedComponents: .date)
-                        if step.time == nil {
-                            Button(tr("＋ 時間", "＋ Time", "＋ Heure")) { step.time = "10:00" }
-                        } else {
-                            HStack {
-                                DatePicker(tr("時間", "Time", "Heure"), selection: time($step.time), displayedComponents: .hourAndMinute)
-                                Button { step.time = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(tr("時間を消す", "Remove the time", "Retirer l'heure"))
-                            }
-                        }
-                        Toggle(tr("完了", "Done", "Fait"), isOn: $step.done)
-                        TextField(tr("場所・オンラインのURL", "Place or online link", "Lieu ou lien en ligne"), text: optional($step.place))
-                            .textInputAutocapitalization(.never)
-                        TextField(tr("メモ", "Note", "Note"), text: optional($step.note))
+            if app != nil {
+                // Une candidature enregistrée se lit en trois volets ; une nouvelle se remplit d'une traite.
+                Section {
+                    Picker(tr("応募の内容", "Sections", "Rubriques"), selection: $pane) {
+                        ForEach(Pane.allCases) { Text($0.name).tag($0) }
                     }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
                 }
-                .onDelete { input.steps.remove(atOffsets: $0) }
-                Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.steps.append(.init()) }
             }
-            Section {
-                ForEach(Binding(get: { input.followUps ?? [] }, set: { input.followUps = $0 })) { $f in
-                    VStack(alignment: .leading) {
-                        DatePicker(tr("日付", "Date", "Date"), selection: day($f.date), displayedComponents: .date)
-                        TextField(tr("やること（例：人事にお礼メール）", "To do (e.g. thank-you email to HR)", "À faire (ex. : mail de remerciement)"), text: $f.note)
-                        Toggle(tr("完了", "Done", "Fait"), isOn: $f.done)
-                    }
-                }
-                .onDelete { input.followUps?.remove(atOffsets: $0) }
-                Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.followUps = (input.followUps ?? []) + [FollowUp(date: today)] }
-            } header: {
-                Text(tr("フォローアップ", "Follow-ups", "Relances"))
-            } footer: {
-                Text(tr("締切と同じように通知とカレンダーに出ます", "Reminded like deadlines, and shown in the calendar", "Rappelées comme les échéances, et visibles dans le calendrier"))
-            }
-            Section(tr("やりとりの記録", "Contact history", "Historique des échanges")) {
-                ForEach(Binding(get: { input.events ?? [] }, set: { input.events = $0 })) { $e in
-                    VStack(alignment: .leading) {
-                        HStack {
-                            Picker(tr("種類", "Type", "Type"), selection: $e.kind) {
-                                ForEach(AppEvent.kinds, id: \.id) { Text(tr($0.ja, $0.en, $0.fr)).tag($0.id) }
-                            }
-                            DatePicker("", selection: day($e.date), displayedComponents: .date).labelsHidden()
-                        }
-                        TextField(tr("内容", "What happened", "Ce qui s'est passé"), text: optional($e.note), axis: .vertical)
-                    }
-                }
-                .onDelete { input.events?.remove(atOffsets: $0) }
-                Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.events = (input.events ?? []) + [AppEvent(date: today)] }
-            }
+            if app == nil || pane == .info { infoSections }
+            if app == nil || pane == .selection { selectionSections }
+            if let app, pane == .tools { toolSections(app) }
             if failed { Section { Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).foregroundStyle(.red) } }
-            if let app {
+            if let app, pane == .info {
                 Section {
-                    NavigationLink {
-                        InterviewView(model: InterviewModel(api: api, applicationId: app.id))
-                    } label: {
-                        Label(tr("面接を練習する", "Practise the interview", "S'entraîner pour l'entretien"), systemImage: "mic")
-                    }
-                    NavigationLink {
-                        ResearchView(api: api, application: app, research: $research, onSaved: onSaved)
-                    } label: {
-                        Label(tr("企業研究", "Company research", "Recherche sur l'entreprise"), systemImage: "magnifyingglass")
-                    }
-                    if app.status == "offer" {
-                        NavigationLink {
-                            OfferGuideView(api: api, application: app, done: $offerDone, onSaved: onSaved)
-                        } label: {
-                            Label(tr("内定後の手続き", "After the offer", "Après l'offre"), systemImage: "checklist")
-                        }
-                    }
-                    NavigationLink {
-                        DebriefsView(api: api, application: app, debriefs: $debriefs, onSaved: onSaved)
-                    } label: {
-                        HStack {
-                            Label(tr("面接の振り返り", "Interview debrief", "Bilan d'entretien"), systemImage: "text.bubble")
-                            Spacer()
-                            if !debriefs.isEmpty { Text("\(debriefs.count)").foregroundStyle(.secondary) }
-                        }
-                    }
-                    NavigationLink {
-                        EmailWriterView(api: api, application: app)
-                    } label: {
-                        Label(tr("メールを書く", "Write an email", "Écrire un mail"), systemImage: "envelope")
-                    }
-                }
-                Section {
-                    Button(tr("削除", "Delete", "Supprimer"), role: .destructive) { Task { await onDelete(app); dismiss() } }
+                    Button(tr("この応募を削除", "Delete this application", "Supprimer cette candidature"), role: .destructive) { Task { await onDelete(app); dismiss() } }
                 }
             }
         }
@@ -238,6 +135,168 @@ struct ApplicationEditor: View {
             ToolbarItem(placement: .confirmationAction) { Button(tr("保存", "Save", "Enregistrer")) { Task { await save() } } }
         }
         .onAppear { if let app, input == JobApplicationInput() { input = JobApplicationInput(app); debriefs = app.debriefs ?? []; offerDone = app.offerChecklist ?? []; research = app.research } }
+    }
+
+    /// Les trois volets d'une candidature enregistrée (mêmes noms que sur le site).
+    enum Pane: String, CaseIterable, Identifiable {
+        case selection, tools, info
+        var id: String { rawValue }
+        var name: String {
+            switch self {
+            case .selection: tr("選考", "Selection", "Sélection")
+            case .tools: tr("準備と連絡", "Prepare", "Préparer")
+            case .info: tr("企業情報", "Company", "Entreprise")
+            }
+        }
+    }
+
+    // MARK: 企業情報
+
+    @ViewBuilder private var infoSections: some View {
+        Section {
+            TextField(tr("企業名", "Company *", "Entreprise *"), text: $input.company)
+            if let e = error("company") { Text(e).font(.caption).foregroundStyle(.red) }
+            TextField(tr("職種", "Position", "Poste"), text: optional($input.position))
+            TextField(tr("採用ページ", "Careers page URL", "Page recrutement (URL)"), text: optional($input.url))
+                .keyboardType(.URL).textInputAutocapitalization(.never)
+            if let e = error("url") { Text(e).font(.caption).foregroundStyle(.red) }
+            Picker(tr("状況", "Status", "Statut"), selection: $input.status) {
+                ForEach(SelectionStage.all) { Text($0.name).tag($0.id) }
+            }
+        }
+        Section {
+            Picker(tr("業界", "Industry", "Secteur"), selection: $input.industry) {
+                Text("—").tag(String?.none)
+                ForEach(CompanyProfile.industries) { Text($0.name).tag(Optional($0.id)) }
+            }
+            Picker(tr("企業の種類", "Company type", "Type d'entreprise"), selection: $input.companyType) {
+                Text("—").tag(String?.none)
+                ForEach(CompanyProfile.types) { Text($0.name).tag(Optional($0.id)) }
+            }
+            TextField(tr("企業メモ", "Notes on the company", "Notes sur l'entreprise"), text: optional($input.notes), axis: .vertical)
+                .lineLimit(3...8)
+            if let e = error("notes") { Text(e).font(.caption).foregroundStyle(.red) }
+        } header: {
+            Text(tr("企業について", "About the company", "À propos de l'entreprise"))
+        } footer: {
+            Text(tr("面接練習の質問に使います", "Used to tailor interview practice", "Sert à adapter l'entraînement aux entretiens"))
+        }
+        CompanyFactsSection(api: api, company: input.company, corporateNumber: $input.corporateNumber, location: $input.location)
+    }
+
+    // MARK: 選考
+
+    @ViewBuilder private var selectionSections: some View {
+        Section(tr("選考ステップ・締切", "Steps and deadlines", "Étapes et échéances")) {
+            ForEach($input.steps) { $step in
+                VStack(alignment: .leading) {
+                    Picker(tr("選考", "Step", "Étape"), selection: $step.type) {
+                        ForEach(SelectionStage.stepTypes) { Text($0.name).tag($0.id) }
+                    }
+                    DatePicker(tr("締切・日程", "Date", "Date"), selection: date($step.dueDate), displayedComponents: .date)
+                    if step.time == nil {
+                        Button(tr("＋ 時間", "＋ Time", "＋ Heure")) { step.time = "10:00" }
+                    } else {
+                        HStack {
+                            DatePicker(tr("時間", "Time", "Heure"), selection: time($step.time), displayedComponents: .hourAndMinute)
+                            Button { step.time = nil } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(tr("時間を消す", "Remove the time", "Retirer l'heure"))
+                        }
+                    }
+                    Toggle(tr("完了", "Done", "Fait"), isOn: $step.done)
+                    TextField(tr("場所・オンラインのURL", "Place or online link", "Lieu ou lien en ligne"), text: optional($step.place))
+                        .textInputAutocapitalization(.never)
+                    TextField(tr("メモ", "Note", "Note"), text: optional($step.note))
+                }
+            }
+            .onDelete { input.steps.remove(atOffsets: $0) }
+            Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.steps.append(.init()) }
+        }
+        Section {
+            ForEach(Binding(get: { input.followUps ?? [] }, set: { input.followUps = $0 })) { $f in
+                VStack(alignment: .leading) {
+                    DatePicker(tr("日付", "Date", "Date"), selection: day($f.date), displayedComponents: .date)
+                    TextField(tr("やること（例：人事にお礼メール）", "To do (e.g. thank-you email to HR)", "À faire (ex. : mail de remerciement)"), text: $f.note)
+                    Toggle(tr("完了", "Done", "Fait"), isOn: $f.done)
+                }
+            }
+            .onDelete { input.followUps?.remove(atOffsets: $0) }
+            Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.followUps = (input.followUps ?? []) + [FollowUp(date: today)] }
+        } header: {
+            Text(tr("フォローアップ", "Follow-ups", "Relances"))
+        } footer: {
+            Text(tr("締切と同じように通知とカレンダーに出ます", "Reminded like deadlines, and shown in the calendar", "Rappelées comme les échéances, et visibles dans le calendrier"))
+        }
+        Section(tr("やりとりの記録", "Contact history", "Historique des échanges")) {
+            ForEach(Binding(get: { input.events ?? [] }, set: { input.events = $0 })) { $e in
+                VStack(alignment: .leading) {
+                    HStack {
+                        Picker(tr("種類", "Type", "Type"), selection: $e.kind) {
+                            ForEach(AppEvent.kinds, id: \.id) { Text(tr($0.ja, $0.en, $0.fr)).tag($0.id) }
+                        }
+                        DatePicker("", selection: day($e.date), displayedComponents: .date).labelsHidden()
+                    }
+                    TextField(tr("内容", "What happened", "Ce qui s'est passé"), text: optional($e.note), axis: .vertical)
+                }
+            }
+            .onDelete { input.events?.remove(atOffsets: $0) }
+            Button(tr("＋ 追加", "Add", "＋ Ajouter")) { input.events = (input.events ?? []) + [AppEvent(date: today)] }
+        }
+    }
+
+    // MARK: 準備と連絡 — les outils, dans l'ordre où l'on en a besoin pendant la sélection
+
+    @ViewBuilder private func toolSections(_ app: JobApplication) -> some View {
+        Section(tr("知る", "Learn", "Connaître")) {
+            NavigationLink {
+                ResearchView(api: api, application: app, research: $research, onSaved: onSaved)
+            } label: {
+                tool(tr("企業研究", "Company research", "Recherche sur l'entreprise"), tr("会社のまとめ、志望動機の切り口、逆質問", "Summary, angles for your motivation, questions to ask", "Résumé, pistes pour le 志望動機, questions à poser"), "magnifyingglass")
+            }
+        }
+        Section(tr("準備する", "Prepare", "Préparer")) {
+            NavigationLink {
+                InterviewView(model: InterviewModel(api: api, applicationId: app.id))
+            } label: {
+                tool(tr("面接を練習する", "Practise the interview", "S'entraîner pour l'entretien"), tr("この企業に合わせた模擬面接", "A mock interview tailored to this company", "Un entretien simulé adapté à cette entreprise"), "mic")
+            }
+        }
+        Section(tr("連絡する", "Contact", "Contacter")) {
+            NavigationLink {
+                EmailWriterView(api: api, application: app)
+            } label: {
+                tool(tr("メールを書く", "Write an email", "Écrire un mail"), tr("お礼、日程調整、辞退、内定承諾", "Thank-you, scheduling, withdrawal, accepting an offer", "Remerciement, date, retrait, acceptation d'une offre"), "envelope")
+            }
+        }
+        Section(tr("振り返る", "Look back", "Faire le point")) {
+            NavigationLink {
+                DebriefsView(api: api, application: app, debriefs: $debriefs, onSaved: onSaved)
+            } label: {
+                tool(tr("面接の振り返り", "Interview debrief", "Bilan d'entretien"), tr("聞かれた質問をメモして、次の選考に備える", "Note the questions asked and prepare the next round", "Noter les questions posées et préparer le tour suivant"), "text.bubble", count: debriefs.count)
+            }
+            if app.status == "offer" {
+                NavigationLink {
+                    OfferGuideView(api: api, application: app, done: $offerDone, onSaved: onSaved)
+                } label: {
+                    tool(tr("内定後の手続き", "After the offer", "Après l'offre"), tr("在留資格の変更から入社まで", "From the change of status to your first day", "Du changement de statut au premier jour"), "checklist", count: offerDone.count)
+                }
+            }
+        }
+    }
+
+    /// Une ligne d'outil : icône, nom, et une phrase qui dit à quoi il sert.
+    private func tool(_ title: String, _ hint: String, _ icon: String, count: Int = 0) -> some View {
+        Label {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.headline).foregroundStyle(Color.cwBlue800)
+                    Text(hint).font(.footnote).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if count > 0 { Text("\(count)").font(.footnote).foregroundStyle(.secondary) }
+            }
+        } icon: { Image(systemName: icon) }
     }
 
     private func save() async {
@@ -253,6 +312,8 @@ struct ApplicationEditor: View {
             dismiss()
         } catch APIError.invalid(let found) {
             issues = found
+            // Le champ en erreur est peut-être dans un autre volet : on l'ouvre.
+            if let first = found.first { pane = ["steps", "followUps", "events"].contains { first.path.hasPrefix($0) } ? .selection : .info }
         } catch {
             failed = true
         }
