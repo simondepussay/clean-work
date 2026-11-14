@@ -179,6 +179,31 @@ extension APIClient {
         return try JSONDecoder().decode(JobApplication.self, from: try await sendRaw("PUT", "api/applications/\(applicationId)", body: body))
     }
 
+    func researchUsage() async throws -> Usage {
+        try JSONDecoder().decode(Usage.self, from: try await sendRaw("GET", "api/research-usage"))
+    }
+
+    /// Fiche de recherche d'entreprise ; elle revient rangée dans la candidature.
+    func researchCompany(applicationId: String, language: HelpLanguage) async -> Result<(application: JobApplication, remaining: Usage?), EmailRefusal> {
+        struct Reply: Decodable { let application: JobApplication; let remaining: Usage? }
+        struct Refusal: Decodable { let error: String?; let reason: String?; let retryAfter: String? }
+        do {
+            let body = try JSONEncoder().encode(["language": language.rawValue])
+            let (data, status) = try await sendUnchecked("POST", "api/applications/\(applicationId)/research", body: body)
+            if (200..<300).contains(status), let reply = try? JSONDecoder().decode(Reply.self, from: data) { return .success((reply.application, reply.remaining)) }
+            let refusal = try? JSONDecoder().decode(Refusal.self, from: data)
+            switch refusal?.error {
+            case "limit":
+                let date = refusal?.retryAfter.flatMap { ISO8601DateFormatter.withFractions.date(from: $0) }
+                return .failure(.limit(reason: refusal?.reason ?? "day", retryAfter: date))
+            case "ai_not_configured": return .failure(.notConfigured)
+            default: return .failure(.failed)
+            }
+        } catch {
+            return .failure(.failed)
+        }
+    }
+
     /// Enregistre les étapes cochées du parcours après l'offre, sans toucher au reste de la fiche.
     func saveOfferChecklist(applicationId: String, _ done: [String]) async throws -> JobApplication {
         let body = try JSONEncoder().encode(["offerChecklist": done])

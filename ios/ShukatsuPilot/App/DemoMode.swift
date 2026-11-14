@@ -53,7 +53,18 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/interviews"): body = [] as [Any]
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
         case ("GET", "/api/email-usage"): body = ["today": 10, "month": 38]
-        case ("GET", "/api/debrief-usage"): body = ["today": 5, "month": 30]
+        case ("GET", "/api/debrief-usage"), ("GET", "/api/research-usage"): body = ["today": 5, "month": 30]
+        case ("POST", _) where path.hasSuffix("/research"):
+            status = 200
+            var app = Self.demoApplication(path)
+            app["research"] = [
+                "language": "ja", "usedOfficialData": true, "createdAt": "2026-11-15T10:00:00.000Z",
+                "summary": "公開データによると、1946年設立、従業員およそ1,800人のグループ本社です。エレクトロニクス、ゲーム、音楽などの事業をまとめる役割を持っています。",
+                "angles": ["事業の幅が広い：自分の経験のうち、どの事業にいちばん近いものがありますか。", "平均勤続年数が18.2年：長く働きたい理由を、自分のキャリアの計画とどう結びつけますか。"],
+                "questions": ["入社後の配属は、どのように決まりますか。", "若手のうちから任される仕事には、どのようなものがありますか。", "入社までに学んでおくとよいことはありますか。"],
+                "missing": ["応募する職種の具体的な仕事内容（採用ページ・募集要項）", "最近のニュースと今後の事業の方向（IR資料）"],
+            ] as [String: Any]
+            body = ["application": app, "remaining": ["today": 4, "month": 29]] as [String: Any]
         case ("PUT", _) where path.hasPrefix("/api/applications/"):
             // La candidature d'exemple, avec ce qui vient d'être envoyé (statut, bilans d'entretien…).
             let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]

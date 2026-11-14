@@ -145,6 +145,7 @@ const routes: Record<string, unknown> = {
   "POST /api/interviews": interview,
   "GET /api/email-usage": { today: 10, month: 38 },
   "GET /api/debrief-usage": { today: 5, month: 30 },
+  "GET /api/research-usage": { today: 5, month: 30 },
   // Mail rédigé par l'IA (« * » = préfixe ; les conseils après entretien sont traités plus bas).
   "POST /api/applications/*": {
     subject: "一次面接のお礼（HAL東京 シモン）",
@@ -205,6 +206,17 @@ export function installDemoApi() {
     }
     const demoApp = (applications as Record<string, unknown>[]).find((a) => new RegExp(`/api/applications/${a.id}(/|$)`).test(url));
     if (demoApp && method === "PUT") Object.assign(demoApp, sent);
+    if (demoApp && method === "POST" && url.endsWith("/research")) {
+      demoApp.research = {
+        language: sent.language ?? "ja", usedOfficialData: true, createdAt: new Date().toISOString(),
+        summary: "公開データによると、1946年設立、従業員およそ1,800人のグループ本社です。エレクトロニクス、ゲーム、音楽、映画、金融などの事業をまとめる役割を持っています。「プラチナくるみん」「えるぼし」の認定があり、男性の育休取得率は82%です。",
+        angles: ["事業の幅が広い（エレクトロニクスからエンタメまで）：自分の経験のうち、どの事業にいちばん近いものがありますか。", "平均勤続年数が18.2年：長く働きたい理由を、自分のキャリアの計画とどう結びつけますか。", "子育て支援の認定（プラチナくるみん）：働き方について大切にしていることは何ですか。"],
+        questions: ["入社後の配属は、どのように決まりますか。", "若手のうちから任される仕事には、どのようなものがありますか。", "男性の育休取得率が高い背景には、どのような取り組みがありますか。", "活躍している外国籍の社員の方に、共通する点はありますか。", "入社までに学んでおくとよいことはありますか。"],
+        missing: ["応募する職種の具体的な仕事内容（採用ページ・募集要項）", "最近のニュースと今後の事業の方向（IR資料・プレスリリース）", "同じ業界の他社との違い（説明会・OB・OG訪問）"],
+      };
+      await new Promise((r) => setTimeout(r, 500));
+      return new Response(JSON.stringify({ application: demoApp, remaining: { today: 4, month: 29 } }), { status: 200, headers: { "content-type": "application/json" } });
+    }
     if (demoApp && method === "POST" && url.endsWith("/advice")) {
       const debriefId = url.split("/").at(-2);
       demoApp.debriefs = ((demoApp.debriefs ?? []) as { id: string }[]).map((d) => (d.id !== debriefId ? d : { ...d, advice: {

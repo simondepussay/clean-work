@@ -101,6 +101,8 @@ struct ApplicationEditor: View {
     @State private var debriefs: [Debrief] = []
     /// 内定後の手続き : étapes cochées, enregistrées à part elles aussi.
     @State private var offerDone: [String] = []
+    /// 企業研究 : écrite par le serveur, gardée ici pour la retrouver en rouvrant l'écran.
+    @State private var research: CompanyResearch?
 
     var body: some View {
         Form {
@@ -197,6 +199,11 @@ struct ApplicationEditor: View {
                     } label: {
                         Label(tr("面接を練習する", "Practise the interview", "S'entraîner pour l'entretien"), systemImage: "mic")
                     }
+                    NavigationLink {
+                        ResearchView(api: api, application: app, research: $research, onSaved: onSaved)
+                    } label: {
+                        Label(tr("企業研究", "Company research", "Recherche sur l'entreprise"), systemImage: "magnifyingglass")
+                    }
                     if app.status == "offer" {
                         NavigationLink {
                             OfferGuideView(api: api, application: app, done: $offerDone, onSaved: onSaved)
@@ -230,7 +237,7 @@ struct ApplicationEditor: View {
             ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
             ToolbarItem(placement: .confirmationAction) { Button(tr("保存", "Save", "Enregistrer")) { Task { await save() } } }
         }
-        .onAppear { if let app, input == JobApplicationInput() { input = JobApplicationInput(app); debriefs = app.debriefs ?? []; offerDone = app.offerChecklist ?? [] } }
+        .onAppear { if let app, input == JobApplicationInput() { input = JobApplicationInput(app); debriefs = app.debriefs ?? []; offerDone = app.offerChecklist ?? []; research = app.research } }
     }
 
     private func save() async {
@@ -649,6 +656,98 @@ private struct OfferGuideView: View {
             // La case revient à son état : ce qui est affiché est ce qui est enregistré.
             done = before
             saveFailed = true
+        }
+    }
+}
+
+/// 企業研究 : la fiche de recherche d'une entreprise, préparée par l'IA à partir de la fiche officielle
+/// (gBizINFO, si la candidature y est reliée) et des notes enregistrées — rien d'autre.
+private struct ResearchView: View {
+    let api: APIClient
+    let application: JobApplication
+    @Binding var research: CompanyResearch?
+    let onSaved: (JobApplication) -> Void
+    @State private var usage: Usage?
+    @State private var busy = false
+    @State private var message: String?
+    @State private var done = 0
+
+    private var sources: String? {
+        let list = [
+            application.corporateNumber != nil ? tr("公式データ（gBizINFO）", "official data (gBizINFO)", "données officielles (gBizINFO)") : nil,
+            !(application.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? tr("企業メモ", "your notes", "vos notes") : nil,
+        ].compactMap { $0 }
+        return list.isEmpty ? nil : list.joined(separator: tr("と", " and ", " et "))
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                Button {
+                    Task { await run() }
+                } label: {
+                    Label(busy ? tr("作成中…", "Working…", "En cours…") : research == nil ? tr("AIでまとめる", "Summarise with AI", "Préparer avec l'IA") : tr("作り直す", "Rebuild", "Refaire"), systemImage: "sparkles")
+                }
+                .disabled(busy || usage?.today == 0)
+                if let message { Text(message).font(.footnote).foregroundStyle(.red) }
+            } header: {
+                Text(sources.map { tr("\($0)だけをもとに作ります。", "Built only from \($0).", "Préparée uniquement à partir de : \($0).") }
+                     ?? tr("まだ情報がありません。「公式データで企業を探す」で企業を選ぶか、求人票を企業メモに貼って保存すると、内容が具体的になります。",
+                           "No information yet. Link the company to official data, or paste the job offer into the notes and save, to get something specific.",
+                           "Aucune information pour l'instant. Reliez l'entreprise aux données officielles ou collez l'offre dans les notes, puis enregistrez."))
+                    .textCase(nil)
+            } footer: {
+                if let usage { Text(tr("残り：今日 \(usage.today) · 今月 \(usage.month)", "Left: \(usage.today) today · \(usage.month) this month", "Reste : \(usage.today) aujourd'hui · \(usage.month) ce mois-ci")) }
+            }
+            if let research {
+                Section { Text(research.summary) }
+                if !research.angles.isEmpty {
+                    Section(tr("志望動機の切り口", "Angles for your motivation", "Pistes pour le 志望動機")) {
+                        ForEach(research.angles, id: \.self) { Text($0).font(.subheadline) }
+                    }
+                }
+                if !research.questions.isEmpty {
+                    Section(tr("逆質問", "Questions to ask (逆質問)", "Questions à poser (逆質問)")) {
+                        ForEach(Array(research.questions.enumerated()), id: \.offset) { i, q in Text("\(i + 1). \(q)").font(.subheadline) }
+                        Button {
+                            UIPasteboard.general.string = research.questions.joined(separator: "\n")
+                            done += 1
+                        } label: { Label(tr("逆質問をコピー", "Copy the questions", "Copier les questions"), systemImage: "doc.on.doc") }
+                    }
+                }
+                if !research.missing.isEmpty {
+                    Section {
+                        ForEach(research.missing, id: \.self) { Text($0).font(.subheadline) }
+                    } header: {
+                        Text(tr("自分で調べること", "To look up yourself", "À chercher vous-même"))
+                    } footer: {
+                        Text(tr("AIは保存されたデータだけを読んでいます。最新の情報は、企業の公式サイトで必ず確かめてください。",
+                                "The AI only read the saved data. Always check the company's official site for current information.",
+                                "L'IA n'a lu que les données enregistrées. Vérifiez toujours les informations récentes sur le site officiel de l'entreprise."))
+                    }
+                }
+            }
+        }
+        .navigationTitle(tr("企業研究", "Company research", "Recherche sur l'entreprise"))
+        .navigationBarTitleDisplayMode(.inline)
+        .cleanList()
+        .textSelection(.enabled)
+        .sensoryFeedback(.success, trigger: done)
+        .task { usage = try? await api.researchUsage() }
+    }
+
+    private func run() async {
+        busy = true
+        message = nil
+        defer { busy = false }
+        switch await api.researchCompany(applicationId: application.id, language: HelpLanguage.saved) {
+        case .success(let reply):
+            research = reply.application.research
+            onSaved(reply.application)
+            if let remaining = reply.remaining { usage = remaining }
+            done += 1
+        case .failure(let refusal):
+            message = refusal.message
         }
     }
 }

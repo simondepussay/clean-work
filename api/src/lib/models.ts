@@ -170,6 +170,25 @@ export const debriefSchema = z.object({
   advice: debriefAdviceSchema.optional(),
 });
 
+/**
+ * 企業研究 : la fiche de recherche préparée par l'IA à partir de ce que l'app sait déjà de l'entreprise
+ * (fiche officielle gBizINFO, notes et offre collées par l'étudiant). Rien d'autre : pas de recherche web.
+ */
+export const researchSchema = z.object({
+  language: z.enum(["ja", "en", "fr"]),
+  /** L'entreprise en langage simple. */
+  summary: z.string().max(1500),
+  /** Pistes pour le « pourquoi cette entreprise » du 志望動機, à relier à sa propre expérience. */
+  angles: z.array(z.string().max(500)).max(6),
+  /** 逆質問 à poser en entretien (en japonais). */
+  questions: z.array(z.string().max(300)).max(6),
+  /** Ce qu'il reste à chercher soi-même (l'IA ne l'a pas trouvé dans les données). */
+  missing: z.array(z.string().max(300)).max(6),
+  /** Vrai si la fiche officielle (gBizINFO) faisait partie des sources. */
+  usedOfficialData: z.boolean().default(false),
+  createdAt: z.string(),
+});
+
 /** 業界 : IT・通信, メーカー, 商社, 金融, コンサル, 小売・流通, サービス・人材, 広告・マスコミ, インフラ・交通, 官公庁・団体, その他. */
 export const industries = ["it", "maker", "trading", "finance", "consulting", "retail", "service", "media", "infrastructure", "public", "other"] as const;
 /** Type d'entreprise : 大手, 中小企業, ベンチャー, 外資系. */
@@ -199,12 +218,14 @@ export const applicationInputSchema = z.object({
   debriefs: z.array(debriefSchema).max(20).default([]),
   /** 内定後の手続き : étapes cochées du parcours après l'offre (identifiants de web/public/naitei-guide.json). */
   offerChecklist: z.array(z.string().min(1).max(40)).max(30).default([]),
+  research: researchSchema.optional(),
 });
 
 export type Step = z.infer<typeof stepSchema>;
 export type AppEvent = z.infer<typeof eventSchema>;
 export type FollowUp = z.infer<typeof followUpSchema>;
 export type Debrief = z.infer<typeof debriefSchema>;
+export type CompanyResearch = z.infer<typeof researchSchema>;
 export type DebriefAdvice = z.infer<typeof debriefAdviceSchema>;
 export type ApplicationInput = z.infer<typeof applicationInputSchema>;
 export type Application = ApplicationInput & {

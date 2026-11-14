@@ -23,6 +23,8 @@ struct JobApplication: Codable, Equatable, Identifiable {
     var debriefs: [Debrief]?
     /// 内定後の手続き : étapes cochées (identifiants de naitei-guide.json).
     var offerChecklist: [String]?
+    /// 企業研究 : fiche préparée par l'IA (écrite par le serveur).
+    var research: CompanyResearch?
 
     struct Step: Codable, Equatable, Identifiable {
         var id = UUID().uuidString
@@ -53,6 +55,17 @@ struct AppEvent: Codable, Equatable, Identifiable {
         ("ob", "OB・OG訪問", "Alumni visit", "Rencontre avec un ancien"), ("meeting", "面談", "Meeting", "Rendez-vous"), ("other", "その他", "Other", "Autre"),
     ]
     static func kindName(_ id: String) -> String { kinds.first { $0.id == id }.map { tr($0.ja, $0.en, $0.fr) } ?? id }
+}
+
+/// 企業研究 : ce que l'IA a tiré de la fiche officielle et des notes, sans rien ajouter de sa mémoire.
+struct CompanyResearch: Codable, Equatable {
+    let language: String
+    let summary: String
+    let angles: [String]
+    let questions: [String]
+    let missing: [String]
+    let usedOfficialData: Bool
+    let createdAt: String
 }
 
 /// 面接の振り返り : notes prises après un vrai entretien, et les conseils que l'IA en a tirés.

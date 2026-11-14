@@ -1067,3 +1067,12 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
 
 /* Bienvenue : le titre du formulaire ferait doublon avec celui de la carte au-dessus. */
 .welcome-profile .profile > h2 { display: none; }
+
+/* ------------------------------------------------------------------ 企業研究 (fiche d'une candidature) */
+.research-panel { margin: 4px 0 20px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--blue-50); display: grid; gap: 12px; }
+.research-panel p { margin: 0; }
+.research-result { display: grid; gap: 8px; padding: 14px 16px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); }
+.research-result h4 { margin: 8px 0 0; font-size: 14px; color: var(--blue-800); }
+.research-result ul, .research-result ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.research-result > button { justify-self: start; }
+.research-note { font-size: 13px; margin-top: 6px !important; }

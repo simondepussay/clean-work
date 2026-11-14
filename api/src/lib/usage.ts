@@ -35,6 +35,10 @@ export const EMAIL_LIMITS = { ...LIMITS, perDay: 10, perMonth: 40 };
 export const DEBRIEFS: Counter = { monthField: "debriefs", dayPrefix: "dday_" };
 export const DEBRIEF_LIMITS = { ...LIMITS, perDay: 5, perMonth: 30 };
 
+/** Fiche de recherche d'entreprise (企業研究) préparée par l'IA. */
+export const RESEARCH: Counter = { monthField: "research", dayPrefix: "rday_" };
+export const RESEARCH_LIMITS = { ...LIMITS, perDay: 5, perMonth: 30 };
+
 export type Refusal = { reason: "day" | "month" | "budget"; retryAfter: string };
 export type Reservation = { release(): Promise<void> };
 

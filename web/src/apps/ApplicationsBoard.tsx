@@ -15,6 +15,7 @@ import { ChatIcon, CheckIcon, ClockIcon, FlagIcon, MailIcon, MicIcon, PenIcon, P
 import { EmailPanel } from "./EmailPanel";
 import { DebriefPanel } from "./DebriefPanel";
 import { OfferGuidePanel } from "./OfferGuidePanel";
+import { ResearchPanel } from "./ResearchPanel";
 import { ymd } from "../home/agenda";
 import type { SavedJob } from "./savedJob";
 import { SaveFromBrowser } from "./SaveFromBrowser";
@@ -77,9 +78,11 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   const [mailing, setMailing] = useState(false);
   /** 面接の振り返り de la candidature ouverte. */
   const [debriefing, setDebriefing] = useState(false);
+  /** 企業研究 de la candidature ouverte. */
+  const [researching, setResearching] = useState(false);
   /** 内定後の手続き (statut « 内定 » seulement). */
   const [afterOffer, setAfterOffer] = useState(false);
-  useEffect(() => { setMailing(false); setDebriefing(false); setAfterOffer(false); }, [editing?.id]);
+  useEffect(() => { setMailing(false); setDebriefing(false); setAfterOffer(false); setResearching(false); }, [editing?.id]);
 
   async function token() {
     const t = await auth.getToken();
@@ -296,6 +299,11 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
               <button type="button" onClick={() => onPractice({ id: editing.id! })}><MicIcon size={16} /> {tr({ ja: "面接を練習する", en: "Practise the interview", fr: "S'entraîner à l'entretien" })}</button>
             )}
             {editing.id && (
+              <button type="button" aria-expanded={researching} onClick={() => setResearching((r) => !r)}>
+                <SearchIcon size={16} /> {tr({ ja: "企業研究", en: "Company research", fr: "Recherche sur l'entreprise" })}
+              </button>
+            )}
+            {editing.id && (
               <button type="button" aria-expanded={mailing} onClick={() => setMailing((m) => !m)}><MailIcon size={16} /> {tr({ ja: "メールを書く", en: "Write an email", fr: "Écrire un mail" })}</button>
             )}
             {editing.id && (
@@ -312,6 +320,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
             {editing.id && <button type="button" className="danger" onClick={remove}>{tr({ ja: "削除", en: "Delete", fr: "Supprimer" })}</button>}
           </div>
           {editing.id && mailing && <EmailPanel applicationId={editing.id} steps={editing.form.steps} />}
+          {saved && researching && <ResearchPanel application={saved} onChange={replace} />}
           {saved && afterOffer && <OfferGuidePanel application={saved} onChange={replace} />}
           {saved && debriefing && <DebriefPanel application={saved} onChange={replace} onPractice={onPractice && (() => onPractice({ id: saved.id }))} />}
           {!editing.id && fromBrowser !== null && (

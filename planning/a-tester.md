@@ -18,6 +18,9 @@ Si le ton ou le contenu ne va pas, le dire à Claude, qui ajustera les consignes
 - [ ] 応募 → une candidature → « 面接の振り返り » → « 振り返りを書く » : noter 2 ou 3 questions d'un vrai entretien et ce qui a coincé, puis « AIのアドバイス ». Les conseils sont-ils concrets (pas des généralités) ? Les questions à préparer ont-elles un rapport avec les tiennes ?
 - [ ] Ensuite « この内容で面接を練習する » : l'entretien simulé revient-il sur les questions du vrai entretien ?
 - [ ] Mettre une candidature au statut 内定, enregistrer, la rouvrir → « 内定後の手続き » : lire les huit étapes, cocher une case, fermer et rouvrir (la case reste cochée). Les liens ouvrent-ils les pages de l'immigration ?
+- [ ] 応募 → une candidature reliée aux données officielles (« 公式データで企業を探す »), avec une vraie offre collée dans 企業メモ, enregistrée → « 企業研究 » → « AIでまとめる ». Le résumé ne dit-il que ce qui est dans ces données (rien d'inventé sur l'entreprise) ? Les 逆質問 sont-elles posables telles quelles ? « 自分で調べること » est-il utile ?
+- [ ] Même chose avec une candidature sans données ni notes : l'IA dit-elle honnêtement qu'elle n'a rien, au lieu d'inventer ?
+- [ ] Créer un compte de test : l'écran de bienvenue (ことば → プロフィール → はじめる) apparaît-il juste après la connexion ? « あとで登録する » laisse-t-il passer, sans revenir à la visite suivante ? L'import de CV depuis cet écran remplit-il le profil ?
 - [ ] Faire relire le contenu de « 内定後の手続き » par le bureau des étudiants étrangers de HAL (je ne suis pas juriste).
 - [ ] iPhone, après ta prochaine archive : les trois mêmes écrans, en bas de la fiche d'une candidature. Toucher une notification ouvre-t-il le bon onglet ? Le mode sombre de l'iPhone reste-t-il lisible ?
 - [ ] iPhone : 書類 → ES : le guide d'écriture s'affiche-t-il de nouveau (il était cassé depuis le déménagement de l'API) ? Les liens « プライバシーポリシー » et « 利用規約 » ouvrent-ils les bonnes pages ?
