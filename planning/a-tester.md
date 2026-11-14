@@ -4,7 +4,23 @@ Ce que Simon doit essayer lui-même quand il a du temps. Les tests automatiques 
 ici, il s'agit de vérifier l'expérience réelle (affichage, formulations, notifications sur un vrai iPhone).
 Cocher `[x]` quand c'est fait, et noter ce qui ne va pas sous la ligne.
 
-Site : https://blue-rock-008b52800.2.azurestaticapps.net
+Site : https://cleanwork.simondepussay.com
+
+## Fonctions IA de novembre : mails, bilan d'entretien, parcours 内定 (12–14 novembre) — à faire en premier
+
+Je n'ai vu que des réponses d'exemple : seul un vrai compte montre ce que l'IA écrit vraiment.
+Si le ton ou le contenu ne va pas, le dire à Claude, qui ajustera les consignes.
+
+- [ ] 応募 → ouvrir une candidature → « メールを書く » → 面接のお礼, choisir l'entretien, écrire une ligne sur ce qui t'a marqué, puis « AIで作成 ». Le keigo est-il naturel ? Rien d'inventé (nom du recruteur en « 〇〇 ») ? Ton nom et HAL東京 dans la signature ?
+- [ ] Même écran, un autre type (日程調整 avec deux dates, ou 選考辞退) : le mail suit-il ce que tu as écrit ?
+- [ ] « 覚えておきたい表現 » : les explications sont-elles dans la langue du globe, et utiles ?
+- [ ] « コピー » puis coller dans un vrai mail ; « メールアプリで開く » ouvre-t-il ta messagerie avec l'objet et le texte ?
+- [ ] 応募 → une candidature → « 面接の振り返り » → « 振り返りを書く » : noter 2 ou 3 questions d'un vrai entretien et ce qui a coincé, puis « AIのアドバイス ». Les conseils sont-ils concrets (pas des généralités) ? Les questions à préparer ont-elles un rapport avec les tiennes ?
+- [ ] Ensuite « この内容で面接を練習する » : l'entretien simulé revient-il sur les questions du vrai entretien ?
+- [ ] Mettre une candidature au statut 内定, enregistrer, la rouvrir → « 内定後の手続き » : lire les huit étapes, cocher une case, fermer et rouvrir (la case reste cochée). Les liens ouvrent-ils les pages de l'immigration ?
+- [ ] Faire relire le contenu de « 内定後の手続き » par le bureau des étudiants étrangers de HAL (je ne suis pas juriste).
+- [ ] iPhone, après ta prochaine archive : les trois mêmes écrans, en bas de la fiche d'une candidature. Toucher une notification ouvre-t-il le bon onglet ? Le mode sombre de l'iPhone reste-t-il lisible ?
+- [ ] iPhone : 書類 → ES : le guide d'écriture s'affiche-t-il de nouveau (il était cassé depuis le déménagement de l'API) ? Les liens « プライバシーポリシー » et « 利用規約 » ouvrent-ils les bonnes pages ?
 
 ## Import de CV, vitesse, rapport (24 octobre)
 
