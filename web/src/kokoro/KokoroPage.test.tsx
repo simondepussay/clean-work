@@ -134,7 +134,7 @@ describe("KokoroPage (こころ)", () => {
     expect(document.documentElement.dataset.mood).toBeUndefined();
   });
 
-  it("日記 : écrit la page du jour, relit les précédentes", async () => {
+  it("日記 : écrit la page du jour ; les pages précédentes se lisent dans le livre, pas dans la page", async () => {
     const fetchMock = server(kokoro());
     const base = fetchMock.getMockImplementation()!;
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
@@ -146,9 +146,10 @@ describe("KokoroPage (こころ)", () => {
     });
     renderPage();
     const journal = await screen.findByRole("region", { name: "日記" });
-    const past = await within(journal).findByRole("button", { name: /面接で緊張した/ });
-    await userEvent.click(past);
-    expect(past).toHaveAttribute("aria-expanded", "true");
+    // Une seule façon de relire : le livre. Le bouton dit combien de pages il contient.
+    const read = await within(journal).findByRole("button", { name: /日記を読む/ });
+    expect(read).toHaveTextContent("1");
+    expect(within(journal).queryByText(/面接で緊張した/)).not.toBeInTheDocument();
     // Un retour à la ligne final (que le serveur retire) ne doit pas empêcher la confirmation.
     await userEvent.type(within(journal).getByLabelText("今日の日記"), "少し落ち着いた{enter}");
     await userEvent.click(within(journal).getByRole("button", { name: "保存" }));
@@ -220,6 +221,27 @@ describe("KokoroPage : liens avec le reste de l'app", () => {
     expect(within(box).getByText("深呼吸を3回。")).toBeInTheDocument();
     await userEvent.click(within(box).getByRole("button", { name: /面接の練習へ/ }));
     expect(onOpen).toHaveBeenCalledWith({ tab: "interview", applicationId: "a1", company: "ソニー" });
+  });
+
+  it("chaque chose une seule fois : avec la lettre, plus de carte « fait hier » ni de réconfort en double, et un seul endroit où respirer", async () => {
+    const t3 = (ja: string) => ({ ja, en: ja, fr: ja });
+    const cheers = [
+      { id: "care", kind: "care" as const, title: t3("つらい結果でしたね"), body: t3("少し休みましょう。") },
+      { id: "done", kind: "done" as const, title: t3("昨日もよくがんばりました"), body: t3("ESを1本。") },
+      { id: "n1", kind: "nudge" as const, title: t3("面接の練習をしてみませんか"), body: t3("あと3日。"), action: { tab: "interview" as const } },
+      { id: "n2", kind: "nudge" as const, title: t3("ESを書きませんか"), body: t3("締切が近いです。"), action: { tab: "documents" as const } },
+    ];
+    server(kokoro({ cheers, support: { level: "often", rainy7: 3, rainy14: 3 }, week: { applications: 2, drafts: 3, interviews: 1, rejections: 0 } }));
+    renderPage();
+    const box = await screen.findByRole("region", { name: "今日のあなたへ" });
+    // La lettre a déjà dit ce qui a été fait et réconforté : il reste une seule suggestion.
+    expect(within(box).queryByText("昨日もよくがんばりました")).not.toBeInTheDocument();
+    expect(within(box).queryByText("つらい結果でしたね")).not.toBeInTheDocument();
+    expect(within(box).getByText("面接の練習をしてみませんか")).toBeInTheDocument();
+    expect(within(box).queryByText("ESを書きませんか")).not.toBeInTheDocument();
+    // Respirer : seulement dans le rituel (« はじめる »), plus dans la lettre.
+    expect(screen.queryByRole("button", { name: "一緒に1分、深呼吸" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "はじめる" })).toBeInTheDocument();
   });
 
   it("お守りの言葉 : ajoute une suggestion, choisit le moment, enregistre", async () => {

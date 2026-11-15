@@ -143,8 +143,6 @@ struct KokoroView: View {
     @State private var ritual = false
     @State private var journalText = ""
     @State private var journalState: JournalState = .idle
-    @State private var shownPages = 5
-    @State private var openPages: Set<String> = []
     @State private var confirmErase = false
     @State private var reading = false
 
@@ -211,7 +209,7 @@ struct KokoroView: View {
 
     enum JournalState { case idle, saving, saved, failed }
 
-    /// 日記 : la page du jour (lignée), puis les pages précédentes, deux lignes chacune ; un tap déplie.
+    /// 日記 : la page du jour (lignée). Les pages précédentes se lisent dans le livre (« 日記を読む ») : une seule façon de les voir.
     private var journalCard: some View {
         let saved = model.journal.first { $0.date == model.today }?.text ?? ""
         let dirty = journalText.trimmingCharacters(in: .whitespacesAndNewlines) != saved
@@ -222,7 +220,7 @@ struct KokoroView: View {
                 Spacer()
                 if !model.journal.isEmpty {
                     Button { reading = true } label: {
-                        Label(tr("日記を読む", "Read as a book", "Feuilleter"), systemImage: "book")
+                        Label(tr("日記を読む", "Read as a book", "Feuilleter") + (past.isEmpty ? "" : " · \(past.count)"), systemImage: "book")
                             .font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue700)
                     }
                     .buttonStyle(.plain)
@@ -256,27 +254,6 @@ struct KokoroView: View {
                 .disabled(!dirty || journalState == .saving)
                 if journalState == .saved && !dirty { Text(tr("保存しました", "Saved", "Enregistré")).font(.caption).foregroundStyle(Color.cwMuted) }
                 if journalState == .failed { Text(tr("保存できませんでした", "Could not save", "Enregistrement impossible")).font(.caption).foregroundStyle(Color.cwBordeaux) }
-            }
-            if !past.isEmpty {
-                Divider().padding(.vertical, 4)
-                ForEach(past.prefix(shownPages)) { page in
-                    let open = openPages.contains(page.date)
-                    Button {
-                        if open { openPages.remove(page.date) } else { openPages.insert(page.date) }
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(Self.shortDate(page.date)).font(.caption.bold()).foregroundStyle(Color.cwBlue800)
-                            Text(page.text).font(.subheadline).foregroundStyle(Color.cwBlue950)
-                                .lineLimit(open ? nil : 2).multilineTextAlignment(.leading)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(open ? tr("たたむ", "Collapse", "Replier") : tr("全文を見る", "Show all", "Tout afficher"))
-                }
-                if past.count > shownPages {
-                    Button(tr("もっと見る", "Show more", "Voir plus")) { shownPages += 10 }.font(.subheadline).underline()
-                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -421,7 +398,6 @@ struct KokoroView: View {
                     Text(tr("お祈りメールが届いた週でした。結果は相性で、あなたの価値ではありません。", "A rejection arrived this week. It is about fit, not about your worth.", "Un refus est arrivé cette semaine. C'est une question d'affinité, pas de valeur."))
                         .foregroundStyle(Color.cwMuted)
                 }
-                Button(tr("1分の呼吸", "One-minute breathing", "Une minute de respiration")) { breathing = true }.buttonStyle(SecondaryButtonStyle())
             }
             .font(.subheadline)
             .frame(maxWidth: .infinity, alignment: .leading)

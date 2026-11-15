@@ -146,7 +146,7 @@ function Ritual({ company, onClose }: { company?: string; onClose: () => void })
 }
 
 /** La petite lettre de soutien, selon le palier (voir api/src/lib/kokoro.ts). */
-function Letter({ data, name, tr, onBreathe }: { data: Kokoro; name: string | null; tr: Tr; onBreathe: () => void }) {
+function Letter({ data, name, tr }: { data: Kokoro; name: string | null; tr: Tr }) {
   const { level } = data.support;
   if (level === "calm") return null;
   const w = data.week;
@@ -181,7 +181,6 @@ function Letter({ data, name, tr, onBreathe }: { data: Kokoro; name: string | nu
       {w.rejections > 0 && (
         <p className="letter-soft">{tr({ ja: "お祈りメールが届いた週でした。結果は相性で、あなたの価値ではありません。", en: "A rejection arrived this week. It is about fit, not about your worth.", fr: "Un refus est arrivé cette semaine. C'est une question d'affinité, pas de valeur." })}</p>
       )}
-      <button className="kokoro-soft-button" onClick={onBreathe}>{tr({ ja: "一緒に1分、深呼吸", en: "Breathe together for a minute", fr: "Respirer ensemble une minute" })}</button>
     </section>
   );
 }
@@ -340,6 +339,7 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   const firstDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 21);
   const days = Array.from({ length: 28 }, (_, i) => ymd(new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate() + i)));
   const byDate = new Map(data.moods.map((m) => [m.date, m]));
+  const letterShown = data.support.level !== "calm";
   const picked = pickedDay && pickedDay <= today && pickedDay >= days[0] ? pickedDay : today;
   const pickedMood = byDate.get(picked);
   const counted: Record<MoodWeather, number> = { sunny: 0, cloudy: 0, rainy: 0 };
@@ -369,9 +369,12 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
         <p className="kokoro-save-error" role="alert">{tr({ ja: "保存できませんでした。通信を確認して、もう一度お試しください。", en: "Could not save. Check your connection and try again.", fr: "Enregistrement impossible. Vérifiez la connexion et réessayez." })}</p>
       )}
 
-      <Letter data={data} name={name} tr={tr} onBreathe={() => setMode("breathe")} />
+      <Letter data={data} name={name} tr={tr} />
 
-      <Cheers cheers={data.cheers} tr={tr} onOpen={openCheer} onBreathe={() => setMode("breathe")} onJournal={goToJournal} />
+      {/* Chaque chose une seule fois : quand la lettre est là, elle a déjà dit ce qui a été fait et réconforté ;
+          il ne reste alors qu'une suggestion et le mot du jour. */}
+      <Cheers cheers={letterShown ? data.cheers.filter((c) => c.kind !== "care" && c.kind !== "done") : data.cheers} max={letterShown ? 1 : 2}
+        tr={tr} onOpen={openCheer} onBreathe={() => setMode("breathe")} onJournal={goToJournal} />
 
       <section className="kokoro-ritual">
         <div className="ritual-art" aria-hidden="true"><span /><span /><span /></div>

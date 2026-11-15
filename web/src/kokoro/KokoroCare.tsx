@@ -21,10 +21,12 @@ const ACTION_LABEL: Record<NonNullable<Cheer["action"]>["tab"], T3> = {
 };
 
 /** 今日のあなたへ : les cartes du jour, puis le mot du jour en citation. */
-export function Cheers({ cheers, tr, onOpen, onBreathe, onJournal }: {
+export function Cheers({ cheers, tr, onOpen, onBreathe, onJournal, max = 2 }: {
   cheers: Cheer[]; tr: Tr; onOpen: CheerOpen; onBreathe: () => void; onJournal: () => void;
+  /** Nombre de cartes au plus : peu, pour que la page reste lisible. */
+  max?: number;
 }) {
-  const cards = cheers.filter((c) => c.kind !== "word").slice(0, 3);
+  const cards = cheers.filter((c) => c.kind !== "word").slice(0, max);
   const word = cheers.find((c) => c.kind === "word");
   if (cards.length === 0 && !word) return null;
   const t = (x: T3) => tr(x);
@@ -86,7 +88,12 @@ export function Charms({ initial, tr, hasDevice }: { initial: Charm[]; tr: Tr; h
 
   return (
     <section className="kokoro-block charms" aria-label={tr({ ja: "お守りの言葉", en: "Lucky-charm words", fr: "Mots porte-bonheur" })}>
-      <h3>{tr({ ja: "お守りの言葉", en: "Lucky-charm words", fr: "Mots porte-bonheur" })}</h3>
+      {/* Un réglage qu'on fait une fois : replié, avec le nombre de phrases déjà choisies. */}
+      <details>
+      <summary>
+        <h3>{tr({ ja: "お守りの言葉", en: "Lucky-charm words", fr: "Mots porte-bonheur" })}</h3>
+        <span className="kokoro-count">{charms.filter((c) => c.text.trim()).length}</span>
+      </summary>
       <p className="kokoro-sub">{tr({
         ja: "面接の前に、自分に届けたい言葉。iPhoneに通知で届きます（面接の日付と時刻が入っているとき）。",
         en: "Words you want to receive before an interview. They arrive as iPhone notifications (when the interview has a date and time).",
@@ -122,6 +129,7 @@ export function Charms({ initial, tr, hasDevice }: { initial: Charm[]; tr: Tr; h
           : tr({ ja: "保存しました。iPhoneアプリにサインインすると届きます。", en: "Saved. Sign in on the iPhone app to receive them.", fr: "Enregistré. Connectez-vous dans l'app iPhone pour les recevoir." })}</span>}
         {state === "error" && <span className="muted small" role="alert">{tr({ ja: "保存できませんでした。", en: "Could not save.", fr: "Enregistrement impossible." })}</span>}
       </div>
+      </details>
     </section>
   );
 }

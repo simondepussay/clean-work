@@ -17,8 +17,6 @@ export function Journal({ today, tr }: { today: string; tr: Tr }) {
   const [saved, setSaved] = useState("");
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [shown, setShown] = useState(5);
-  const [open, setOpen] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
 
   useEffect(() => {
@@ -61,6 +59,7 @@ export function Journal({ today, tr }: { today: string; tr: Tr }) {
         {(entries?.length ?? 0) > 0 && (
           <button className="link journal-read" onClick={() => setReading(true)}>
             <BookIcon size={16} /> {tr({ ja: "日記を読む", en: "Read as a book", fr: "Feuilleter" })}
+            {past.length > 0 && <span className="journal-count">{past.length}</span>}
           </button>
         )}
       </div>
@@ -83,21 +82,6 @@ export function Journal({ today, tr }: { today: string; tr: Tr }) {
         {state === "saved" && !dirty && time && <span role="status" className="muted small">{tr({ ja: `${time}に保存`, en: `Saved at ${time}`, fr: `Enregistré à ${time}` })}</span>}
         {state === "error" && <span role="alert" className="journal-error small">{tr({ ja: "保存できませんでした。もう一度お試しください。", en: "Could not save. Please try again.", fr: "Enregistrement impossible. Réessaie." })}</span>}
       </div>
-      {past.length > 0 && (
-        <ul className="journal-past">
-          {past.slice(0, shown).map((e) => (
-            <li key={e.date}>
-              <button className="journal-entry" aria-expanded={open === e.date} onClick={() => setOpen(open === e.date ? null : e.date)}>
-                <span className="journal-date">{formatDay(e.date, tr.lang)}</span>
-                <span className={open === e.date ? "journal-text" : "journal-text clamp"}>{e.text}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {past.length > shown && (
-        <button className="link" onClick={() => setShown((n) => n + 10)}>{tr({ ja: "もっと見る", en: "Show more", fr: "Voir plus" })}</button>
-      )}
       {reading && entries && <JournalBook entries={entries} tr={tr} onClose={() => setReading(false)} />}
     </section>
   );

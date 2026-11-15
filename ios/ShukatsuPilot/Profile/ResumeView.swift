@@ -17,6 +17,13 @@ struct ResumeView: View {
     var body: some View {
         Form {
             Section {
+                // Les deux feuilles du site : celle qu'on prépare passe devant.
+                ResumeSheets(resumeInFront: kind == .resume)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+            }
+            Section {
                 Picker(tr("書類", "Document", "Document"), selection: $kind) {
                     Text(tr("履歴書", "Résumé (履歴書)", "CV (履歴書)")).tag(Kind.resume)
                     Text(tr("職務経歴書", "Career (職務経歴書)", "Parcours (職務経歴書)")).tag(Kind.workHistory)
@@ -172,5 +179,53 @@ struct ResumeView: View {
 
     private func text(_ value: Binding<String?>) -> Binding<String> {
         Binding(get: { value.wrappedValue ?? "" }, set: { value.wrappedValue = $0.isEmpty ? nil : $0 })
+    }
+}
+
+/// Les deux feuilles, au trait comme sur le site : 履歴書 (cadre photo, tableau des dates) et 職務経歴書
+/// (titres et paragraphes). Celle qu'on prépare passe devant, l'autre s'efface derrière.
+private struct ResumeSheets: View {
+    let resumeInFront: Bool
+
+    var body: some View {
+        ZStack {
+            sheet(resume: !resumeInFront)
+                .rotationEffect(.degrees(resumeInFront ? 5 : -5)).offset(x: resumeInFront ? 18 : -18, y: -4).opacity(0.55)
+            sheet(resume: resumeInFront)
+                .rotationEffect(.degrees(resumeInFront ? -3 : 3)).offset(x: resumeInFront ? -16 : 16, y: 4)
+        }
+        .frame(width: 150, height: 150)
+        .animation(.easeInOut(duration: 0.25), value: resumeInFront)
+        .accessibilityHidden(true)
+    }
+
+    private func sheet(resume: Bool) -> some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 4).fill(.white)
+            RoundedRectangle(cornerRadius: 4).stroke(Color.cwBlue700, lineWidth: 1.6)
+            Text(resume ? "履歴書" : "職務経歴書").font(.system(size: 9, weight: .bold)).foregroundStyle(Color.cwBlue800).offset(x: 10, y: 8)
+            if resume {
+                lines([(10, 28, 54), (10, 38, 54), (10, 48, 54)]).stroke(Color.cwBlue300, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                RoundedRectangle(cornerRadius: 1.5).fill(Color.cwBlue50).frame(width: 24, height: 32).offset(x: 62, y: 12)
+                RoundedRectangle(cornerRadius: 1.5).stroke(Color.cwBlue300, style: StrokeStyle(lineWidth: 1.2, dash: [3, 2])).frame(width: 24, height: 32).offset(x: 62, y: 12)
+                Path { p in
+                    for y in stride(from: 60.0, through: 110.0, by: 10.0) { p.move(to: CGPoint(x: 10, y: y)); p.addLine(to: CGPoint(x: 86, y: y)) }
+                    p.move(to: CGPoint(x: 30, y: 60)); p.addLine(to: CGPoint(x: 30, y: 110))
+                }
+                .stroke(Color.cwLine, lineWidth: 1.2)
+            } else {
+                lines([(10, 30, 40), (10, 66, 40), (10, 108, 32)]).stroke(Color.cwBordeaux, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                lines([(10, 38, 86), (10, 45, 80), (10, 52, 84), (10, 74, 86), (10, 81, 76), (10, 88, 82), (10, 95, 70), (10, 116, 66)])
+                    .stroke(Color.cwBlue300, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+            }
+        }
+        .frame(width: 96, height: 128)
+    }
+
+    /// Traits horizontaux : (x de départ, y, x d'arrivée).
+    private func lines(_ segments: [(Double, Double, Double)]) -> Path {
+        Path { p in
+            for (x, y, to) in segments { p.move(to: CGPoint(x: x, y: y)); p.addLine(to: CGPoint(x: to, y: y)) }
+        }
     }
 }

@@ -1145,3 +1145,17 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
 .es-groups details ul { margin: 0 !important; padding: 6px !important; }
 .es-groups details li button { border-color: transparent; }
 .es-groups details li button:hover { border-color: var(--line); }
+
+/* ------------------------------------------------------------------ こころ : chaque chose une seule fois */
+.journal-count, .kokoro-count { margin-left: 6px; padding: 0 8px; border-radius: 999px; background: var(--k-sand); font-size: 12px; color: #6b5d4d; }
+/* お守りの言葉 : replié, comme un réglage. */
+.charms summary { display: flex; align-items: center; gap: 4px; cursor: pointer; list-style: none; }
+.charms summary::-webkit-details-marker { display: none; }
+.charms summary h3 { margin: 0; }
+.charms summary::after { content: "›"; margin-left: auto; font-size: 20px; color: var(--muted); transition: rotate .15s; }
+.charms details[open] summary::after { rotate: 90deg; }
+.charms details[open] summary { margin-bottom: 8px; }
+/* 相談先 : toujours visibles, mais sur deux colonnes quand la place le permet. */
+@media (min-width: 620px) {
+  .kokoro-help ul { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; }
+}
