@@ -49,7 +49,7 @@ private final class DemoURLProtocol: URLProtocol {
             body = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) ?? [:]
         case ("GET", "/api/applications"): body = Self.applications
         case ("GET", "/api/plans"): body = Self.plans
-        case ("GET", "/api/drafts"): body = [] as [Any]
+        case ("GET", "/api/drafts"): body = Self.drafts
         case ("GET", "/api/interviews"): body = [] as [Any]
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
         case ("GET", "/api/email-usage"): body = ["today": 10, "month": 38]
@@ -128,6 +128,23 @@ private final class DemoURLProtocol: URLProtocol {
         var data = Data(); var buffer = [UInt8](repeating: 0, count: 4096)
         while stream.hasBytesAvailable { let n = stream.read(&buffer, maxLength: buffer.count); if n <= 0 { break }; data.append(buffer, count: n) }
         return data
+    }
+
+    /// Deux ES d'exemple ; avec « -manyES », une vingtaine, pour voir la liste rangée en dossiers.
+    private static var drafts: [[String: Any]] {
+        var list: [[String: Any]] = [
+            ["id": "d1", "kind": "motivation", "company": "株式会社サイバーエージェント", "question": "当社を志望する理由を教えてください。", "charLimit": 400,
+             "body": "私が貴社を志望する理由は、世界中の人を楽しませるゲームを作りたいからです。", "updatedAt": day(0)],
+            ["id": "d2", "kind": "jikopr", "question": "自己PRをしてください。", "charLimit": 300, "body": "私の強みは行動力です。", "updatedAt": day(-1)],
+        ]
+        guard ProcessInfo.processInfo.arguments.contains("-manyES") else { return list }
+        for (c, company) in ["ソニーグループ", "楽天グループ", "LINEヤフー", "メルカリ", "トヨタ自動車", "任天堂", "サイボウズ"].enumerated() {
+            for (q, question) in ["当社を志望する理由を教えてください。", "学生時代に力を入れたことは何ですか。", "自己PRをしてください。"].enumerated() where (c + q) % 4 != 3 {
+                list.append(["id": "m\(c)\(q)", "kind": "free", "company": company, "question": question, "charLimit": 400,
+                             "body": q == 0 ? "私が貴社を志望する理由は、事業に共感したからです。" : "", "updatedAt": day(-(c * 3 + q))])
+            }
+        }
+        return list
     }
 
     /// La candidature d'exemple dont l'identifiant figure dans le chemin (/api/applications/{id}/…).

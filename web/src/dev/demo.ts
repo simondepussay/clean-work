@@ -37,6 +37,17 @@ const drafts = [
   { id: "d2", kind: "jikopr", question: "自己PRをしてください。", charLimit: 300, body: "私の強みは行動力です。", createdAt: "", updatedAt: today.toISOString() },
 ];
 
+// « ?demo&many » : une trentaine d'ES, pour voir la liste quand elle devient longue.
+if (new URLSearchParams(location.search).has("many")) {
+  const companies = ["ソニーグループ", "楽天グループ", "LINEヤフー", "メルカリ", "トヨタ自動車", "任天堂", "サイボウズ", "富士通", "NTTデータ"];
+  const questions = [["motivation", "当社を志望する理由を教えてください。", 400], ["gakuchika", "学生時代に力を入れたことは何ですか。", 400], ["jikopr", "自己PRをしてください。", 300]] as const;
+  companies.forEach((company, c) => questions.forEach(([kind, question, charLimit], q) => {
+    if ((c + q) % 4 === 3) return;
+    drafts.push({ id: `m${c}${q}`, kind, applicationId: "", company, question, charLimit, body: q === 0 ? `私が貴社を志望する理由は、${company}の事業に共感したからです。` : "", createdAt: "", updatedAt: new Date(today.getTime() - (c * 3 + q) * 86_400_000).toISOString() } as never);
+  }));
+  drafts.push({ id: "mc", kind: "strengths", question: "長所と短所を教えてください。", charLimit: 300, body: "私の長所は粘り強さです。", createdAt: "", updatedAt: today.toISOString() } as never);
+}
+
 const profile = {
   nameKanji: "ドゥピュッセ シモン", nameKana: "どぅぴゅっせ しもん", nameLatin: "Simon Depussay",
   education: [{ school: "HAL東京", faculty: "IT学部", start: "2026-04", end: "2028-03", status: "expected" }],

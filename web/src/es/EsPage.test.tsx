@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import guide from "../../public/es-guide.json";
@@ -50,6 +50,54 @@ function api(initial: unknown[] = []) {
 }
 
 const renderPage = () => render(<AuthContext.Provider value={auth}><EsPage /></AuthContext.Provider>);
+
+describe("liste des ES quand il y en a beaucoup", () => {
+  const draft = (id: string, company: string | undefined, question: string, updatedAt: string, body = "") =>
+    ({ id, company, question, body, charLimit: 400, createdAt: "t", updatedAt });
+  const many = [
+    ...["ソニー", "楽天", "メルカリ", "任天堂"].flatMap((c, i) => [draft(`${c}1`, c, "志望動機", `2026-11-0${i + 1}`, `${c}で働きたい`), draft(`${c}2`, c, "ガクチカ", `2026-10-0${i + 1}`)]),
+    draft("c1", undefined, "自己PR", "2026-11-09", "私の強みは行動力です。"),
+  ];
+
+  it("peu d'ES : une liste simple, la plus récente d'abord, sans recherche", async () => {
+    api([draft("a", "楽天", "志望動機", "2026-10-01"), draft("b", "ソニー", "志望動機", "2026-11-01")]);
+    renderPage();
+    const list = await screen.findByRole("list", { name: "ES" });
+    expect(within(list).getAllByRole("button").map((b) => b.textContent)).toEqual([expect.stringContaining("ソニー"), expect.stringContaining("楽天")]);
+    expect(screen.queryByRole("searchbox")).toBeNull();
+  });
+
+  it("beaucoup d'ES : un dossier par entreprise (共通 en tête), replié, avec son nombre ; on l'ouvre pour voir ses ES", async () => {
+    api(many);
+    renderPage();
+    const list = await screen.findByRole("list", { name: "ES" });
+    const folders = within(list).getAllByRole("listitem").filter((f) => f.tagName === "DETAILS");
+    const names = folders.map((f) => f.querySelector("summary")!.textContent);
+    expect(names[0]).toBe("共通1");
+    // L'ordre des entreprises suit le classement japonais du navigateur : on vérifie l'ensemble.
+    expect([...names].sort()).toEqual(["共通1", "ソニー2", "メルカリ2", "任天堂2", "楽天2"].sort());
+    const sony = folders.find((f) => f.textContent!.startsWith("ソニー"))!;
+    expect(folders.every((f) => !(f as HTMLDetailsElement).open)).toBe(true);
+    await userEvent.click(within(sony).getByText("ソニー"));
+    expect((sony as HTMLDetailsElement).open).toBe(true);
+    await userEvent.click(within(sony).getByRole("button", { name: /ガクチカ/ }));
+    expect(await screen.findByLabelText(/設問/)).toHaveValue("ガクチカ");
+  });
+
+  it("la recherche déplie les dossiers concernés et cache les autres", async () => {
+    api(many);
+    renderPage();
+    await userEvent.type(await screen.findByRole("searchbox", { name: "ESを検索" }), "行動力");
+    const list = screen.getByRole("list", { name: "ES" });
+    const folders = within(list).getAllByRole("listitem").filter((f) => f.tagName === "DETAILS");
+    expect(folders).toHaveLength(1);
+    expect((folders[0] as HTMLDetailsElement).open).toBe(true);
+    expect(within(folders[0]).getByRole("button", { name: /自己PR/ })).toBeInTheDocument();
+    await userEvent.clear(screen.getByRole("searchbox", { name: "ESを検索" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "ESを検索" }), "該当なし");
+    expect(screen.getByText("該当するESはありません")).toBeInTheDocument();
+  });
+});
 
 describe("EsPage", () => {
   it("indique qu'il n'y a pas encore d'ES", async () => {

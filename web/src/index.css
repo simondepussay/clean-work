@@ -747,7 +747,23 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 .kokoro-ritual .primary { flex: none; }
 
 /* --- Le jardin (Daylio) ---------------------------------------------------------------------------- */
-.garden-dots { display: grid; grid-template-columns: repeat(7, 26px); gap: 12px 16px; justify-content: start; }
+.garden-body { display: flex; gap: 20px 36px; flex-wrap: wrap; align-items: flex-start; }
+.garden-dots { display: grid; grid-template-columns: repeat(7, 32px); gap: 8px 12px; justify-content: start; }
+.garden-dots .garden-wd { text-align: center; font-size: 12px; color: var(--muted); }
+/* Chaque jour est un bouton : le chiffre du jour sur la couleur de sa météo. */
+.garden-dots button.dot { border: 0; padding: 0; width: 32px; height: 32px; font-size: 12px; font-weight: 600; color: #6b5d4d; cursor: pointer; display: inline-grid; place-items: center; }
+.garden-dots button.dot.rainy { color: #fff; }
+.garden-dots button.dot[aria-pressed="true"] { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--blue-700); }
+.garden-dots .dot.future { background: none; }
+.garden-day { flex: 1 1 220px; display: grid; gap: 8px; align-content: start; }
+.garden-day p { margin: 0; }
+.garden-date { font-weight: 700; color: var(--blue-800); display: flex; align-items: baseline; gap: 8px; }
+.garden-date span { font-size: 12px; font-weight: 600; color: var(--bordeaux); }
+.garden-weather { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.garden-weather .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; background: var(--k-sand); }
+.garden-weather .dot.sunny { background: var(--k-sun); } .garden-weather .dot.cloudy { background: var(--k-cloud); } .garden-weather .dot.rainy { background: var(--k-rain); }
+.garden-weather em { font-style: normal; color: var(--muted); }
+
 /* Limité au jardin : sinon ces pastilles de 26 px grossissent aussi la légende du calendrier. */
 :is(.garden-dots, .garden-legend) .dot { width: 26px; height: 26px; border-radius: 50%; background: var(--k-sand); display: inline-block; transition: transform .2s; }
 .garden-dots .dot:hover { transform: scale(1.15); }
@@ -755,7 +771,7 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
 :is(.garden-dots, .garden-legend) .dot.cloudy { background: var(--k-cloud); }
 :is(.garden-dots, .garden-legend) .dot.rainy { background: var(--k-rain); }
 .garden-dots .dot.today { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--bordeaux); }
-.garden-legend { display: flex; gap: 18px; margin: 16px 0 0; font-size: 13px; color: var(--muted); }
+.garden-legend { display: flex; gap: 6px 18px; flex-wrap: wrap; margin: 8px 0 0 !important; font-size: 13px; color: var(--muted); }
 .garden-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .garden-legend .dot { width: 12px; height: 12px; }
 
@@ -925,8 +941,8 @@ input, select, textarea { max-width: 100%; box-sizing: border-box; }
   .kokoro-letter { padding: 26px 20px 22px; }
   .kokoro-ritual { flex-wrap: wrap; }
   .ritual-art { width: 56px; height: 56px; }
-  .garden-dots { grid-template-columns: repeat(7, 1fr); gap: 10px; }
-  .garden-dots .dot { width: 100%; height: auto; aspect-ratio: 1; max-width: 30px; }
+  .garden-dots { grid-template-columns: repeat(7, 36px); gap: 8px; }
+  .garden-dots button.dot { width: 36px; height: 36px; }
 }
 
 /* ------------------------------------------------------------------ 応募 : liste dense (remplace le kanban) */
@@ -1106,3 +1122,26 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
   .editor-head .actions { width: 100%; }
   .editor-tabs button { padding: 10px 12px; }
 }
+
+/* ------------------------------------------------------------------ liste des ES : recherche, dossiers par entreprise */
+/* La liste garde sa place et défile à part : avec des dizaines d'ES, l'éditeur reste à côté. */
+@media (min-width: 721px) {
+  .es aside { position: sticky; top: 12px; align-self: start; max-height: calc(100vh - 24px); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+}
+.es-search { display: flex; flex-direction: row; align-items: center; gap: 6px; margin: 12px 0 0; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--muted); }
+.es-search input { border: 0; background: none; padding: 8px 0; width: 100%; min-width: 0; font-size: 14px; outline: none; }
+.es-search:focus-within { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+.es aside li button .es-meta { font-size: 11px; opacity: .75; }
+.es aside li button .es-question { color: var(--blue-800); font-size: 14px; font-weight: 600; }
+/* minmax(0, …) : un long nom d'entreprise ou une longue question se coupe au lieu d'élargir la colonne. */
+.es-groups { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.es-groups details li button { min-width: 0; overflow: hidden; }
+.es-groups details { border: 1px solid var(--line); border-radius: 12px; background: var(--white); }
+.es-groups summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer; list-style: none; color: var(--blue-800); }
+.es-groups summary::-webkit-details-marker { display: none; }
+.es-groups summary strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.es-groups summary span { flex: none; padding: 0 8px; border-radius: 999px; background: var(--blue-100); font-size: 12px; }
+.es-groups details[open] summary { border-bottom: 1px solid var(--line); }
+.es-groups details ul { margin: 0 !important; padding: 6px !important; }
+.es-groups details li button { border-color: transparent; }
+.es-groups details li button:hover { border-color: var(--line); }

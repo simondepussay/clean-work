@@ -137,6 +137,8 @@ struct RitualView: View {
 struct KokoroView: View {
     @State var model: KokoroModel
     @Environment(\.horizontalSizeClass) private var sizeClass
+    /// Jour choisi dans le calendrier des 4 semaines (aucun : aujourd'hui).
+    @State private var pickedDay: String?
     @State private var breathing = false
     @State private var ritual = false
     @State private var journalText = ""
@@ -346,24 +348,55 @@ struct KokoroView: View {
         }
     }
 
-    /// Les 4 dernières semaines, 7 cases par ligne, aujourd'hui entouré.
+    /// Les 4 dernières semaines en calendrier : quatre lignes du dimanche au samedi, la semaine en cours en dernier
+    /// (ses jours à venir restent vides). Toucher un jour montre ce qui y a été noté.
     private func monthStrip(_ data: Kokoro) -> some View {
         let byDate = Dictionary(data.moods.map { ($0.date, $0) }, uniquingKeysWith: { a, _ in a })
-        let days = (0..<28).map { offset in
-            ISO8601DateFormatter.dayOnly.string(from: Calendar.current.date(byAdding: .day, value: offset - 27, to: .now) ?? .now)
-        }
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
-            ForEach(days, id: \.self) { day in
-                let weather = byDate[day].flatMap { MoodWeather(rawValue: $0.weather) }
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(weather?.fill ?? Color.cwBlue50)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(day == model.today ? Color.cwBordeaux : Color.cwLine, lineWidth: day == model.today ? 2 : 1))
-                    .overlay { if let weather { Image(systemName: weather.symbol).font(.caption2).foregroundStyle(weather.tint) } }
-                    .aspectRatio(1, contentMode: .fit)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 1
+        let startOfDay = calendar.startOfDay(for: .now)
+        let first = calendar.date(byAdding: .day, value: -(calendar.component(.weekday, from: startOfDay) - 1) - 21, to: startOfDay) ?? startOfDay
+        let days = (0..<28).map { ISO8601DateFormatter.dayOnly.string(from: calendar.date(byAdding: .day, value: $0, to: first) ?? first) }
+        let weekdays = [tr("日", "S", "D"), tr("月", "M", "L"), tr("火", "T", "M"), tr("水", "W", "M"), tr("木", "T", "J"), tr("金", "F", "V"), tr("土", "S", "S")]
+        let picked = pickedDay.flatMap { days.contains($0) && $0 <= model.today ? $0 : nil } ?? model.today
+        let pickedMood = byDate[picked]
+        return VStack(alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
+                ForEach(Array(weekdays.enumerated()), id: \.offset) { _, name in
+                    Text(name).font(.caption2).foregroundStyle(.secondary).accessibilityHidden(true)
+                }
+                ForEach(days, id: \.self) { day in
+                    let weather = byDate[day].flatMap { MoodWeather(rawValue: $0.weather) }
+                    if day > model.today {
+                        Color.clear.aspectRatio(1, contentMode: .fit)
+                    } else {
+                        Button { pickedDay = day } label: {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(weather?.fill ?? Color.cwBlue50)
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(day == model.today ? Color.cwBordeaux : day == picked ? Color.cwBlue700 : Color.cwLine, lineWidth: day == model.today || day == picked ? 2 : 1))
+                                .overlay { Text(String(Int(day.suffix(2)) ?? 0)).font(.caption2.weight(.semibold)).foregroundStyle(weather?.tint ?? Color.secondary) }
+                                .aspectRatio(1, contentMode: .fit)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(day + (weather.map { " · " + $0.label } ?? ""))
+                        .accessibilityAddTraits(day == picked ? .isSelected : [])
+                    }
+                }
+            }
+            .frame(maxWidth: 320)
+            .accessibilityLabel(tr("この4週間の天気", "The last 4 weeks", "Les 4 dernières semaines"))
+            // Le jour choisi (aujourd'hui par défaut) : ce qui y a été noté.
+            HStack(spacing: 8) {
+                Text(String(picked.dropFirst(5)).replacingOccurrences(of: "-", with: "/")).font(.subheadline.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+                if let mood = pickedMood, let weather = MoodWeather(rawValue: mood.weather) {
+                    Label(weather.label, systemImage: weather.symbol).font(.subheadline).foregroundStyle(Color.cwBlue800)
+                    if let word = mood.word, !word.isEmpty { Text("「\(word)」").font(.subheadline).foregroundStyle(.secondary) }
+                } else {
+                    Text(picked == model.today ? tr("まだ選んでいません", "Not chosen yet", "Pas encore choisie") : tr("記録なし", "Nothing noted", "Rien de noté")).font(.subheadline).foregroundStyle(.secondary)
+                }
             }
         }
-        .frame(maxWidth: 320)
-        .accessibilityLabel(tr("この4週間の天気", "The last 4 weeks", "Les 4 dernières semaines"))
+        .sensoryFeedback(.selection, trigger: pickedDay)
     }
 
     /// Ce que dit l'app selon le palier (voir api/src/lib/kokoro.ts).

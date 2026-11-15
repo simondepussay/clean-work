@@ -48,6 +48,23 @@ describe("KokoroPage (こころ)", () => {
     expect(JSON.parse(put[1]!.body as string)).toEqual({ date: today, weather: "rainy" });
   });
 
+  it("calendrier des 4 semaines : jours de la semaine en tête, et le jour choisi montre ce qui y a été noté", async () => {
+    const yesterday = ymd(new Date(Date.now() - 86_400_000));
+    server(kokoro({ moods: [{ date: yesterday, weather: "rainy", word: "疲れた" }] }));
+    renderPage();
+    const garden = await screen.findByRole("region", { name: "この4週間の天気" });
+    expect(within(garden).getByText("日")).toBeInTheDocument();
+    expect(within(garden).getByText("土")).toBeInTheDocument();
+    // Aujourd'hui par défaut : rien de choisi encore.
+    expect(within(garden).getByText(/まだ選んでいません/)).toBeInTheDocument();
+    // Les jours à venir de la semaine ne sont pas cliquables.
+    expect(within(garden).getAllByRole("button").length).toBeLessThanOrEqual(28);
+    const day = within(garden).getAllByRole("button").find((b) => b.getAttribute("aria-label")?.includes("雨"))!;
+    await userEvent.click(day);
+    expect(day).toHaveAttribute("aria-pressed", "true");
+    expect(within(garden).getByText("「疲れた」")).toBeInTheDocument();
+  });
+
   it("les aides sont toujours visibles, même par beau temps", async () => {
     server(kokoro());
     renderPage();

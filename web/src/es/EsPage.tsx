@@ -7,7 +7,7 @@ import { GuidePanel, Intro } from "./GuidePanel";
 import { useGuide, type Guide, type GuideType, type Lang } from "./guide";
 import { apiMessage, useTr } from "../i18n";
 import { ReviewPanel } from "./ReviewPanel";
-import { CheckIcon, CloseIcon, CopyIcon, LightIcon, PlusIcon } from "../icons";
+import { CheckIcon, CloseIcon, CopyIcon, LightIcon, PlusIcon, SearchIcon } from "../icons";
 import { runChecks, starterText, type CheckResult } from "./checks";
 import { INDUSTRIES } from "../apps/statuses";
 
@@ -17,6 +17,10 @@ const blank: DraftInput = { question: "", body: "" };
 export type EsSeed = { company: string; applicationId: string; nonce: number };
 
 /** ES (S13) : liste à gauche, éditeur à droite, compteur de caractères en direct. */
+/** Nombre d'ES à partir duquel la liste propose une recherche, puis se range en dossiers par entreprise. */
+const SEARCH_FROM = 5;
+const GROUP_FROM = 8;
+
 export function EsPage({ seed }: { seed?: EsSeed } = {}) {
   const auth = useAuth();
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
@@ -25,6 +29,16 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [choosing, setChoosing] = useState(false);
+  /** Recherche dans la liste, et dossiers d'entreprise dépliés à la main. */
+  const [query, setQuery] = useState("");
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  // Le dossier de l'ES qu'on ouvre se déplie (on peut le replier ensuite).
+  useEffect(() => {
+    const current = drafts?.find((d) => d.id === selected);
+    if (current) setOpenGroups((o) => new Set(o).add(current.company ?? ""));
+    // À l'ouverture d'une ES seulement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
   const [copied, setCopied] = useState(false);
   const [apps, setApps] = useState<Application[]>([]);
   const pendingSeed = useRef<EsSeed | null>(null);
@@ -137,6 +151,32 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
 
   if (drafts === null) return <Loader />;
 
+  // Liste : la plus récemment modifiée d'abord ; au-delà de quelques ES, recherche puis dossiers par entreprise.
+  const owner = (d: Draft) => d.company || [tr({ ja: "共通", en: "General", fr: "Commune" }), ...INDUSTRIES.filter((i) => i.value === d.industry).map((i) => i[lang])].join(" · ");
+  const searching = query.trim() !== "";
+  const needle = query.trim().toLowerCase();
+  const shown = [...drafts]
+    .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""))
+    .filter((d) => !searching || [owner(d), d.question, d.body].some((t) => (t ?? "").toLowerCase().includes(needle)));
+  const grouped = drafts.length > GROUP_FROM;
+  const common = tr({ ja: "共通", en: "General", fr: "Commune" });
+  // Clé d'un dossier : le nom de l'entreprise, ou « » pour les ES communes.
+  const groups = [...shown.reduce((m, d) => m.set(d.company ?? "", [...(m.get(d.company ?? "") ?? []), d]), new Map<string, Draft[]>())]
+    .map(([key, items]) => ({ key, name: key || common, items }))
+    // Les ES communes en tête, puis les entreprises par ordre alphabétique : un dossier se retrouve toujours au même endroit.
+    .sort((a, b) => (a.key === "" ? -1 : b.key === "" ? 1 : a.name.localeCompare(b.name, lang)));
+  const item = (d: Draft, withOwner: boolean) => {
+    const length = countChars(d.body ?? "");
+    return (
+      <button className={d.id === selected ? "current" : undefined} onClick={() => open(d)}>
+        {withOwner && <strong>{owner(d)}</strong>}
+        <span className={withOwner ? undefined : "es-question"}>{d.question}</span>
+        {d.body?.trim() && <span className="excerpt">{d.body.trim().replace(/\s+/g, " ").slice(0, 40)}</span>}
+        <span className="es-meta">{length}{d.charLimit ? ` / ${d.charLimit}` : ""}{tr({ ja: "字", en: " chars", fr: " car." })}</span>
+      </button>
+    );
+  };
+
   const type = guide?.types.find((t) => t.id === form.kind);
 
   return (
@@ -145,18 +185,34 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
     <section className="es">
       <aside>
         <button className="primary" onClick={() => setChoosing(true)}><PlusIcon size={16} /> {tr({ ja: "新しいES", en: "New entry sheet", fr: "Nouvelle ES" })}</button>
-        <ul aria-label="ES">
-          {drafts.map((d) => (
-            <li key={d.id}>
-              <button className={d.id === selected ? "current" : undefined} onClick={() => open(d)}>
-                <strong>{d.company || [tr({ ja: "共通", en: "General", fr: "Commune" }), ...INDUSTRIES.filter((i) => i.value === d.industry).map((i) => i[lang])].join(" · ")}</strong>
-                <span>{d.question}</span>
-                {d.body?.trim() && <span className="excerpt">{d.body.trim().replace(/\s+/g, " ").slice(0, 40)}</span>}
-              </button>
-            </li>
-          ))}
-          {drafts.length === 0 && <li className="muted">{tr({ ja: "まだESがありません", en: "No entry sheets yet", fr: "Pas encore d'ES" })}</li>}
-        </ul>
+        {/* À partir de quelques ES, une recherche ; au-delà, un dossier par entreprise. */}
+        {drafts.length > SEARCH_FROM && (
+          <label className="es-search">
+            <SearchIcon size={15} />
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder={tr({ ja: "企業名・設問・本文で検索", en: "Search company, question, text", fr: "Chercher entreprise, question, texte" })}
+              aria-label={tr({ ja: "ESを検索", en: "Search entry sheets", fr: "Chercher une ES" })} />
+          </label>
+        )}
+        {grouped ? (
+          <div className="es-groups" role="list" aria-label="ES">
+            {groups.map((g) => (
+              // Ouverts : les dossiers dépliés à la main, celui de l'ES qu'on vient d'ouvrir, et tous pendant une recherche.
+              <details key={g.key} role="listitem" open={searching || openGroups.has(g.key)}
+                onToggle={(e) => { const isOpen = e.currentTarget.open; if (!searching) setOpenGroups((o) => { const n = new Set(o); if (isOpen) n.add(g.key); else n.delete(g.key); return n; }); }}>
+                <summary><strong>{g.name}</strong><span>{g.items.length}</span></summary>
+                <ul>{g.items.map((d) => <li key={d.id}>{item(d, false)}</li>)}</ul>
+              </details>
+            ))}
+            {groups.length === 0 && <p className="muted">{tr({ ja: "該当するESはありません", en: "No matching entry sheets", fr: "Aucune ES correspondante" })}</p>}
+          </div>
+        ) : (
+          <ul aria-label="ES">
+            {shown.map((d) => <li key={d.id}>{item(d, true)}</li>)}
+            {drafts.length === 0 && <li className="muted">{tr({ ja: "まだESがありません", en: "No entry sheets yet", fr: "Pas encore d'ES" })}</li>}
+            {drafts.length > 0 && shown.length === 0 && <li className="muted">{tr({ ja: "該当するESはありません", en: "No matching entry sheets", fr: "Aucune ES correspondante" })}</li>}
+          </ul>
+        )}
       </aside>
 
       {choosing && (

@@ -187,6 +187,8 @@ function Letter({ data, name, tr, onBreathe }: { data: Kokoro; name: string | nu
 }
 
 /** Ceux qui peuvent écouter, toujours visibles ; adaptés à la région et aux étudiants étrangers. */
+const WEEKDAYS = { ja: ["日", "月", "火", "水", "木", "金", "土"], en: ["S", "M", "T", "W", "T", "F", "S"], fr: ["D", "L", "M", "M", "J", "V", "S"] } as const;
+
 function Helplines({ data, tr }: { data: Kokoro; tr: Tr }) {
   const foreign = data.international || tr.lang !== "ja";
   const items: { Icon: typeof PhoneIcon; name: string; text: string; href: string }[] = [
@@ -225,6 +227,8 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   const [data, setData] = useState<Kokoro | null>(null);
   const [failed, setFailed] = useState(false);
   const [apps, setApps] = useState<Application[]>([]);
+  /** Jour choisi dans le calendrier des 4 semaines (aucun : aujourd'hui). */
+  const [pickedDay, setPicked] = useState<string | null>(null);
   const [mode, setMode] = useState<"none" | "breathe" | "ritual">("none");
   /** Rideau de nuages fermé pendant un chargement (au début, et quand la météo change). */
   const [veiled, setVeiled] = useState(true);
@@ -330,9 +334,14 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
   // Pendant le premier chargement : le ciel est couvert de nuages (pas de roue qui tourne).
   if (!data) return <KokoroLoading label={tr({ ja: "読み込み中", en: "Loading", fr: "Chargement" })} />;
 
-  // Les 4 dernières semaines, en « jardin » de points (aujourd'hui en dernier).
-  const days = Array.from({ length: 28 }, (_, i) => ymd(new Date(Date.now() - (27 - i) * 86_400_000)));
+  // Les 4 dernières semaines, en calendrier : quatre lignes du dimanche au samedi, la semaine en cours en dernier
+  // (ses jours à venir restent vides). Chaque colonne est donc un jour de la semaine.
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() - 21);
+  const days = Array.from({ length: 28 }, (_, i) => ymd(new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate() + i)));
   const byDate = new Map(data.moods.map((m) => [m.date, m]));
+  const picked = pickedDay && pickedDay <= today && pickedDay >= days[0] ? pickedDay : today;
+  const pickedMood = byDate.get(picked);
   const counted: Record<MoodWeather, number> = { sunny: 0, cloudy: 0, rainy: 0 };
   days.forEach((d) => { const m = byDate.get(d); if (m) counted[m.weather] += 1; });
 
@@ -379,16 +388,35 @@ export function KokoroPage({ onOpen }: { onOpen?: (target: { tab: "interview" | 
 
       <section className="kokoro-block garden" aria-label={tr({ ja: "この4週間の天気", en: "The last 4 weeks", fr: "Les 4 dernières semaines" })}>
         <h3>{tr({ ja: "この4週間", en: "The last 4 weeks", fr: "Ces 4 semaines" })}</h3>
-        <div className="garden-dots">
-          {days.map((d) => {
-            const m = byDate.get(d);
-            const label = m ? tr(WEATHERS.find((w) => w.id === m.weather)!.label) : "";
-            return <span key={d} className={`dot${m ? ` ${m.weather}` : ""}${d === today ? " today" : ""}`} title={`${formatDay(d, tr.lang)}${m ? ` · ${label}` : ""}${m?.word ? ` · ${m.word}` : ""}`} />;
-          })}
+        <div className="garden-body">
+          <div className="garden-dots">
+            {WEEKDAYS[tr.lang].map((w, i) => <span key={i} className="garden-wd" aria-hidden="true">{w}</span>)}
+            {days.map((d) => {
+              const m = byDate.get(d);
+              const label = m ? tr(WEATHERS.find((w) => w.id === m.weather)!.label) : tr({ ja: "記録なし", en: "nothing noted", fr: "rien de noté" });
+              if (d > today) return <span key={d} className="dot future" aria-hidden="true" />;
+              return (
+                <button key={d} type="button" className={`dot${m ? ` ${m.weather}` : ""}${d === today ? " today" : ""}`} aria-pressed={d === picked}
+                  aria-label={`${formatDay(d, tr.lang)} · ${label}`} title={`${formatDay(d, tr.lang)} · ${label}${m?.word ? ` · ${m.word}` : ""}`}
+                  onClick={() => setPicked(d)}>{Number(d.slice(8))}</button>
+              );
+            })}
+          </div>
+          {/* Le jour choisi (aujourd'hui par défaut) : ce qui y a été noté. */}
+          <div className="garden-day" aria-live="polite">
+            <p className="garden-date">{formatDay(picked, tr.lang)}{picked === today && <span>{tr({ ja: "今日", en: "today", fr: "aujourd'hui" })}</span>}</p>
+            {pickedMood ? (
+              <p className="garden-weather"><i className={`dot ${pickedMood.weather}`} />{tr(WEATHERS.find((w) => w.id === pickedMood.weather)!.label)}{pickedMood.word && <em>「{pickedMood.word}」</em>}</p>
+            ) : (
+              <p className="muted">{picked === today
+                ? tr({ ja: "まだ選んでいません。上で今日の天気を選べます。", en: "Not chosen yet. Pick today's weather above.", fr: "Pas encore choisie. Choisissez la météo du jour plus haut." })
+                : tr({ ja: "この日の記録はありません。", en: "Nothing noted that day.", fr: "Rien de noté ce jour-là." })}</p>
+            )}
+            <p className="garden-legend">
+              {WEATHERS.map((w) => <span key={w.id}><i className={`dot ${w.id}`} />{tr(w.label)} {counted[w.id]}</span>)}
+            </p>
+          </div>
         </div>
-        <p className="garden-legend">
-          {WEATHERS.map((w) => <span key={w.id}><i className={`dot ${w.id}`} />{tr(w.label)} {counted[w.id]}</span>)}
-        </p>
       </section>
 
       <Charms initial={data.charms} tr={tr} hasDevice={data.devices.count > 0} />
