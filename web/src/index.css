@@ -1164,3 +1164,44 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
 @media (min-width: 620px) {
   .kokoro-help ul { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; }
 }
+
+/* ------------------------------------------------------------------ スキル辞典 (書類 › スキル) */
+.skills-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.skills-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0; font-size: 13px; color: var(--muted); }
+.skills-legend > span { display: inline-flex; align-items: center; gap: 4px; }
+.skills-legend .skill-mark { width: 20px; height: 20px; }
+.skills-count { font-weight: 700; color: var(--blue-800); font-variant-numeric: tabular-nums; }
+.skills-hint { margin: 8px 0 4px; font-size: 13px; color: var(--muted); }
+.skill-group h3 { margin: 22px 0 8px; font-size: 14px; color: var(--blue-800); }
+.skill-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.skill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 6px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--white); color: var(--blue-950); font-size: 14px; cursor: pointer; transition: border-color .25s, background-color .25s; }
+.skill:hover { border-color: var(--blue-300); }
+.skill.lv1 { border-color: var(--blue-300); background: var(--blue-50); }
+.skill.lv2 { border-color: var(--bordeaux); background: var(--bordeaux-50); color: var(--bordeaux); font-weight: 600; }
+.skill:active .skill-mark { transform: scale(.88); }
+
+/* Le rond : un trait qui se dessine comme à la main (et se défait quand on l'enlève). */
+.skill-mark { width: 24px; height: 24px; flex: none; overflow: visible; transition: transform .15s; }
+.skill-mark .ring { fill: none; stroke-width: 2.2; stroke-linecap: round;
+  /* Un trait de 100 suivi d'un long vide : décalé de 101, plus rien ne dépasse (pas même le bout arrondi). */
+  stroke-dasharray: 100 200; stroke-dashoffset: 101;
+  transition: stroke-dashoffset .45s cubic-bezier(.6, .05, .3, 1), stroke .25s; }
+.skill-mark .outer { stroke: var(--blue-700); }
+.skill-mark .inner { stroke: var(--bordeaux); transition-delay: 0s; }
+.skill-mark .guide { fill: none; stroke: var(--line); stroke-width: 1.6; stroke-dasharray: 2 4.2; transition: opacity .3s; }
+.skill-mark.lv1 .guide, .skill-mark.lv2 .guide { opacity: 0; }
+.skill-mark.lv1 .outer, .skill-mark.lv2 .outer { stroke-dashoffset: 0; }
+.skill-mark.lv2 .outer { stroke: var(--bordeaux); }
+.skill-mark.lv2 .inner { stroke-dashoffset: 0; transition-delay: .12s; }
+.skill.lv1 .skill-mark, .skill.lv2 .skill-mark { animation: skill-pop .45s cubic-bezier(.3, 1.6, .5, 1); }
+.skill.lv2 .skill-mark { animation-name: skill-pop2; }
+.skill-mark .burst path { stroke: var(--bordeaux); stroke-width: 1.8; stroke-linecap: round; transform-box: view-box;
+  opacity: 0; animation: skill-burst .6s ease-out .2s; }
+@keyframes skill-pop { 0% { transform: scale(.7) rotate(-20deg); } 100% { transform: none; } }
+@keyframes skill-pop2 { 0% { transform: scale(.75) rotate(25deg); } 100% { transform: none; } }
+@keyframes skill-burst { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 0; scale: 1.25; } }
+@media (prefers-reduced-motion: reduce) {
+  .skill-mark .ring { transition: none; }
+  .skill .skill-mark, .skill-mark .burst path { animation: none; }
+}

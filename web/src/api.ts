@@ -584,3 +584,11 @@ export async function requestBeta(body: BetaRequest, fetcher: typeof fetch = fet
   }
 }
 
+
+/** スキル辞典 : 1 = ○ (des notions), 2 = ◎ (bien maîtrisée) ; une compétence absente n'est pas cochée. */
+export type SkillLevels = Record<string, 1 | 2>;
+export const getSkills = (token: string, f?: typeof fetch) =>
+  call<{ levels: SkillLevels; updatedAt: string | null }>(token, "GET", "/api/skills", undefined, f);
+/** Envoie toutes les compétences cochées (remplace l'enregistrement précédent). */
+export const saveSkills = (token: string, levels: SkillLevels, f?: typeof fetch) =>
+  call<{ levels: SkillLevels; updatedAt: string }>(token, "PUT", "/api/skills", { levels }, f);

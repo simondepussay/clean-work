@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTr } from "../i18n";
 
-export type DocumentKind = "es" | "pdf";
+export type DocumentKind = "es" | "pdf" | "skills";
 
 /** ES : une feuille, un trait d'écriture et une plume (dessin bicolore, propre à Clean Work). */
 function EsIcon() {
@@ -29,9 +29,22 @@ function CvIcon() {
   );
 }
 
+/** スキル : une petite fiche de compétences, un ◎ bordeaux et un ○ bleu. */
+function SkillsIcon() {
+  return (
+    <svg className="doc-icon" viewBox="0 0 28 28" aria-hidden="true">
+      <rect x="3.5" y="4" width="21" height="20" rx="3" fill="var(--blue-100)" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="9.5" cy="10.5" r="3" fill="var(--white)" stroke="var(--bordeaux)" strokeWidth="1.5" />
+      <circle cx="9.5" cy="10.5" r="1.2" fill="none" stroke="var(--bordeaux)" strokeWidth="1.2" />
+      <circle cx="9.5" cy="18" r="3" fill="var(--white)" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M15 10.5h6M15 18h4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /**
  * Onglet « 書類 » : deux petits boutons placés juste sous l'intercalaire « 書類 » (aligné sur son
- * centre), pour passer des ES aux CV en PDF ; puis le contenu choisi.
+ * centre), pour passer des ES aux CV en PDF et à la スキル辞典 ; puis le contenu choisi.
  */
 export function DocumentsPage({ current, onChoose, children }: { current: DocumentKind; onChoose: (d: DocumentKind) => void; children: ReactNode }) {
   const tr = useTr();
@@ -60,6 +73,7 @@ export function DocumentsPage({ current, onChoose, children }: { current: Docume
   const choices = [
     { id: "es" as const, Icon: EsIcon, title: tr({ ja: "ES", en: "ES", fr: "ES" }) },
     { id: "pdf" as const, Icon: CvIcon, title: tr({ ja: "履歴書PDF", en: "CV in PDF", fr: "CV en PDF" }) },
+    { id: "skills" as const, Icon: SkillsIcon, title: tr({ ja: "スキル", en: "Skills", fr: "Compétences" }) },
   ];
   return (
     <div className="documents" ref={root}>

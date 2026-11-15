@@ -15,6 +15,7 @@ import { KokoroLoading } from "./kokoro/KokoroSky";
 const ApplicationsBoard = lazy(() => import("./apps/ApplicationsBoard").then((m) => (loadedFine(), { default: m.ApplicationsBoard })));
 const EsPage = lazy(() => import("./es/EsPage").then((m) => (loadedFine(), { default: m.EsPage })));
 const InterviewPage = lazy(() => import("./interview/InterviewPage").then((m) => (loadedFine(), { default: m.InterviewPage })));
+const SkillsPanel = lazy(() => import("./profile/SkillsPanel").then((m) => (loadedFine(), { default: m.SkillsPanel })));
 const DocumentsPage = lazy(() => import("./profile/DocumentsPage").then((m) => (loadedFine(), { default: m.DocumentsPage })));
 const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => (loadedFine(), { default: m.ResumePanel })));
 const KokoroPage = lazy(() => import("./kokoro/KokoroPage").then((m) => (loadedFine(), { default: m.KokoroPage })));
@@ -29,7 +30,7 @@ import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
-const VIEWS = ["home", "kokoro", "apps", "es", "interview", "documents", "info", "account", "beta"] as const;
+const VIEWS = ["home", "kokoro", "apps", "es", "interview", "documents", "skills", "info", "account", "beta"] as const;
 type View = (typeof VIEWS)[number];
 
 function viewFromHash(): View {
@@ -58,6 +59,7 @@ const VIEW_TITLES: Record<View, T3> = {
   es: { ja: "エントリーシート", en: "Entry sheets", fr: "Entry sheets" },
   interview: { ja: "面接", en: "Interview", fr: "Entretiens" },
   documents: { ja: "書類", en: "Documents", fr: "Documents" },
+  skills: { ja: "スキル辞典", en: "Skills", fr: "Compétences" },
   info: { ja: "情報", en: "Info", fr: "Infos" },
   account: { ja: "アカウント", en: "Account", fr: "Compte" },
   beta: { ja: "βテストに参加", en: "Join the beta", fr: "Rejoindre la bêta" },
@@ -297,7 +299,7 @@ export default function App() {
         {signedIn && !showWelcome && (
           <nav className="tabs" role="tablist" aria-label={tr({ ja: "メニュー", en: "Menu", fr: "Menu" })}>
             {[{ view: "home" as View, ja: "ホーム", en: "Home" }, ...SERVICES].map((s) => (
-              <button key={s.view} data-view={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && view === "es")} onClick={() => open(s.view)}>
+              <button key={s.view} data-view={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && (view === "es" || view === "skills"))} onClick={() => open(s.view)}>
                 {s.ja}<span>{s.en}</span>
               </button>
             ))}
@@ -325,9 +327,9 @@ export default function App() {
                   onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
                   onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
               )}
-              {signedIn && (view === "es" || view === "documents") && (
-                <DocumentsPage current={view === "es" ? "es" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : "documents")}>
-                  {view === "es" ? <EsPage seed={esSeed} /> : <ResumePanel />}
+              {signedIn && (view === "es" || view === "documents" || view === "skills") && (
+                <DocumentsPage current={view === "es" ? "es" : view === "skills" ? "skills" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : d === "skills" ? "skills" : "documents")}>
+                  {view === "es" ? <EsPage seed={esSeed} /> : view === "skills" ? <SkillsPanel /> : <ResumePanel />}
                 </DocumentsPage>
               )}
               {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}

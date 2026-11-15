@@ -157,6 +157,7 @@ const routes: Record<string, unknown> = {
   "GET /api/email-usage": { today: 10, month: 38 },
   "GET /api/debrief-usage": { today: 5, month: 30 },
   "GET /api/research-usage": { today: 5, month: 30 },
+  "GET /api/skills": { levels: demoNew ? {} : { swift: 2, swiftui: 2, python: 1, javascript: 1, "html-css": 2, git: 2, azure: 1, figma: 1, "cross-cultural": 2, teamwork: 1, keigo: 1 }, updatedAt: null },
   // Mail rédigé par l'IA (« * » = préfixe ; les conseils après entretien sont traités plus bas).
   "POST /api/applications/*": {
     subject: "一次面接のお礼（HAL東京 シモン）",
@@ -206,6 +207,10 @@ export function installDemoApi() {
       const entry = sent.text ? { date: sent.date, text: String(sent.text).trimEnd(), updatedAt: new Date().toISOString() } : null;
       journal.entries = [...(entry ? [entry] : []), ...journal.entries.filter((e) => e.date !== sent.date)];
       return new Response(JSON.stringify({ entry }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (key === "PUT /api/skills") {
+      routes["GET /api/skills"] = { levels: sent.levels ?? {}, updatedAt: new Date().toISOString() };
+      return new Response(JSON.stringify(routes["GET /api/skills"]), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (key === "PUT /api/kokoro/values") kokoro.values = (sent.values as string[]).filter(Boolean);
     // Candidature modifiée : gardée pendant la démo (statut, bilans d'entretien…).

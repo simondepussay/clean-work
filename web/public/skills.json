@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "lang",
+      "name": { "ja": "プログラミング言語", "en": "Programming languages", "fr": "Langages de programmation" },
+      "skills": [
+        { "id": "python", "name": "Python" },
+        { "id": "javascript", "name": "JavaScript" },
+        { "id": "typescript", "name": "TypeScript" },
+        { "id": "java", "name": "Java" },
+        { "id": "c", "name": "C" },
+        { "id": "cpp", "name": "C++" },
+        { "id": "csharp", "name": "C#" },
+        { "id": "swift", "name": "Swift" },
+        { "id": "kotlin", "name": "Kotlin" },
+        { "id": "go", "name": "Go" },
+        { "id": "rust", "name": "Rust" },
+        { "id": "php", "name": "PHP" },
+        { "id": "ruby", "name": "Ruby" },
+        { "id": "dart", "name": "Dart" },
+        { "id": "sql", "name": "SQL" }
+      ]
+    },
+    {
+      "id": "dev",
+      "name": { "ja": "Web・アプリ開発", "en": "Web and app development", "fr": "Développement web et apps" },
+      "skills": [
+        { "id": "html-css", "name": "HTML / CSS" },
+        { "id": "react", "name": "React" },
+        { "id": "vue", "name": "Vue.js" },
+        { "id": "nextjs", "name": "Next.js" },
+        { "id": "nodejs", "name": "Node.js" },
+        { "id": "spring", "name": "Spring" },
+        { "id": "django", "name": "Django" },
+        { "id": "laravel", "name": "Laravel" },
+        { "id": "rails", "name": "Ruby on Rails" },
+        { "id": "swiftui", "name": "SwiftUI" },
+        { "id": "flutter", "name": "Flutter" },
+        { "id": "unity", "name": "Unity" },
+        { "id": "unreal", "name": "Unreal Engine" },
+        { "id": "testing", "name": { "ja": "テスト（単体・結合）", "en": "Testing (unit, integration)", "fr": "Tests (unitaires, intégration)" } }
+      ]
+    },
+    {
+      "id": "infra",
+      "name": { "ja": "クラウド・インフラ", "en": "Cloud and infrastructure", "fr": "Cloud et infrastructure" },
+      "skills": [
+        { "id": "aws", "name": "AWS" },
+        { "id": "azure", "name": "Azure" },
+        { "id": "gcp", "name": "Google Cloud" },
+        { "id": "docker", "name": "Docker" },
+        { "id": "kubernetes", "name": "Kubernetes" },
+        { "id": "linux", "name": "Linux" },
+        { "id": "git", "name": "Git / GitHub" },
+        { "id": "cicd", "name": "CI/CD" },
+        { "id": "terraform", "name": "Terraform" },
+        { "id": "network", "name": { "ja": "ネットワーク", "en": "Networking", "fr": "Réseaux" } },
+        { "id": "security", "name": { "ja": "セキュリティ", "en": "Security", "fr": "Sécurité" } }
+      ]
+    },
+    {
+      "id": "data",
+      "name": { "ja": "データ・AI", "en": "Data and AI", "fr": "Données et IA" },
+      "skills": [
+        { "id": "mysql", "name": "MySQL" },
+        { "id": "postgresql", "name": "PostgreSQL" },
+        { "id": "mongodb", "name": "MongoDB" },
+        { "id": "excel", "name": { "ja": "Excel（関数・ピボット）", "en": "Excel (formulas, pivots)", "fr": "Excel (formules, tableaux croisés)" } },
+        { "id": "data-analysis", "name": { "ja": "データ分析", "en": "Data analysis", "fr": "Analyse de données" } },
+        { "id": "bi", "name": "Tableau / Power BI" },
+        { "id": "ml", "name": { "ja": "機械学習", "en": "Machine learning", "fr": "Apprentissage automatique" } },
+        { "id": "genai", "name": { "ja": "生成AIの活用", "en": "Using generative AI", "fr": "Utiliser l'IA générative" } }
+      ]
+    },
+    {
+      "id": "design",
+      "name": { "ja": "デザイン・映像", "en": "Design and video", "fr": "Design et vidéo" },
+      "skills": [
+        { "id": "figma", "name": "Figma" },
+        { "id": "photoshop", "name": "Photoshop" },
+        { "id": "illustrator", "name": "Illustrator" },
+        { "id": "uiux", "name": { "ja": "UI/UXデザイン", "en": "UI/UX design", "fr": "Design UI/UX" } },
+        { "id": "video", "name": { "ja": "動画編集（Premiere など）", "en": "Video editing (Premiere…)", "fr": "Montage vidéo (Premiere…)" } },
+        { "id": "after-effects", "name": "After Effects" },
+        { "id": "3dcg", "name": { "ja": "3DCG（Blender など）", "en": "3D (Blender…)", "fr": "3D (Blender…)" } }
+      ]
+    },
+    {
+      "id": "business",
+      "name": { "ja": "ビジネス", "en": "Business", "fr": "Entreprise" },
+      "skills": [
+        { "id": "word", "name": "Word" },
+        { "id": "powerpoint", "name": "PowerPoint" },
+        { "id": "presentation", "name": { "ja": "プレゼンテーション", "en": "Presentations", "fr": "Présentations" } },
+        { "id": "business-mail", "name": { "ja": "ビジネスメール", "en": "Business email", "fr": "E-mails professionnels" } },
+        { "id": "keigo", "name": { "ja": "敬語", "en": "Keigo (polite Japanese)", "fr": "Keigo (japonais poli)" } },
+        { "id": "minutes", "name": { "ja": "議事録の作成", "en": "Taking meeting minutes", "fr": "Comptes rendus de réunion" } },
+        { "id": "project-management", "name": { "ja": "プロジェクト管理", "en": "Project management", "fr": "Gestion de projet" } },
+        { "id": "sales", "name": { "ja": "営業・接客", "en": "Sales and customer service", "fr": "Vente et service client" } },
+        { "id": "marketing", "name": { "ja": "マーケティング", "en": "Marketing", "fr": "Marketing" } },
+        { "id": "accounting", "name": { "ja": "会計・簿記", "en": "Accounting, bookkeeping", "fr": "Comptabilité" } },
+        { "id": "translation", "name": { "ja": "翻訳・通訳", "en": "Translation, interpreting", "fr": "Traduction, interprétation" } }
+      ]
+    },
+    {
+      "id": "human",
+      "name": { "ja": "ヒューマンスキル", "en": "People skills", "fr": "Savoir-être" },
+      "skills": [
+        { "id": "teamwork", "name": { "ja": "チームワーク", "en": "Teamwork", "fr": "Travail d'équipe" } },
+        { "id": "leadership", "name": { "ja": "リーダーシップ", "en": "Leadership", "fr": "Leadership" } },
+        { "id": "problem-solving", "name": { "ja": "問題解決", "en": "Problem solving", "fr": "Résolution de problèmes" } },
+        { "id": "cross-cultural", "name": { "ja": "異文化コミュニケーション", "en": "Cross-cultural communication", "fr": "Communication interculturelle" } },
+        { "id": "listening", "name": { "ja": "傾聴", "en": "Active listening", "fr": "Écoute active" } },
+        { "id": "negotiation", "name": { "ja": "交渉", "en": "Negotiation", "fr": "Négociation" } },
+        { "id": "time-management", "name": { "ja": "時間管理", "en": "Time management", "fr": "Gestion du temps" } },
+        { "id": "initiative", "name": { "ja": "主体性", "en": "Initiative", "fr": "Esprit d'initiative" } },
+        { "id": "teaching", "name": { "ja": "人に教える力", "en": "Teaching others", "fr": "Transmettre, enseigner" } }
+      ]
+    }
+  ]
+}

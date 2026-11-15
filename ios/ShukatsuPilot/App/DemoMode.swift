@@ -54,6 +54,10 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/interview-usage"), ("GET", "/api/usage"): body = ["today": 3, "month": 19]
         case ("GET", "/api/email-usage"): body = ["today": 10, "month": 38]
         case ("GET", "/api/debrief-usage"), ("GET", "/api/research-usage"): body = ["today": 5, "month": 30]
+        case ("GET", "/api/skills"):
+            body = ["levels": newAccount ? [:] : ["swift": 2, "swiftui": 2, "python": 1, "javascript": 1, "html-css": 2, "git": 2, "azure": 1, "figma": 1, "cross-cultural": 2, "teamwork": 1, "keigo": 1]]
+        case ("PUT", "/api/skills"):
+            body = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) ?? [:]
         case ("POST", _) where path.hasSuffix("/research"):
             status = 200
             var app = Self.demoApplication(path)

@@ -6,6 +6,13 @@ Cocher `[x]` quand c'est fait, et noter ce qui ne va pas sous la ligne.
 
 Site : https://cleanwork.simondepussay.com
 
+## スキル辞典 (書類 › スキル, 15 novembre)
+
+- Site et iPhone : un toucher = ○, deux = ◎, trois = rien ; regarder l'animation (trait qui se dessine, rebond, éclats pour ◎).
+- Cocher vite plusieurs compétences, changer d'onglet, revenir : tout doit être gardé (un seul envoi après 0,7 s).
+- Cocher sur le site, ouvrir l'iPhone : mêmes ronds.
+- Dire s'il manque des compétences ou des catégories : la liste est dans web/public/skills.json.
+
 ## Fonctions IA de novembre : mails, bilan d'entretien, parcours 内定 (12–14 novembre) — à faire en premier
 
 Je n'ai vu que des réponses d'exemple : seul un vrai compte montre ce que l'IA écrit vraiment.

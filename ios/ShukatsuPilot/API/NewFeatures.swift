@@ -241,3 +241,41 @@ extension ISO8601DateFormatter {
         return f
     }()
 }
+
+// MARK: スキル辞典
+
+/// La liste des compétences classées : le même fichier que le web (web/public/skills.json), lu depuis le site.
+struct SkillCatalog: Decodable, Equatable {
+    struct Category: Decodable, Equatable, Identifiable {
+        let id: String
+        let name: Text3
+        let skills: [Skill]
+    }
+    struct Skill: Decodable, Equatable, Identifiable {
+        let id: String
+        /// Un nom propre (« Python ») n'est pas traduit : une simple chaîne, sinon les trois langues.
+        let name: Text3
+
+        private enum Keys: String, CodingKey { case id, name }
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: Keys.self)
+            id = try c.decode(String.self, forKey: .id)
+            if let plain = try? c.decode(String.self, forKey: .name) { name = Text3(ja: plain, en: plain, fr: plain) }
+            else { name = try c.decode(Text3.self, forKey: .name) }
+        }
+    }
+    let categories: [Category]
+}
+
+extension APIClient {
+    /// 1 = ○ (des notions), 2 = ◎ (bien maîtrisée) ; une compétence absente n'est pas cochée.
+    func skillLevels() async throws -> [String: Int] {
+        struct Reply: Decodable { let levels: [String: Int] }
+        return try JSONDecoder().decode(Reply.self, from: try await sendRaw("GET", "api/skills")).levels
+    }
+
+    /// Envoie toutes les compétences cochées (remplace l'enregistrement précédent).
+    func saveSkillLevels(_ levels: [String: Int]) async throws {
+        _ = try await sendRaw("PUT", "api/skills", body: try JSONEncoder().encode(["levels": levels]))
+    }
+}

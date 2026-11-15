@@ -108,4 +108,25 @@ final class ProfileTests: XCTestCase {
         let plain = try XCTUnwrap(try JSONSerialization.jsonObject(with: JSONEncoder().encode(english)) as? [String: String])
         XCTAssertNil(plain["languageOther"])
     }
+
+    // MARK: スキル辞典
+
+    func testSkillCatalogDecodesPlainAndTranslatedNames() throws {
+        let data = Data(#"{"version":1,"categories":[{"id":"lang","name":{"ja":"言語","en":"Languages","fr":"Langages"},"skills":[{"id":"python","name":"Python"},{"id":"keigo","name":{"ja":"敬語","en":"Keigo","fr":"Keigo (poli)"}}]}]}"#.utf8)
+        let catalog = try JSONDecoder().decode(SkillCatalog.self, from: data)
+        XCTAssertEqual(catalog.categories.first?.skills.map(\.name.fr), ["Python", "Keigo (poli)"])
+    }
+
+    func testSkillLevelsAreReadAndSentWhole() async throws {
+        StubURLProtocol.handler = { request in
+            let body = request.httpMethod == "PUT" ? Data(#"{"levels":{"swift":2},"updatedAt":"t"}"#.utf8) : Data(#"{"levels":{"swift":1,"figma":2},"updatedAt":null}"#.utf8)
+            return (200, body)
+        }
+        let levels = try await api().skillLevels()
+        XCTAssertEqual(levels, ["swift": 1, "figma": 2])
+        try await api().saveSkillLevels(["swift": 2])
+        let sent = try XCTUnwrap(StubURLProtocol.lastRequest)
+        XCTAssertEqual(sent.httpMethod, "PUT")
+        XCTAssertEqual(sent.url?.path, "/api/skills")
+    }
 }
