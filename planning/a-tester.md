@@ -12,6 +12,7 @@ Site : https://cleanwork.simondepussay.com
 - Cocher vite plusieurs compétences, changer d'onglet, revenir : tout doit être gardé (un seul envoi après 0,7 s).
 - Cocher sur le site, ouvrir l'iPhone : mêmes ronds.
 - Dire s'il manque des compétences ou des catégories : la liste est dans web/public/skills.json.
+- L'IA s'en sert : relire un 自己PR avec quelques ◎ cochés (elle doit les relier à une expérience, sans en inventer), et lancer un entretien simulé (une question peut porter sur un ◎ lié au poste).
 
 ## Fonctions IA de novembre : mails, bilan d'entretien, parcours 内定 (12–14 novembre) — à faire en premier
 

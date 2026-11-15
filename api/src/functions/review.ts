@@ -6,6 +6,7 @@ import { withUser } from "../lib/http";
 import { containers, type Application, type Review } from "../lib/models";
 import { Repository } from "../lib/repository";
 import { buildMessages, costJpy, draftPurpose, explanationLanguages, reviewModelFromEnv, sanitize, type ReviewModel } from "../lib/review";
+import { SkillsService } from "../lib/skills";
 import { getStore, type DocStore } from "../lib/store";
 import { UsageLimiter } from "../lib/usage";
 
@@ -50,7 +51,8 @@ export function reviewHandlers(deps: Deps = {}) {
 
     let output;
     try {
-      output = await ai.review(buildMessages(draft, language, { application, otherMotivations }));
+      const skills = (await new SkillsService(store()).get(user.userId)).levels;
+      output = await ai.review(buildMessages(draft, language, { application, otherMotivations, skills }));
     } catch (e) {
       await reserved.reservation.release();
       ctx.error("relecture : échec du modèle", e);

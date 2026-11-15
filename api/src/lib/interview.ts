@@ -16,6 +16,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { containers, type Application, type Draft, type Profile } from "./models";
+import { SkillsService, skillLines, type SkillLevels } from "./skills";
 import { costJpy, cut, explanationLanguages, INDUSTRY_NAMES, TYPE_NAMES, type ChatMessage, type ExplanationLanguage, type ModelUsage, type StructuredModel } from "./review";
 import type { DocStore } from "./store";
 import { INTERVIEW_LIMITS, INTERVIEWS, UsageLimiter, type Refusal } from "./usage";
@@ -100,7 +101,7 @@ const STATUS_NAMES: Record<string, string> = { enrolled: "在学中", graduated:
  * Ce que l'IA sait de la séance. Volontairement sans nom, date de naissance, adresse, téléphone
  * ni email : le principe de minimisation des données (et ça n'aide pas à poser de bonnes questions).
  */
-export function buildContext(input: { application: Application | null; profile: Profile | null; drafts: Draft[]; stage: InterviewStage }): string {
+export function buildContext(input: { application: Application | null; profile: Profile | null; drafts: Draft[]; stage: InterviewStage; skills?: SkillLevels | null }): string {
   const { application: app, profile, drafts, stage } = input;
   const lines = [`段階：${STAGE_NAMES[stage]}`];
 
@@ -137,6 +138,8 @@ export function buildContext(input: { application: Application | null; profile: 
   } else {
     lines.push("プロフィール未登録");
   }
+  // スキル辞典 : l'auto-évaluation ○ / ◎ (sans profil aussi).
+  lines.push(...skillLines(input.skills));
 
   // ES écrites pour cette entreprise d'abord ; sinon les ES « communes » (自己PR…).
   const related = app ? drafts.filter((d) => d.applicationId === app.id) : [];
@@ -183,6 +186,7 @@ export function questionMessages(context: string, language: ExplanationLanguage)
 ## 学生に合わせる
 - プロフィールと提出したESから質問を作る。ESに書いたことは本番で必ず聞かれる。
 - 留学生によく聞かれる質問（なぜ日本で働きたいか、日本語の勉強など）を1つ入れてよい。
+- 「スキル ◎得意」があれば、職種に関係するものを1つ選び、実際にどう使ったか（作ったもの・役割・結果）を聞く質問を1つ入れてよい。スキルは学生の自己評価なので、使った経験があると決めつけない聞き方にする。
 - 「実際に受けた面接の振り返り」があれば、うまく答えられなかった質問を1〜2問、言い方を変えてもう一度聞く。次の選考段階なら、前回の質問を深掘りする。
 
 ${FAIRNESS}
@@ -389,11 +393,12 @@ export class InterviewCoach {
     const reserved = await this.limiter().reserve(userId);
     if (!reserved.ok) return { error: "limit", refusal: reserved.refusal };
 
-    const [profile, drafts] = await Promise.all([
+    const [profile, drafts, skills] = await Promise.all([
       this.store.get<Profile>(containers.profiles, userId, userId),
       this.store.list<Draft>(containers.drafts, userId),
+      new SkillsService(this.store).get(userId),
     ]);
-    const context = buildContext({ application, profile, drafts, stage });
+    const context = buildContext({ application, profile, drafts, stage, skills: skills.levels });
     const answer = await this.ask<{ questions: { question: string; intent: string }[] }>(questionMessages(context, input.language), "interview_questions", questionsSchema(input.language));
     const turns = answer ? sanitizeQuestions(answer.result) : [];
     if (!answer || turns.length === 0) {
