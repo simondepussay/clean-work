@@ -9,9 +9,9 @@ import { ListEditor, type Field } from "../profile/ListEditor";
 import { toICalendar, upcomingDeadlines } from "./deadlines";
 import { CLOSED, COLUMNS, COMPANY_TYPES, GROUPS, INDUSTRIES, daysUntil, deadlineLabel, matches, stepTypes, type GroupId } from "./statuses";
 import { apiMessage, useTr } from "../i18n";
-import { CalendarMenu } from "./CalendarMenu";
+import { CalendarOptions } from "./CalendarMenu";
 import { CompanyFacts } from "./CompanyFacts";
-import { ChatIcon, CheckIcon, ClockIcon, FlagIcon, MailIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
+import { CalendarIcon, ChatIcon, CheckIcon, ChevronLeftIcon, ClockIcon, DocIcon, FlagIcon, GlobeIcon, MailIcon, MicIcon, PenIcon, PlusIcon, SearchIcon } from "../icons";
 import { EmailPanel } from "./EmailPanel";
 import { DebriefPanel } from "./DebriefPanel";
 import { OfferGuidePanel } from "./OfferGuidePanel";
@@ -85,6 +85,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   /** Volet ouvert d'une candidature enregistrée, et outil déplié dans « 準備と連絡 ». */
   const [pane, setPane] = useState<Pane>("selection");
   const [tool, setTool] = useState<Tool | null>(null);
+  const [moreView, setMoreView] = useState<"list" | "calendar">("list");
   // L'outil déplié s'affiche sous les cartes : on l'amène à l'écran (sur un téléphone, il serait hors champ).
   const toolPanel = useRef<HTMLDivElement>(null);
   useEffect(() => { if (tool) toolPanel.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" }); }, [tool]);
@@ -256,13 +257,23 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
             placeholder={tr({ ja: "企業名・職種・メモで検索", en: "Search company, position, notes", fr: "Chercher entreprise, poste, notes" })}
             aria-label={tr({ ja: "応募を検索", en: "Search applications", fr: "Chercher une candidature" })} />
         </label>
-        <CalendarMenu onDownload={exportCalendar} canDownload={allUpcoming.length > 0} />
-        <details className="more-menu">
+        <details className="more-menu" onToggle={(e) => { if (!(e.currentTarget as HTMLDetailsElement).open) setMoreView("list"); }}>
           <summary aria-label={tr({ ja: "その他", en: "More", fr: "Plus" })}>…</summary>
-          <div className="menu">
-            <button type="button" onClick={(e) => { setImporting(true); (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; }}>{tr({ ja: "インポート（Notion・Huntr・Excel）", en: "Import (Notion, Huntr, Excel)", fr: "Importer (Notion, Huntr, Excel)" })}</button>
-            <button type="button" onClick={(e) => { setBrowserHelp(true); (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; }}>{tr({ ja: "ブラウザから追加", en: "Save from the browser", fr: "Ajouter depuis le navigateur" })}</button>
-          </div>
+          {moreView === "calendar" ? (
+            <div className="menu wide">
+              <button type="button" className="menu-back" onClick={() => setMoreView("list")}>
+                <ChevronLeftIcon size={15} /> {tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}
+              </button>
+              <CalendarOptions onDownload={exportCalendar} canDownload={allUpcoming.length > 0}
+                onDone={() => { const d = document.querySelector<HTMLDetailsElement>(".apps-bar .more-menu"); if (d) d.open = false; }} />
+            </div>
+          ) : (
+            <div className="menu">
+              <button type="button" onClick={() => setMoreView("calendar")}><CalendarIcon size={15} /> {tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}</button>
+              <button type="button" onClick={(e) => { setImporting(true); (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; }}><DocIcon size={15} /> {tr({ ja: "インポート（Notion・Huntr・Excel）", en: "Import (Notion, Huntr, Excel)", fr: "Importer (Notion, Huntr, Excel)" })}</button>
+              <button type="button" onClick={(e) => { setBrowserHelp(true); (e.currentTarget.closest("details") as HTMLDetailsElement).open = false; }}><GlobeIcon size={15} /> {tr({ ja: "ブラウザから追加", en: "Save from the browser", fr: "Ajouter depuis le navigateur" })}</button>
+            </div>
+          )}
         </details>
         {error && !editing && <span role="alert" className="notice">{tr({ ja: "保存できませんでした", en: "Could not save", fr: "Enregistrement impossible" })}</span>}
       </div>

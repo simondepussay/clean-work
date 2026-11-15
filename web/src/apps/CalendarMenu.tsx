@@ -11,22 +11,9 @@ import { CalendarIcon, CheckIcon, DocIcon } from "../icons";
  * calendrier ; ou un fichier .ics ponctuel.
  */
 export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?: () => void; canDownload?: boolean }) {
-  const auth = useAuth();
   const tr = useTr();
   const [open, setOpen] = useState(false);
-  const [url, setUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [copied, setCopied] = useState(false);
   const root = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open || url) return;
-    auth.getToken()
-      .then((t) => (t ? getCalendarLink(t, tr.lang) : null))
-      .then((r) => (r?.ok ? setUrl(r.value.url) : setFailed(true)))
-      .catch(() => setFailed(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +26,36 @@ export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?:
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  return (
+    <div className="calendar-menu" ref={root}>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
+        <CalendarIcon size={16} /> {tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}
+      </button>
+      {open && (
+        <div className="menu wide" role="menu" aria-label={tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}>
+          <CalendarOptions onDownload={onDownload} canDownload={canDownload} onDone={() => setOpen(false)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Le contenu du menu (abonnement, lien à copier, .ics) ; utilisable seul dans un autre menu. */
+export function CalendarOptions({ onDownload, canDownload = false, onDone }: { onDownload?: () => void; canDownload?: boolean; onDone: () => void }) {
+  const auth = useAuth();
+  const tr = useTr();
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    auth.getToken()
+      .then((t) => (t ? getCalendarLink(t, tr.lang) : null))
+      .then((r) => (r?.ok ? setUrl(r.value.url) : setFailed(true)))
+      .catch(() => setFailed(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const webcal = url?.replace(/^https:/, "webcal:");
   const targets = url && webcal ? [
@@ -74,12 +91,7 @@ export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?:
   }
 
   return (
-    <div className="calendar-menu" ref={root}>
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
-        <CalendarIcon size={16} /> {tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}
-      </button>
-      {open && (
-        <div className="menu wide" role="menu" aria-label={tr({ ja: "カレンダーに追加", en: "Add to calendar", fr: "Ajouter au calendrier" })}>
+    <>
           <p className="menu-title">{tr({ ja: "カレンダーで購読（自動で更新）", en: "Subscribe (updates automatically)", fr: "S'abonner (mise à jour automatique)" })}</p>
           {!url && !failed && <Loader size={26} />}
           {failed && <p className="menu-note">{tr({ ja: "リンクを作成できませんでした", en: "Could not create the link", fr: "Impossible de créer le lien" })}</p>}
@@ -98,7 +110,7 @@ export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?:
             </>
           )}
           {onDownload && (
-            <button type="button" role="menuitem" className="menu-link" onClick={() => { onDownload(); setOpen(false); }} disabled={!canDownload}>
+            <button type="button" role="menuitem" className="menu-link" onClick={() => { onDownload(); onDone(); }} disabled={!canDownload}>
               <DocIcon size={15} /> {tr({ ja: ".ics ファイルをダウンロード（一度だけ）", en: "Download an .ics file (one-off)", fr: "Télécharger un fichier .ics (ponctuel)" })}
             </button>
           )}
@@ -112,8 +124,6 @@ export function CalendarMenu({ onDownload, canDownload = false }: { onDownload?:
               {tr({ ja: "リンクを作り直す（今のリンクは無効に）", en: "Create a new link (the current one stops working)", fr: "Créer un nouveau lien (l'actuel ne marchera plus)" })}
             </button>
           )}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
