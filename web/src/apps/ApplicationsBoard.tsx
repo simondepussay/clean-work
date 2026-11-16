@@ -250,7 +250,7 @@ export function ApplicationsBoard({ onWriteEs, onPractice, seed }: {
   return (
     <section className="apps">
       <div className="apps-bar">
-        <button className="primary" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}><PlusIcon size={16} /> {tr({ ja: "応募を追加", en: "Add an application", fr: "Ajouter une candidature" })}</button>
+        <button className="primary add-app" onClick={() => { setIssues([]); setEditing({ id: null, form: { ...blank } }); }}><span className="add-app-plus" aria-hidden="true"><PlusIcon size={14} /></span>{tr({ ja: "応募を追加", en: "Add an application", fr: "Ajouter une candidature" })}</button>
         <label className="apps-search">
           <SearchIcon size={15} />
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}

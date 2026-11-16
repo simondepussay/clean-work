@@ -220,6 +220,18 @@ del { background: color-mix(in srgb, var(--bordeaux) 25%, transparent); }
 @media (max-width: 560px) { .resume-sheets { width: 80px; } }
 .apps { margin-top: 24px; }
 .apps-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+/* Bouton « Ajouter une candidature » : dégradé bordeaux, « + » dans une pastille, léger relief */
+button.add-app { display: inline-flex; align-items: center; gap: 10px; padding: 8px 20px 8px 8px; border: 0;
+  background: linear-gradient(135deg, var(--bordeaux-600), var(--bordeaux)); letter-spacing: .01em;
+  box-shadow: 0 1px 2px rgba(123, 30, 46, .25), 0 6px 16px rgba(123, 30, 46, .22), inset 0 1px 0 rgba(255, 255, 255, .14);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+button.add-app:hover { border: 0; background: linear-gradient(135deg, var(--bordeaux-600), var(--bordeaux)); filter: brightness(1.08);
+  transform: translateY(-1px); box-shadow: 0 2px 4px rgba(123, 30, 46, .25), 0 10px 24px rgba(123, 30, 46, .28), inset 0 1px 0 rgba(255, 255, 255, .14); }
+button.add-app:active { transform: translateY(0); filter: brightness(.97); }
+.add-app-plus { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); transition: transform .25s ease, background .18s; }
+button.add-app:hover .add-app-plus { transform: rotate(90deg); background: rgba(255, 255, 255, .26); }
+@media (prefers-reduced-motion: reduce) { button.add-app, .add-app-plus { transition: none; } button.add-app:hover { transform: none; } button.add-app:hover .add-app-plus { transform: none; } }
 .apps-search { display: flex; flex-direction: row; margin: 0; align-items: center; gap: 6px; flex: 1 1 220px; max-width: 340px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--muted); }
 .apps-search input { border: 0; outline: none; background: none; padding: 8px 0; width: 100%; font: inherit; box-shadow: none; }
 .apps-search input:focus-visible { outline: none; }
