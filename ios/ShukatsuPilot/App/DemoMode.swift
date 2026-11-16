@@ -63,7 +63,7 @@ private final class DemoURLProtocol: URLProtocol {
             var app = Self.demoApplication(path)
             app["research"] = [
                 "language": "ja", "usedOfficialData": true, "createdAt": "2026-11-15T10:00:00.000Z",
-                "summary": "公開データによると、1946年設立、従業員およそ1,800人のグループ本社です。エレクトロニクス、ゲーム、音楽などの事業をまとめる役割を持っています。",
+                "summary": "公開データによると、1998年設立、従業員およそ1,800人の会社です。ゲーム、教育アプリ、旅行サービスなど、幅広い事業を手がけています。",
                 "angles": ["事業の幅が広い：自分の経験のうち、どの事業にいちばん近いものがありますか。", "平均勤続年数が18.2年：長く働きたい理由を、自分のキャリアの計画とどう結びつけますか。"],
                 "questions": ["入社後の配属は、どのように決まりますか。", "若手のうちから任される仕事には、どのようなものがありますか。", "入社までに学んでおくとよいことはありますか。"],
                 "missing": ["応募する職種の具体的な仕事内容（採用ページ・募集要項）", "最近のニュースと今後の事業の方向（IR資料）"],
@@ -85,8 +85,8 @@ private final class DemoURLProtocol: URLProtocol {
             app["debriefs"] = [["id": debriefId, "date": Self.day(-1), "questions": "志望動機を教えてください", "advice": advice] as [String: Any]]
             body = ["application": app, "remaining": ["today": 4, "month": 29]] as [String: Any]
         case ("POST", _) where path.hasSuffix("/email"):
-            body = ["subject": "一次面接のお礼（HAL東京 シモン）",
-                    "body": "ソニーグループ株式会社\n採用ご担当 〇〇様\n\nお世話になっております。\nHAL東京のシモンと申します。\n\n本日はお忙しい中、一次面接のお時間をいただき、誠にありがとうございました。\nお話を伺い、貴社で働きたいという気持ちがいっそう強くなりました。\n\n取り急ぎ、面接のお礼を申し上げます。\n今後ともよろしくお願いいたします。\n\n――――――――――\nHAL東京\nシモン\nsimon@example.com",
+            body = ["subject": "一次面接のお礼（さくら情報専門学校 シモン）",
+                    "body": "株式会社ミライ\n採用ご担当 〇〇様\n\nお世話になっております。\nさくら情報専門学校のシモンと申します。\n\n本日はお忙しい中、一次面接のお時間をいただき、誠にありがとうございました。\nお話を伺い、貴社で働きたいという気持ちがいっそう強くなりました。\n\n取り急ぎ、面接のお礼を申し上げます。\n今後ともよろしくお願いいたします。\n\n――――――――――\nさくら情報専門学校\nシモン\nsimon@example.com",
                     "points": [["expression": "お世話になっております", "meaning": "ビジネスメールの書き出しの決まり文句です。"],
                                ["expression": "取り急ぎ", "meaning": "「まずは急いで」という意味。お礼をすぐ伝えたいときに使います。"]],
                     "remaining": ["today": 9, "month": 37]] as [String: Any]
@@ -102,7 +102,7 @@ private final class DemoURLProtocol: URLProtocol {
         case ("GET", "/api/weather"): body = ["date": Self.day(6), "prefecture": "東京都", "place": "東京都港区", "kind": "rain", "rainChance": 70, "tMax": 18, "tMin": 12] as [String: Any]
         case ("GET", _) where path.hasPrefix("/api/postal/"): body = ["postalCode": "160-0023", "address": "東京都新宿区西新宿", "prefecture": "東京都"]
         case ("GET", "/api/company/search"):
-            body = [["corporateNumber": "5010401067252", "name": "ソニーグループ株式会社", "location": "東京都港区港南１丁目７番１号"]]
+            body = [["corporateNumber": "1010001234567", "name": "株式会社ミライ", "location": "東京都港区海岸１丁目２番３号"]]
         case ("GET", _) where path.hasPrefix("/api/company/"): body = Self.companyFacts
         case ("POST", "/api/plans"):
             let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
@@ -117,8 +117,8 @@ private final class DemoURLProtocol: URLProtocol {
     }
 
     static var companyFacts: [String: Any] {[
-        "corporateNumber": "5010401067252", "name": "ソニーグループ株式会社", "location": "東京都港区港南１丁目７番１号",
-        "url": "https://www.sony.com/ja/", "employees": 1800, "founded": 1946,
+        "corporateNumber": "1010001234567", "name": "株式会社ミライ", "location": "東京都港区海岸１丁目２番３号",
+        "url": "https://example.com/", "employees": 1800, "founded": 1998,
         "labels": [["id": "kurumin", "title": "プラチナくるみん認定", "date": "2022-06-01"],
                    ["id": "eruboshi", "title": "えるぼし認定（3段階目）", "date": "2021-04-01"],
                    ["id": "kenkou", "title": "健康経営優良法人（大規模法人部門）", "date": "2025-03-10"]],
@@ -137,12 +137,12 @@ private final class DemoURLProtocol: URLProtocol {
     /// Deux ES d'exemple ; avec « -manyES », une vingtaine, pour voir la liste rangée en dossiers.
     private static var drafts: [[String: Any]] {
         var list: [[String: Any]] = [
-            ["id": "d1", "kind": "motivation", "company": "株式会社サイバーエージェント", "question": "当社を志望する理由を教えてください。", "charLimit": 400,
+            ["id": "d1", "kind": "motivation", "company": "株式会社アオゾラゲームス", "question": "当社を志望する理由を教えてください。", "charLimit": 400,
              "body": "私が貴社を志望する理由は、世界中の人を楽しませるゲームを作りたいからです。", "updatedAt": day(0)],
             ["id": "d2", "kind": "jikopr", "question": "自己PRをしてください。", "charLimit": 300, "body": "私の強みは行動力です。", "updatedAt": day(-1)],
         ]
         guard ProcessInfo.processInfo.arguments.contains("-manyES") else { return list }
-        for (c, company) in ["ソニーグループ", "楽天グループ", "LINEヤフー", "メルカリ", "トヨタ自動車", "任天堂", "サイボウズ"].enumerated() {
+        for (c, company) in ["株式会社ミライ", "ハルカゼ商事", "ソラノデータ", "ツナグテック", "ヒカリモビリティ", "ユメノワ", "ミドリソフト"].enumerated() {
             for (q, question) in ["当社を志望する理由を教えてください。", "学生時代に力を入れたことは何ですか。", "自己PRをしてください。"].enumerated() where (c + q) % 4 != 3 {
                 list.append(["id": "m\(c)\(q)", "kind": "free", "company": company, "question": question, "charLimit": 400,
                              "body": q == 0 ? "私が貴社を志望する理由は、事業に共感したからです。" : "", "updatedAt": day(-(c * 3 + q))])
@@ -162,17 +162,17 @@ private final class DemoURLProtocol: URLProtocol {
     }
 
     static var applications: [[String: Any]] {[
-        ["id": "a1", "company": "株式会社サイバーエージェント", "position": "ゲームプランナー", "status": "es",
+        ["id": "a1", "company": "株式会社アオゾラゲームス", "position": "ゲームプランナー", "status": "es",
          "steps": [["id": "s1", "type": "es", "dueDate": day(2), "done": false]], "nextDeadline": day(2)],
-        ["id": "a2", "company": "ソニーグループ", "position": "エンジニア", "status": "interview1",
-         "steps": [["id": "s2", "type": "interview1", "dueDate": day(6), "time": "14:00", "place": "東京都港区港南1-7-1", "done": false]], "nextDeadline": day(6),
-         "corporateNumber": "5010401067252", "location": "東京都港区港南１丁目７番１号"],
-        ["id": "a3", "company": "楽天グループ", "status": "interested", "steps": [] as [Any]],
-        ["id": "a4", "company": "LINEヤフー", "status": "test",
+        ["id": "a2", "company": "株式会社ミライ", "position": "エンジニア", "status": "interview1",
+         "steps": [["id": "s2", "type": "interview1", "dueDate": day(6), "time": "14:00", "place": "東京都港区海岸1-2-3", "done": false]], "nextDeadline": day(6),
+         "corporateNumber": "1010001234567", "location": "東京都港区海岸１丁目２番３号"],
+        ["id": "a3", "company": "ハルカゼ商事", "status": "interested", "steps": [] as [Any]],
+        ["id": "a4", "company": "ソラノデータ", "status": "test",
          "steps": [["id": "s4", "type": "test", "dueDate": day(12), "done": false]], "nextDeadline": day(12)],
-        ["id": "a5", "company": "メルカリ", "position": "バックエンドエンジニア", "status": "applied", "steps": [] as [Any]],
-        ["id": "a6", "company": "トヨタ自動車", "position": "ソフトウェア開発", "status": "applied", "steps": [] as [Any]],
-        ["id": "a7", "company": "任天堂", "position": "ソフトウェアエンジニア", "status": "offer", "steps": [] as [Any], "offerChecklist": ["accept"]],
+        ["id": "a5", "company": "ツナグテック", "position": "バックエンドエンジニア", "status": "applied", "steps": [] as [Any]],
+        ["id": "a6", "company": "ヒカリモビリティ", "position": "ソフトウェア開発", "status": "applied", "steps": [] as [Any]],
+        ["id": "a7", "company": "ユメノワ", "position": "ソフトウェアエンジニア", "status": "offer", "steps": [] as [Any], "offerChecklist": ["accept"]],
     ]}
 
     /// Onglet « こころ » : 3 jours de pluie cette semaine (palier « often »).
