@@ -11,6 +11,7 @@ struct InfoLink: Identifiable {
     static let partners = [
         InfoLink(name: "JLPT Étude", url: "https://jlpt.simondepussay.com", ja: "JLPT N1 の語彙・漢字・文法を勉強するサイト", en: "Study JLPT N1 vocabulary, kanji and grammar", fr: "Réviser le vocabulaire, les kanji et la grammaire du JLPT N1"),
         InfoLink(name: "JLPT Kanji Otter Adventure", url: "https://apps.apple.com/us/app/jlpt-kanji-otter-adventure/id6497395953", ja: "ゲームで漢字を覚える iPhone アプリ", en: "An iPhone game for learning kanji", fr: "Un jeu iPhone pour apprendre les kanji"),
+        InfoLink(name: "ラッコ英単語", url: "https://apps.apple.com/jp/app/%E3%83%A9%E3%83%83%E3%82%B3%E8%8B%B1%E5%8D%98%E8%AA%9E/id6802069784", ja: "英単語を覚える iPhone アプリ", en: "An iPhone app for learning English vocabulary", fr: "Une app iPhone pour apprendre le vocabulaire anglais"),
     ]
     static let jobSites = [
         InfoLink(name: "ハローワーク", url: "https://www.hellowork.mhlw.go.jp/", ja: "国の求人検索", en: "Japan's public job search", fr: "Recherche d'emploi publique"),

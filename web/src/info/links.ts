@@ -20,6 +20,11 @@ export const PARTNERS: InfoLink[] = [
     url: "https://apps.apple.com/us/app/jlpt-kanji-otter-adventure/id6497395953",
     text: { ja: "ゲームで漢字を覚える iPhone アプリ", en: "An iPhone game for learning kanji", fr: "Un jeu iPhone pour apprendre les kanji" },
   },
+  {
+    name: "ラッコ英単語",
+    url: "https://apps.apple.com/jp/app/%E3%83%A9%E3%83%83%E3%82%B3%E8%8B%B1%E5%8D%98%E8%AA%9E/id6802069784",
+    text: { ja: "英単語を覚える iPhone アプリ", en: "An iPhone app for learning English vocabulary", fr: "Une app iPhone pour apprendre le vocabulaire anglais" },
+  },
 ];
 
 /** Les grands sites d'offres (on n'y envoie pas de robot : leurs conditions l'interdisent). */
