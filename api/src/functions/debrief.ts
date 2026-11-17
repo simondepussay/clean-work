@@ -5,6 +5,7 @@ import { withUser } from "../lib/http";
 import { containers, type Application } from "../lib/models";
 import { Repository } from "../lib/repository";
 import { costJpy, reviewModelFromEnv, type StructuredModel } from "../lib/review";
+import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 import { DEBRIEF_LIMITS, DEBRIEFS, UsageLimiter } from "../lib/usage";
 
@@ -56,6 +57,7 @@ export function debriefHandlers(deps: Deps = {}) {
     const written = { ...sanitizeAdvice(output.result), language, createdAt: now().toISOString() };
     const debriefs = (fresh.debriefs ?? []).map((d) => (d.id === debrief.id ? { ...d, advice: written } : d));
     const saved = await new Repository(store(), now).updateApplication(user.userId, application.id, { debriefs });
+    await award(store(), user.userId, [{ kind: "debrief", key: debrief.id }], now);
     return { jsonBody: { application: saved, remaining: await limiter().remaining(user.userId) } };
   }, deps.verifier);
 

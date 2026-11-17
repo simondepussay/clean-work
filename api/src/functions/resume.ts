@@ -5,6 +5,7 @@ import { withUser } from "../lib/http";
 import { messages } from "../lib/models";
 import { Repository } from "../lib/repository";
 import { renderResume, WEEKDAYS } from "../lib/resumePdf";
+import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 
 const requestSchema = z.object({
@@ -28,11 +29,13 @@ export const todayInJapan = (now = new Date()) => now.toLocaleDateString("sv-SE"
 export function resumeHandler(deps: { verifier?: () => IdentityVerifier | null; store?: () => DocStore; now?: () => Date } = {}) {
   return withUser(async (req, user) => {
     const options = requestSchema.parse((await req.json().catch(() => ({}))) ?? {});
-    const profile = await new Repository((deps.store ?? getStore)()).getProfile(user.userId);
+    const store = (deps.store ?? getStore)();
+    const profile = await new Repository(store).getProfile(user.userId);
     if (!profile) return { status: 404, jsonBody: { error: "profile_missing" } };
 
     const pdf = await renderResume(profile, { ...options, date: todayInJapan(deps.now?.()) });
     const filename = `履歴書_${profile.nameKanji.replace(/\s+/g, "")}.pdf`;
+    await award(store, user.userId, [{ kind: "document", key: `resume_${todayInJapan(deps.now?.())}` }], deps.now);
     return {
       body: pdf,
       headers: {

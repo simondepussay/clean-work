@@ -34,7 +34,7 @@ struct MainView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            CleanHeader(showingAccount: $showingAccount)
+            CleanHeader(showingAccount: $showingAccount, api: model.apiClient)
             BinderTabBar(selection: $tab)
                 .padding(.top, 10)
             sheetContent
@@ -113,6 +113,7 @@ struct InterviewTarget: Equatable {
 /// En-tête : la marque à gauche (comme sur le site), le globe et le compte à droite.
 struct CleanHeader: View {
     @Binding var showingAccount: Bool
+    var api: APIClient?
     @AppStorage(HelpLanguage.storageKey) private var language = HelpLanguage.deviceDefault.rawValue
 
     var body: some View {
@@ -130,6 +131,7 @@ struct CleanHeader: View {
             .accessibilityLabel(tr("表示言語", "Language", "Langue"))
             Button { showingAccount = true } label: { CircleIcon(systemName: "person") }
                 .accessibilityLabel(tr("アカウント", "Account", "Compte"))
+            if let api { ScoreBadge(api: api) }
         }
         .padding(.horizontal, 16)
         .padding(.top, 6)
@@ -318,5 +320,132 @@ struct WelcomeSetupView: View {
     private func later() {
         UserDefaults.standard.set(true, forKey: Self.key(me))
         onDone(nil)
+    }
+}
+
+// MARK: - Score
+
+/// Les niveaux doux, du 種 au 実 (mêmes seuils que l'API, lib/score.ts).
+enum ScoreLevel {
+    static let kanji = ["種", "芽", "若葉", "蕾", "花", "実"]
+    static func name(_ level: Int) -> String {
+        switch level {
+        case 0: tr("たね", "Seed", "Graine")
+        case 1: tr("め", "Sprout", "Pousse")
+        case 2: tr("わかば", "Young leaf", "Jeune feuille")
+        case 3: tr("つぼみ", "Bud", "Bouton")
+        case 4: tr("はな", "Bloom", "Fleur")
+        default: tr("み", "Fruit", "Fruit")
+        }
+    }
+}
+
+/// La pastille de score, à droite du compte : le niveau (kanji) dans un anneau de progression, et les points.
+/// Elle se recharge après chaque geste enregistré, montre « +10 » quand les points montent, et ouvre une petite carte.
+struct ScoreBadge: View {
+    let api: APIClient
+    @State private var score: Score?
+    @State private var gain: Int?
+    @State private var showingCard = false
+    @State private var reload = 0
+
+    private var level: Int { min(score?.level ?? 0, ScoreLevel.kanji.count - 1) }
+    private var progress: Double {
+        guard let score, let next = score.next, next > score.floor else { return 1 }
+        return Double(score.points - score.floor) / Double(next - score.floor)
+    }
+
+    var body: some View {
+        Group {
+            if let score {
+                Button { showingCard = true } label: {
+                    HStack(spacing: 6) {
+                        ZStack {
+                            Circle().stroke(Color.cwBlue100, lineWidth: 2.5)
+                            Circle().trim(from: 0, to: progress).stroke(Color.cwBordeaux, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                            Text(ScoreLevel.kanji[level])
+                                .font(.custom("HiraMinProN-W6", size: ScoreLevel.kanji[level].count > 1 ? 10 : 14))
+                                .foregroundStyle(Color.cwBordeaux)
+                        }
+                        .frame(width: 30, height: 30)
+                        Text("\(score.points)").font(.subheadline.bold().monospacedDigit()).foregroundStyle(Color.cwBlue800)
+                    }
+                    .padding(.leading, 4).padding(.trailing, 12)
+                    .frame(height: 40)
+                    .background(.white, in: Capsule())
+                    .overlay(Capsule().stroke(Color.cwLine, lineWidth: 1))
+                    .overlay(alignment: .topTrailing) {
+                        if let gain {
+                            Text("+\(gain)").font(.caption.bold()).foregroundStyle(Color.cwBordeaux)
+                                .offset(x: -4, y: -14)
+                                .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tr("スコア \(score.points) ポイント、\(ScoreLevel.kanji[level])", "Score: \(score.points) points, \(ScoreLevel.name(level))", "Score : \(score.points) points, \(ScoreLevel.name(level))"))
+                .popover(isPresented: $showingCard) { ScoreCard(score: score).presentationCompactAdaptation(.popover) }
+                .sensoryFeedback(.success, trigger: gain) { _, new in new != nil }
+            }
+        }
+        .task(id: reload) {
+            // Plusieurs gestes d'affilée : une seule requête.
+            if reload > 0 { try? await Task.sleep(for: .milliseconds(400)) }
+            guard !Task.isCancelled, let next = try? await api.score() else { return }
+            if let old = score, next.points > old.points {
+                withAnimation(.spring(duration: 0.4)) { gain = next.points - old.points }
+                Task {
+                    try? await Task.sleep(for: .seconds(1.8))
+                    withAnimation { gain = nil }
+                }
+            }
+            withAnimation(.easeOut(duration: 0.6)) { score = next }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .cwScoreMaybeChanged)) { _ in reload += 1 }
+    }
+}
+
+/// La carte du score : le niveau, la progression vers le suivant, et comment gagner des points.
+private struct ScoreCard: View {
+    let score: Score
+
+    var body: some View {
+        let level = min(score.level, ScoreLevel.kanji.count - 1)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Text(ScoreLevel.kanji[level])
+                    .font(.custom("HiraMinProN-W6", size: ScoreLevel.kanji[level].count > 1 ? 15 : 20))
+                    .foregroundStyle(Color.cwBordeaux)
+                    .frame(width: 44, height: 44)
+                    .background(Color.cwBordeaux50, in: Circle())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ScoreLevel.name(level)).font(.headline).foregroundStyle(Color.cwBlue800)
+                    Text("\(score.points) pt").font(.subheadline).foregroundStyle(Color.cwMuted)
+                }
+            }
+            if let next = score.next {
+                ProgressView(value: Double(score.points - score.floor), total: Double(max(1, next - score.floor))).tint(Color.cwBordeaux)
+                Text(tr("次の「\(ScoreLevel.kanji[min(level + 1, 5)])」まで、あと \(next - score.points) pt", "\(next - score.points) pt to \(ScoreLevel.name(level + 1))", "Encore \(next - score.points) pt avant \(ScoreLevel.name(level + 1))"))
+                    .font(.footnote).foregroundStyle(Color.cwMuted)
+            } else {
+                Text(tr("いちばん上の段階です。ここまで、おつかれさま。", "The last stage. Well done for coming this far.", "Le dernier palier. Bravo pour tout ce chemin."))
+                    .font(.footnote).foregroundStyle(Color.cwMuted)
+            }
+            Text(tr("ポイントがたまること", "How to earn points", "Comment gagner des points")).font(.footnote.bold()).foregroundStyle(Color.cwBlue800)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach([
+                    tr("プロフィールやスキルを書く", "Fill in your profile and skills", "Remplir son profil et ses compétences"),
+                    tr("応募を追加して、選考を進める", "Add applications and move them forward", "Ajouter des candidatures et les faire avancer"),
+                    tr("ESのレビュー、面接練習、企業研究", "ES review, interview practice, company research", "Relecture d'ES, entretien simulé, recherche d'entreprise"),
+                    tr("予定や目標をカレンダーに", "Plan events and goals in the calendar", "Noter événements et objectifs au calendrier"),
+                    tr("こころの天気と日記", "Kokoro weather and journal", "Météo intérieure et journal"),
+                ], id: \.self) { Text("・\($0)").font(.footnote) }
+            }
+            Text(tr("ポイントは減りません。自分のペースで大丈夫です。", "Points never go down. Go at your own pace.", "Les points ne baissent jamais. À votre rythme."))
+                .font(.caption).foregroundStyle(Color.cwMuted)
+        }
+        .padding(18)
+        .frame(width: 300, alignment: .leading)
     }
 }

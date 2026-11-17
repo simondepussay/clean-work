@@ -2,6 +2,7 @@ import { app } from "@azure/functions";
 import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
 import { Repository } from "../lib/repository";
+import { award, applicationEvents, profileEvents } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 
 /**
@@ -13,7 +14,9 @@ export function profileHandler(verifier?: () => IdentityVerifier | null, store: 
     const repo = new Repository(store());
     if (req.method === "PUT") {
       const body = await req.json().catch(() => null);
-      return { jsonBody: await repo.saveProfile(user.userId, body) };
+      const saved = await repo.saveProfile(user.userId, body);
+      await award(store(), user.userId, profileEvents(saved));
+      return { jsonBody: saved };
     }
     const profile = await repo.getProfile(user.userId);
     return profile ? { jsonBody: profile } : { status: 404, jsonBody: { error: "not_found" } };

@@ -7,6 +7,7 @@ import { containers, type Application, type Review } from "../lib/models";
 import { Repository } from "../lib/repository";
 import { buildMessages, costJpy, draftPurpose, explanationLanguages, reviewModelFromEnv, sanitize, type ReviewModel } from "../lib/review";
 import { SkillsService } from "../lib/skills";
+import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 import { UsageLimiter } from "../lib/usage";
 
@@ -77,6 +78,7 @@ export function reviewHandlers(deps: Deps = {}) {
       ...result,
     };
     await repo.saveReview(saved);
+    await award(store(), user.userId, [{ kind: "review", key: saved.id }], now);
     return { status: 201, jsonBody: saved };
   }, deps.verifier);
 

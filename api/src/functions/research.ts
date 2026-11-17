@@ -6,6 +6,7 @@ import { gbizFromEnv, type CompanyFacts } from "../lib/openData";
 import { Repository } from "../lib/repository";
 import { buildResearchMessages, researchOutputSchema, researchRequestSchema, sanitizeResearch, type ResearchResult } from "../lib/research";
 import { costJpy, reviewModelFromEnv, type StructuredModel } from "../lib/review";
+import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 import { RESEARCH, RESEARCH_LIMITS, UsageLimiter } from "../lib/usage";
 
@@ -56,6 +57,7 @@ export function researchHandlers(deps: Deps = {}) {
 
     const written = { ...sanitizeResearch(output.result), language, usedOfficialData: official !== null, createdAt: now().toISOString() };
     const saved = await new Repository(store(), now).updateApplication(user.userId, application.id, { research: written });
+    await award(store(), user.userId, [{ kind: "research", key: application.id }], now);
     return { jsonBody: { application: saved, remaining: await limiter().remaining(user.userId) } };
   }, deps.verifier);
 

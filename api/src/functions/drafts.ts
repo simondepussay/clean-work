@@ -2,6 +2,7 @@ import { app } from "@azure/functions";
 import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
 import { Repository } from "../lib/repository";
+import { award, applicationEvents, profileEvents } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 
 /**
@@ -19,7 +20,11 @@ export function draftsHandler(verifier?: () => IdentityVerifier | null, store: (
     const notFound = { status: 404, jsonBody: { error: "not_found" } };
 
     if (!id) {
-      if (req.method === "POST") return { status: 201, jsonBody: await repo.createDraft(user.userId, await body()) };
+      if (req.method === "POST") {
+        const draft = await repo.createDraft(user.userId, await body());
+        await award(store(), user.userId, [{ kind: "draft", key: draft.id }]);
+        return { status: 201, jsonBody: draft };
+      }
       return { jsonBody: await repo.listDrafts(user.userId) };
     }
     if (req.method === "PUT") {

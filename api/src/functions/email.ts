@@ -5,6 +5,7 @@ import { buildEmailMessages, emailRequestSchema, emailSchema, sanitizeEmail, typ
 import { containers, type Application } from "../lib/models";
 import { Repository } from "../lib/repository";
 import { costJpy, reviewModelFromEnv, type StructuredModel } from "../lib/review";
+import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 import { EMAIL_LIMITS, EMAILS, UsageLimiter } from "../lib/usage";
 
@@ -48,6 +49,7 @@ export function emailHandlers(deps: Deps = {}) {
     }
     const cost = costJpy(output.usage);
     await limiter().recordCost(cost);
+    await award(store(), user.userId, [{ kind: "email", key: `${application.id}_${now().toISOString().slice(0, 10)}` }], now);
     ctx.log(`mail (${request.kind}) : ${output.usage.inputTokens}+${output.usage.outputTokens} jetons, ${cost.toFixed(2)} ¥`);
     return { jsonBody: { ...sanitizeEmail(output.result), remaining: await limiter().remaining(user.userId) } };
   }, deps.verifier);

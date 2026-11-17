@@ -8,6 +8,19 @@ struct Me: Decodable, Equatable {
     let hasProfile: Bool
 }
 
+/// Ce que renvoie GET /api/score. level : 0 = 種 … 5 = 実 ; next = points du niveau suivant (nil au dernier).
+struct Score: Decodable, Equatable {
+    let points: Int
+    let level: Int
+    let floor: Int
+    let next: Int?
+}
+
+extension Notification.Name {
+    /// Posté après chaque modification réussie (POST, PUT…) : le score a peut-être monté.
+    static let cwScoreMaybeChanged = Notification.Name("cwScoreMaybeChanged")
+}
+
 enum APIError: Error, Equatable {
     /// Jeton absent, expiré ou refusé : il faut se reconnecter.
     case unauthorized
@@ -31,6 +44,11 @@ struct APIClient {
 
     func me() async throws -> Me {
         try decode(Me.self, from: try await send("GET", "api/me"))
+    }
+
+    /// Les points et le niveau doux (GET /api/score).
+    func score() async throws -> Score {
+        try decode(Score.self, from: try await send("GET", "api/score"))
     }
 
     private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
@@ -273,6 +291,10 @@ struct APIClient {
         request.timeoutInterval = 60
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        // Un geste enregistré a pu faire monter le score : la pastille de l'en-tête se met à jour.
+        if method != "GET", (200..<300).contains(http.statusCode) {
+            await MainActor.run { NotificationCenter.default.post(name: .cwScoreMaybeChanged, object: nil) }
+        }
         return (data, http.statusCode)
     }
 

@@ -190,6 +190,8 @@ const routes: Record<string, unknown> = {
 };
 
 /** Remplace `fetch` pour les appels à /api par les données d'exemple ci-dessus. */
+let demoScore = demoNew ? 0 : 265;
+
 export function installDemoApi() {
   const real = globalThis.fetch.bind(globalThis);
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -197,6 +199,13 @@ export function installDemoApi() {
     if (!url.startsWith("/api/")) return real(input, init);
     const method = init?.method ?? "GET";
     const key = `${method} ${url}`;
+    // Score : chaque modification rapporte quelques points pendant la démo (seuils comme l'API).
+    if (method !== "GET" && method !== "DELETE") demoScore += 10;
+    if (key === "GET /api/score") {
+      const floors = [0, 50, 150, 400, 800, 1500];
+      const level = floors.filter((f) => demoScore >= f).length - 1;
+      return new Response(JSON.stringify({ points: demoScore, level, floor: floors[level], next: floors[level + 1] ?? null }), { status: 200, headers: { "content-type": "application/json" } });
+    }
     // Ajout ou modification : on renvoie ce qui a été envoyé, avec un identifiant.
     const sent = typeof init?.body === "string" ? JSON.parse(init.body) : {};
     // こころ : la météo choisie reste affichée pendant la démo.

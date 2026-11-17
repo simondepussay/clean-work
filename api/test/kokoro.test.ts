@@ -108,7 +108,8 @@ describe("/api/kokoro", () => {
     const store = new MemoryStore();
     await api(store)("u1", "PUT", "mood", { date: "2026-10-28", weather: "cloudy" });
     expect(await store.get(containers.profiles, "u1", "kokoro")).toMatchObject({ moods: [{ weather: "cloudy" }] });
-    expect(await new Repository(store, () => NOW).scheduleDeletion("u1", 30)).toBe(1);
+    // 2 documents : la météo du moral, et le score qu'elle a fait monter (supprimé lui aussi avec le compte).
+    expect(await new Repository(store, () => NOW).scheduleDeletion("u1", 30)).toBe(2);
   });
 });
 

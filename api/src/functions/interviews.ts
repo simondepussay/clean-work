@@ -4,6 +4,7 @@ import { withUser } from "../lib/http";
 import { InterviewCoach, type CoachError, type Interview } from "../lib/interview";
 import { containers } from "../lib/models";
 import { reviewModelFromEnv, type StructuredModel } from "../lib/review";
+import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 import { INTERVIEW_LIMITS, INTERVIEWS, UsageLimiter } from "../lib/usage";
 
@@ -76,7 +77,10 @@ export function interviewHandlers(deps: Deps = {}) {
 
   const finish = withUser(async (req, user) => {
     const c = coach();
-    return c ? reply(await c.finish(user.userId, req.params.id)) : noAI;
+    if (!c) return noAI;
+    const result = await c.finish(user.userId, req.params.id);
+    if (!("error" in result)) await award(store(), user.userId, [{ kind: "interview", key: result.id }], now);
+    return reply(result);
   }, deps.verifier);
 
   const usage = withUser(async (_req, user) => ({

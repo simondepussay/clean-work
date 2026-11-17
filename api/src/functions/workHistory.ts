@@ -4,6 +4,7 @@ import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
 import { messages } from "../lib/models";
 import { Repository } from "../lib/repository";
+import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 import { renderWorkHistory } from "../lib/workHistoryPdf";
 import { todayInJapan } from "./resume";
@@ -19,12 +20,14 @@ const requestSchema = z.object({
 export function workHistoryHandler(deps: { verifier?: () => IdentityVerifier | null; store?: () => DocStore; now?: () => Date } = {}) {
   return withUser(async (req, user) => {
     const options = requestSchema.parse((await req.json().catch(() => ({}))) ?? {});
-    const profile = await new Repository((deps.store ?? getStore)()).getProfile(user.userId);
+    const store = (deps.store ?? getStore)();
+    const profile = await new Repository(store).getProfile(user.userId);
     if (!profile) return { status: 404, jsonBody: { error: "profile_missing" } };
     if (profile.work.length === 0) return { status: 400, jsonBody: { error: "no_work" } };
 
     const pdf = await renderWorkHistory(profile, { ...options, date: todayInJapan(deps.now?.()) });
     const filename = `職務経歴書_${profile.nameKanji.replace(/\s+/g, "")}.pdf`;
+    await award(store, user.userId, [{ kind: "document", key: `work_${todayInJapan(deps.now?.())}` }], deps.now);
     return {
       body: pdf,
       headers: {

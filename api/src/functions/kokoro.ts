@@ -4,6 +4,7 @@ import { withUser } from "../lib/http";
 import { KokoroService } from "../lib/kokoro";
 import { containers, type Device } from "../lib/models";
 import { getPushSender, type PushSender } from "../lib/push";
+import { award, applicationEvents, profileEvents } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 
 /** Notifications d'essai par jour et par compte (bouton « テスト通知 »). */
@@ -37,12 +38,19 @@ export function kokoroHandler(deps: { verifier?: () => IdentityVerifier | null; 
       return { status: 204 };
     }
     if (part === "mood" && req.method === "PUT") {
-      await kokoro.setMood(user.userId, await body());
+      const mood = await body();
+      await kokoro.setMood(user.userId, mood);
+      const { date, weather } = (mood ?? {}) as { date?: string; weather?: string | null };
+      if (weather && date) await award(store, user.userId, [{ kind: "mood", key: date }], deps.now);
       return { status: 204 };
     }
     if (part === "values" && req.method === "PUT") return { jsonBody: { values: await kokoro.setValues(user.userId, await body()) } };
     if (part === "journal" && req.method === "GET") return { jsonBody: { entries: await kokoro.journal(user.userId) } };
-    if (part === "journal" && req.method === "PUT") return { jsonBody: { entry: await kokoro.writeJournal(user.userId, await body()) } };
+    if (part === "journal" && req.method === "PUT") {
+      const entry = await kokoro.writeJournal(user.userId, await body());
+      if (entry?.text) await award(store, user.userId, [{ kind: "journal", key: entry.date }], deps.now);
+      return { jsonBody: { entry } };
+    }
     if (part === "charms" && req.method === "PUT") return { jsonBody: { charms: await kokoro.setCharms(user.userId, await body()) } };
     if (part === "settings" && req.method === "PUT") return { jsonBody: await kokoro.setSettings(user.userId, await body()) };
     if (part === "test-push" && req.method === "POST") {

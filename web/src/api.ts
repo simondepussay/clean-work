@@ -77,6 +77,7 @@ export async function saveProfile(token: string, profile: ProfileInput, fetcher:
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(withoutEmptyFields(profile)),
   });
+  if (res.ok) scoreChanged();
   if (res.status === 400) return { ok: false, issues: ((await res.json()) as { issues: Issue[] }).issues };
   if (!res.ok) throw new Error(`profil : ${res.status}`);
   return { ok: true, profile: (await res.json()) as ProfileInput };
@@ -129,11 +130,22 @@ export function onApiChange(listener: ((token: string) => void) | null) {
   afterChange = listener;
 }
 
+/** Prévenus quand un geste a pu faire monter le score (la pastille à côté du profil se met à jour). */
+const scoreListeners = new Set<() => void>();
+export function onScoreMaybeChanged(listener: () => void) {
+  scoreListeners.add(listener);
+  return () => { scoreListeners.delete(listener); };
+}
+function scoreChanged() {
+  for (const l of scoreListeners) l();
+}
+
 async function call<T>(token: string, method: string, path: string, body?: unknown, fetcher: typeof fetch = fetch) {
   if (method !== "GET") {
     clearApiCache();
     const result = await send<T>(token, method, path, body, fetcher);
     afterChange?.(token);
+    if (result.ok) scoreChanged();
     return result;
   }
   // Le jeton fait partie de la clé : un autre compte (ou un jeton renouvelé) ne lit pas ces données.
@@ -187,6 +199,7 @@ export async function reviewDraft(token: string, id: string, language: string, f
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify({ language }),
   });
+  if (res.ok) scoreChanged();
   const body = await res.json().catch(() => ({}));
   if (res.status === 201) return { ok: true, review: body as Review };
   if (res.status === 429 || body.error === "limit") return { ok: false, error: "limit", reason: body.reason, retryAfter: body.retryAfter };
@@ -215,6 +228,7 @@ export async function writeEmail(token: string, applicationId: string, request: 
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(request),
   });
+  if (res.ok) scoreChanged();
   const body = await res.json().catch(() => ({}));
   if (res.ok && typeof body.body === "string") return { ok: true, email: body as EmailDraft };
   if (res.status === 429 || body.error === "limit") return { ok: false, error: "limit", reason: body.reason, retryAfter: body.retryAfter };
@@ -247,6 +261,7 @@ async function downloadPdf(token: string, path: string, options: object, fetcher
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(withoutEmptyFields(options)),
   });
+  if (res.ok) scoreChanged();
   if (res.status === 404) return { ok: false, error: "profile_missing" };
   if (res.status === 400) {
     const body = await res.json().catch(() => ({}));
@@ -312,6 +327,7 @@ export async function adviseDebrief(token: string, applicationId: string, debrie
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify({ language }),
   });
+  if (res.ok) scoreChanged();
   const body = await res.json().catch(() => ({}));
   if (res.ok && body.application) return { ok: true, application: body.application as Application, remaining: body.remaining };
   if (res.status === 429 || body.error === "limit") return { ok: false, error: "limit", reason: body.reason, retryAfter: body.retryAfter };
@@ -327,6 +343,7 @@ export async function researchCompany(token: string, applicationId: string, lang
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify({ language }),
   });
+  if (res.ok) scoreChanged();
   const body = await res.json().catch(() => ({}));
   if (res.ok && body.application) return { ok: true, application: body.application as Application, remaining: body.remaining };
   if (res.status === 429 || body.error === "limit") return { ok: false, error: "limit", reason: body.reason, retryAfter: body.retryAfter };
@@ -362,6 +379,7 @@ async function interviewCall(token: string, path: string, body: unknown, fetcher
     headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
     body: JSON.stringify(body),
   });
+  if (res.ok) scoreChanged();
   const json = await res.json().catch(() => ({}));
   if (res.ok) return { ok: true, interview: json as Interview };
   if (json.error === "limit") return { ok: false, error: "limit", reason: json.reason, retryAfter: json.retryAfter };
@@ -592,3 +610,20 @@ export const getSkills = (token: string, f?: typeof fetch) =>
 /** Envoie toutes les compétences cochées (remplace l'enregistrement précédent). */
 export const saveSkills = (token: string, levels: SkillLevels, f?: typeof fetch) =>
   call<{ levels: SkillLevels; updatedAt: string }>(token, "PUT", "/api/skills", { levels }, f);
+
+// ------------------------------------------------------------------ score (points et niveau doux)
+
+/** level : 0 = 種, 1 = 芽, 2 = 若葉, 3 = 蕾, 4 = 花, 5 = 実. next = points du niveau suivant (null au dernier). */
+export type Score = { points: number; level: number; floor: number; next: number | null };
+
+export async function getScore(token: string, fetcher: typeof fetch = fetch): Promise<Score | null> {
+  try {
+    const res = await fetcher(API_BASE + "/api/score", { headers: { [TOKEN_HEADER]: token } });
+    if (!res?.ok) return null;
+    const s = (await res.json()) as Partial<Score> | null;
+    // Une réponse inattendue (ancienne API, proxy…) : pas de pastille plutôt qu'une page cassée.
+    return s && typeof s.points === "number" && typeof s.level === "number" && typeof s.floor === "number" ? { points: s.points, level: s.level, floor: s.floor, next: s.next ?? null } : null;
+  } catch {
+    return null;
+  }
+}

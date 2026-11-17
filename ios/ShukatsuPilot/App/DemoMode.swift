@@ -29,6 +29,7 @@ private final class DemoAccount: AccountService {
 
 /// Répond aux appels de l'API avec des données d'exemple (dates autour d'aujourd'hui).
 private final class DemoURLProtocol: URLProtocol {
+    nonisolated(unsafe) static var demoScore = ProcessInfo.processInfo.arguments.contains("-newAccount") ? 0 : 265
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func stopLoading() {}
@@ -40,7 +41,13 @@ private final class DemoURLProtocol: URLProtocol {
         var status = method == "POST" ? 201 : 200
         // « -demo -newAccount » : un compte tout neuf, pour voir l'écran de bienvenue.
         let newAccount = ProcessInfo.processInfo.arguments.contains("-newAccount")
+        // Score : chaque modification rapporte quelques points pendant la démo (seuils comme l'API).
+        if method != "GET" && method != "DELETE" { Self.demoScore += 10 }
         switch (method, path) {
+        case ("GET", "/api/score"):
+            let floors = [0, 50, 150, 400, 800, 1500]
+            let level = floors.lastIndex { Self.demoScore >= $0 } ?? 0
+            body = ["points": Self.demoScore, "level": level, "floor": floors[level], "next": level + 1 < floors.count ? floors[level + 1] as Any : NSNull()]
         case ("GET", "/api/me"): body = ["userId": "demo", "email": "simon@example.com", "name": "Simon", "hasProfile": !newAccount]
         case ("GET", "/api/profile") where newAccount:
             status = 404

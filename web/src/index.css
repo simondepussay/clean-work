@@ -69,6 +69,35 @@ html[data-mood="rainy"] .waves::after { opacity: 1; }
 .topbar-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .round-button { width: 42px; height: 42px; padding: 0; border-radius: 50%; display: grid; place-items: center; position: relative;
   border: 1.5px solid var(--blue-300); color: var(--blue-700); background: var(--white); }
+/* Score : pastille à droite du compte (niveau doux en kanji dans un anneau de progression, et les points) */
+.score { position: relative; }
+.score-pill { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px 0 4px; border: 1px solid var(--line); background: var(--white); color: var(--blue-800); }
+.score-pill:hover, .score-pill.current { border-color: var(--blue-300); background: var(--blue-50); }
+.score-ring { position: relative; width: 34px; height: 34px; display: grid; place-items: center; }
+.score-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.score-ring circle { fill: none; stroke-width: 3; }
+.score-ring .track { stroke: var(--blue-100); }
+.score-ring .fill { stroke: var(--bordeaux); stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+.score-kanji { font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif; font-size: 15px; font-weight: 600; color: var(--bordeaux); line-height: 1; }
+.score-kanji.two { font-size: 11px; letter-spacing: -.04em; }
+.score-points { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.score-points small { font-size: 11px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+.score-gain { position: absolute; right: 10px; top: -6px; font-size: 13px; font-weight: 700; color: var(--bordeaux); pointer-events: none; animation: score-gain 1.8s ease forwards; }
+@keyframes score-gain { 0% { opacity: 0; transform: translateY(6px); } 15% { opacity: 1; transform: translateY(0); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+.score-card { position: absolute; right: 0; top: calc(100% + 10px); z-index: 30; width: 290px; padding: 16px 18px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 32px rgba(12, 31, 58, .14); text-align: left; }
+.score-card-head { display: flex; align-items: center; gap: 12px; }
+.score-card-head div { display: flex; flex-direction: column; }
+.score-card-head strong { color: var(--blue-800); }
+.score-card-head .muted { font-size: 13px; }
+.score-card-kanji { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--bordeaux-50); color: var(--bordeaux); font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif; font-size: 20px; font-weight: 600; }
+.score-bar { margin-top: 14px; height: 6px; border-radius: 999px; background: var(--blue-100); overflow: hidden; }
+.score-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--bordeaux-600), var(--bordeaux)); }
+.score-next { margin: 8px 0 0; font-size: 13px; }
+.score-ways-title { margin: 14px 0 4px; font-size: 13px; font-weight: 600; color: var(--blue-800); }
+.score-ways { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: var(--fg); }
+.score-note { margin: 10px 0 0; font-size: 12px; }
+@media (max-width: 560px) { .score-points small { display: none; } .score-pill { padding-right: 10px; } }
+@media (prefers-reduced-motion: reduce) { .score-gain { animation: none; opacity: 1; } .score-ring .fill { transition: none; } }
 .round-button:hover, .round-button.current { border-color: var(--bordeaux); color: var(--bordeaux); background: var(--white); }
 .round-button .code { position: absolute; right: -6px; bottom: -4px; font-size: 9px; font-weight: 700; line-height: 1; padding: 2px 4px; border-radius: 6px; background: var(--blue-700); color: #fff; }
 .language-menu { position: relative; }

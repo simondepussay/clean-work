@@ -25,6 +25,7 @@ const WelcomeSetup = lazy(() => import("./welcome/WelcomeSetup").then((m) => (lo
 const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (loadedFine(), { default: m.ProfileEditor })));
 import { BriefcaseIcon, ChatIcon, DocIcon, HeartIcon, LightIcon, UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
+import { ScoreBadge } from "./ScoreBadge";
 import { welcomePostponed } from "./welcome/postponed";
 import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
@@ -277,12 +278,13 @@ export default function App() {
         </button>
         <div className="topbar-tools">
         <LanguageMenu />
-        {signedIn ? (
+        {signedIn ? (<>
           <button className={`avatar round-button${view === "account" ? " current" : ""}`} onClick={() => open("account")}
             aria-label={tr({ ja: "アカウント", en: "Account", fr: "Compte" })} title={signedIn.name ?? signedIn.email ?? ""}>
             <UserIcon size={22} />
           </button>
-        ) : (
+          <ScoreBadge key={owner ?? ""} getToken={auth.getToken} />
+        </>) : (
           auth.state.status === "signedOut" && <button className="primary" onClick={() => auth.signIn()}>{tr({ ja: "サインイン", en: "Sign in", fr: "Se connecter" })}</button>
         )}
         </div>
