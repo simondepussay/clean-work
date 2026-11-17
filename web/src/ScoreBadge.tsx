@@ -13,7 +13,7 @@ export const LEVEL_NAMES: { kanji: string; name: T3 }[] = [
 ];
 
 const WAYS: T3[] = [
-  { ja: "プロフィールやスキルを書く", en: "Fill in your profile and skills", fr: "Remplir son profil et ses compétences" },
+  { ja: "プロフィールを書く・スキルに ○ ◎ をつける", en: "Fill in your profile, mark skills ○ or ◎", fr: "Remplir son profil, noter ses compétences ○ ou ◎" },
   { ja: "応募を追加して、選考を進める", en: "Add applications and move them forward", fr: "Ajouter des candidatures et les faire avancer" },
   { ja: "ESのレビュー、面接練習、企業研究", en: "ES review, interview practice, company research", fr: "Relecture d'ES, entretien simulé, recherche d'entreprise" },
   { ja: "予定や目標をカレンダーに", en: "Plan events and goals in the calendar", fr: "Noter événements et objectifs au calendrier" },
@@ -43,7 +43,7 @@ export function ScoreBadge({ getToken }: { getToken: () => Promise<string | null
       const token = await tokenRef.current();
       const next = token ? await getScore(token) : null;
       if (!alive || !next) return;
-      if (last.current !== null && next.points > last.current) setGain({ n: next.points - last.current, key: Date.now() });
+      if (last.current !== null && next.points !== last.current) setGain({ n: next.points - last.current, key: Date.now() });
       last.current = next.points;
       setScore(next);
     };
@@ -84,7 +84,7 @@ export function ScoreBadge({ getToken }: { getToken: () => Promise<string | null
         </span>
         <span className="score-points">{score.points}<small>pt</small></span>
       </button>
-      {gain && <span key={gain.key} className="score-gain" aria-live="polite">+{gain.n}</span>}
+      {gain && <span key={gain.key} className={`score-gain${gain.n < 0 ? " down" : ""}`} aria-live="polite">{gain.n > 0 ? `+${gain.n}` : `−${-gain.n}`}</span>}
       {open && (
         <div className="score-card" role="dialog" aria-label={tr({ ja: "スコア", en: "Score", fr: "Score" })}>
           <div className="score-card-head">
@@ -99,7 +99,7 @@ export function ScoreBadge({ getToken }: { getToken: () => Promise<string | null
           </p>
           <p className="score-ways-title">{tr({ ja: "ポイントがたまること", en: "How to earn points", fr: "Comment gagner des points" })}</p>
           <ul className="score-ways">{WAYS.map((w, i) => <li key={i}>{tr(w)}</li>)}</ul>
-          <p className="muted score-note">{tr({ ja: "ポイントは減りません。自分のペースで大丈夫です。", en: "Points never go down. Go at your own pace.", fr: "Les points ne baissent jamais. À votre rythme." })}</p>
+          <p className="muted score-note">{tr({ ja: "ポイントは減りません（スキルを外したときだけ、その分が戻ります）。自分のペースで大丈夫です。", en: "Points don't go down (except when you remove a skill: its points go back). Go at your own pace.", fr: "Les points ne baissent pas (sauf si vous retirez une compétence : ses points sont repris). À votre rythme." })}</p>
         </div>
       )}
     </div>

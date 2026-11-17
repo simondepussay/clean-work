@@ -8,8 +8,13 @@ import { useTr } from "../i18n";
 export const mcpUrl = () => `${API_BASE || window.location.origin}/api/mcp`;
 
 /** La commande à coller dans un terminal pour relier Claude Code (avec la clé, ou un exemple sans). */
+/** L'adresse avec la clé dedans, pour les apps qui n'acceptent qu'une URL (ChatGPT, Claude). */
+export const keyUrl = (key: string) => `${mcpUrl()}/${key}`;
+
 export const claudeCommand = (key = "cwk_…") =>
   `claude mcp add --transport http clean-work ${mcpUrl()} --header "Authorization: Bearer ${key}"`;
+
+type Copied = "key" | "url" | "command" | "keyurl" | null;
 
 /**
  * Page du compte : relier son agent IA (Claude, ChatGPT…) à Clean Work par une clé.
@@ -22,7 +27,7 @@ export function AgentKeysPanel() {
   const [name, setName] = useState("");
   const [scope, setScope] = useState<AgentScope>("write");
   const [fresh, setFresh] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"key" | "url" | "command" | null>(null);
+  const [copied, setCopied] = useState<Copied>(null);
   /** Repliée par défaut : la plupart des gens n'en ont pas besoin. */
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +66,7 @@ export function AgentKeysPanel() {
     if (token && (await revokeAgentKey(token, k.id))) await load();
   }
 
-  const copy = async (what: "key" | "url" | "command", value: string) => {
+  const copy = async (what: Copied, value: string) => {
     await navigator.clipboard?.writeText(value).catch(() => undefined);
     setCopied(what);
     setTimeout(() => setCopied(null), 1500);
@@ -97,15 +102,7 @@ export function AgentKeysPanel() {
           <div className="agent-url"><code>{fresh}</code>
             <button type="button" onClick={() => copy("key", fresh)}>{copied === "key" ? tr({ ja: "コピーしました", en: "Copied", fr: "Copié" }) : tr({ ja: "コピー", en: "Copy", fr: "Copier" })}</button>
           </div>
-          <p className="agent-label">{tr({ ja: "Claude Code ならこのコマンドをターミナルに貼りつけるだけ：", en: "With Claude Code, just paste this command into a terminal:", fr: "Avec Claude Code, collez simplement cette commande dans un terminal :" })}</p>
-          <div className="agent-url"><code className="agent-command">{claudeCommand(fresh)}</code>
-            <button type="button" className="primary" onClick={() => copy("command", claudeCommand(fresh))}>{copied === "command" ? tr({ ja: "コピーしました", en: "Copied", fr: "Copié" }) : tr({ ja: "コマンドをコピー", en: "Copy command", fr: "Copier la commande" })}</button>
-          </div>
-          <p className="muted">{tr({
-            ja: "ほかのエージェントでは、設定で「Authorization: Bearer キー」として使ってください。パスワードと同じように、人に見せないでください。",
-            en: "With other agents, add it in their settings as “Authorization: Bearer <key>”. Keep it private, like a password.",
-            fr: "Avec les autres agents, ajoutez-la dans leurs réglages : « Authorization: Bearer <clé> ». Gardez-la secrète, comme un mot de passe.",
-          })}</p>
+          <AgentSetup secret={fresh} copied={copied} copy={copy} />
           <button type="button" onClick={() => setFresh(null)}>{tr({ ja: "保存しました", en: "I've saved it", fr: "Je l'ai notée" })}</button>
         </div>
       )}
@@ -137,11 +134,85 @@ export function AgentKeysPanel() {
         <button className="primary" disabled={busy || !name.trim()}>{tr({ ja: "キーを作る", en: "Create a key", fr: "Créer une clé" })}</button>
       </form>
       {!fresh && <p className="muted agent-hint">{tr({
-        ja: "キーを作ると、Claude Code にそのまま貼りつけられるコマンドも表示されます。",
-        en: "When you create a key, you also get a ready-to-paste command for Claude Code.",
-        fr: "En créant une clé, vous obtenez aussi une commande prête à coller dans Claude Code.",
+        ja: "キーを作ると、ChatGPT・Claude・Claude Code へのつなぎ方が表示されます。",
+        en: "When you create a key, you'll see how to connect it to ChatGPT, Claude or Claude Code.",
+        fr: "En créant une clé, vous verrez comment la relier à ChatGPT, Claude ou Claude Code.",
       })}</p>}
       {error && <p className="notice" role="alert">{error}</p>}
     </details>
+  );
+}
+
+type AgentApp = "chatgpt" | "claude" | "claudeCode" | "other";
+const APPS: { id: AgentApp; label: string }[] = [
+  { id: "chatgpt", label: "ChatGPT" },
+  { id: "claude", label: "Claude" },
+  { id: "claudeCode", label: "Claude Code" },
+  { id: "other", label: "…" },
+];
+
+/** Après la création d'une clé : comment la relier, selon l'app de l'utilisateur (un onglet par app). */
+function AgentSetup({ secret, copied, copy }: { secret: string; copied: Copied; copy: (what: Copied, value: string) => void }) {
+  const tr = useTr();
+  const [app, setApp] = useState<AgentApp>("chatgpt");
+  const copyLabel = (what: Copied, label: string) => (copied === what ? tr({ ja: "コピーしました", en: "Copied", fr: "Copié" }) : label);
+  const urlRow = (
+    <div className="agent-url"><code className="agent-command">{keyUrl(secret)}</code>
+      <button type="button" className="primary" onClick={() => copy("keyurl", keyUrl(secret))}>{copyLabel("keyurl", tr({ ja: "URLをコピー", en: "Copy URL", fr: "Copier l'adresse" }))}</button>
+    </div>
+  );
+  const urlWarning = <p className="muted">{tr({ ja: "このURLにはキーが入っています。人に見せないでください。", en: "This URL contains your key: keep it private.", fr: "Cette adresse contient votre clé : gardez-la secrète." })}</p>;
+
+  return (
+    <div className="agent-setup">
+      <p className="agent-label">{tr({ ja: "どのAIで使いますか？", en: "Which AI do you use?", fr: "Avec quelle IA ?" })}</p>
+      <div className="agent-tabs" role="tablist">
+        {APPS.map((a) => (
+          <button key={a.id} type="button" role="tab" aria-selected={app === a.id} className={app === a.id ? "current" : ""} onClick={() => setApp(a.id)}>
+            {a.id === "other" ? tr({ ja: "その他", en: "Other", fr: "Autre" }) : a.label}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel">
+        {app === "chatgpt" && <>
+          <ol className="agent-steps">
+            <li>{tr({ ja: "ChatGPT の「設定」→「アプリとコネクタ」→「詳細設定」で「開発者モード」をオンにします。", en: "In ChatGPT, open Settings → Apps & Connectors → Advanced settings and turn on Developer mode.", fr: "Dans ChatGPT, ouvrez Paramètres → Applications et connecteurs → Paramètres avancés, et activez le mode développeur." })}</li>
+            <li>{tr({ ja: "「作成」を押し、名前は「Clean Work」、MCPサーバーのURLに下のURLを貼り、認証は「なし」を選びます。", en: "Click Create, name it “Clean Work”, paste the URL below as the MCP server URL, and choose “No authentication”.", fr: "Cliquez sur Créer, nommez-le « Clean Work », collez l'adresse ci-dessous comme URL du serveur MCP et choisissez « Aucune authentification »." })}</li>
+            <li>{tr({ ja: "チャットで Clean Work を選んで、「今週の予定は？」などと頼みます。", en: "In a chat, pick Clean Work and ask, for example, “What do I have this week?”.", fr: "Dans une conversation, choisissez Clean Work et demandez par exemple « Qu'est-ce que j'ai cette semaine ? »." })}</li>
+          </ol>
+          {urlRow}
+          <p className="muted">{tr({ ja: "開発者モードは、ChatGPT の有料プランで使えます。メニューの名前は変わることがあります。", en: "Developer mode is available on paid ChatGPT plans. Menu names may change.", fr: "Le mode développeur est disponible avec les offres payantes de ChatGPT. Les noms des menus peuvent changer." })}</p>
+          {urlWarning}
+        </>}
+
+        {app === "claude" && <>
+          <ol className="agent-steps">
+            <li>{tr({ ja: "Claude（Web・デスクトップ）の「設定」→「コネクタ」→「カスタムコネクタを追加」を開きます。", en: "In Claude (web or desktop), open Settings → Connectors → Add custom connector.", fr: "Dans Claude (web ou bureau), ouvrez Paramètres → Connecteurs → Ajouter un connecteur personnalisé." })}</li>
+            <li>{tr({ ja: "名前は「Clean Work」、URLに下のURLを貼って追加します。", en: "Name it “Clean Work”, paste the URL below and add it.", fr: "Nommez-le « Clean Work », collez l'adresse ci-dessous et ajoutez-le." })}</li>
+            <li>{tr({ ja: "チャットのツールで Clean Work をオンにして、頼みます。", en: "Turn Clean Work on in the chat's tools, then ask.", fr: "Activez Clean Work dans les outils de la conversation, puis demandez." })}</li>
+          </ol>
+          {urlRow}
+          {urlWarning}
+        </>}
+
+        {app === "claudeCode" && <>
+          <p className="agent-steps-intro">{tr({ ja: "このコマンドをターミナルに貼りつけるだけです。", en: "Just paste this command into a terminal.", fr: "Collez simplement cette commande dans un terminal." })}</p>
+          <div className="agent-url"><code className="agent-command">{claudeCommand(secret)}</code>
+            <button type="button" className="primary" onClick={() => copy("command", claudeCommand(secret))}>{copyLabel("command", tr({ ja: "コマンドをコピー", en: "Copy command", fr: "Copier la commande" }))}</button>
+          </div>
+        </>}
+
+        {app === "other" && <>
+          <p className="agent-steps-intro">{tr({
+            ja: "MCPに対応したエージェントなら使えます。サーバーのURLを入れ、ヘッダー「Authorization: Bearer キー」を追加します。ヘッダーを追加できない場合は、キー入りのURLを使ってください。",
+            en: "Any MCP-compatible agent works. Add the server URL with the header “Authorization: Bearer <key>”. If it can't add headers, use the URL with the key in it.",
+            fr: "Tout agent compatible MCP fonctionne. Ajoutez l'adresse du serveur avec l'en-tête « Authorization: Bearer <clé> ». S'il ne permet pas d'en-tête, utilisez l'adresse qui contient la clé.",
+          })}</p>
+          {urlRow}
+          {urlWarning}
+        </>}
+      </div>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import { app } from "@azure/functions";
 import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
 import { SkillsService } from "../lib/skills";
-import { award, applicationEvents, profileEvents } from "../lib/score";
+import { ScoreService } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 
 /**
@@ -15,7 +15,7 @@ export function skillsHandler(verifier?: () => IdentityVerifier | null, store: (
     const skills = new SkillsService(store());
     if (req.method === "PUT") {
       const saved = await skills.save(user.userId, await req.json().catch(() => null));
-      await award(store(), user.userId, Object.keys(saved.levels).map((id) => ({ kind: "skill" as const, key: id })));
+      await new ScoreService(store()).syncSkills(user.userId, saved.levels).catch((e: Error) => console.warn(`score des compétences non mis à jour : ${e.message}`));
       return { jsonBody: saved };
     }
     return { jsonBody: await skills.get(user.userId) };

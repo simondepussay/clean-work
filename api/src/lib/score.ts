@@ -2,7 +2,8 @@
  * Le score : des points quand on avance dans son 就活, et un niveau doux (種 → 芽 → 若葉 → 蕾 → 花 → 実).
  *
  * Règles :
- *   - on ne perd jamais de points (supprimer une candidature ne retire rien) ;
+ *   - on ne perd jamais de points (supprimer une candidature ne retire rien), sauf les compétences :
+ *     elles suivent leur état (○, ◎, retirée), voir `syncSkills` ;
  *   - chaque geste ne rapporte qu'une fois : une clé par geste (« candidature X créée », « météo du 17/11 »…),
  *     donc modifier dix fois la même chose ne rapporte rien de plus ;
  *   - au plus DAILY_CAP points par jour (heure UTC), pour que créer et supprimer en boucle ne serve à rien ;
@@ -78,6 +79,24 @@ export class ScoreService {
       gained += points;
     }
     return gained;
+  }
+
+  /**
+   * Les compétences suivent leur état actuel, clic après clic : ○ = POINTS.skill, ◎ = le double,
+   * et une compétence retirée rend ses points (seule exception à « on ne perd jamais de points »).
+   * Le total des compétences est gardé dans le champ `skills` ; on n'ajoute que l'écart.
+   * Hors plafond du jour : ce total est borné par le nombre de compétences du dictionnaire.
+   */
+  async syncSkills(userId: string, levels: Record<string, number>) {
+    const target = Object.values(levels).reduce((n, l) => n + (l === 2 ? 2 : l === 1 ? 1 : 0) * POINTS.skill, 0);
+    const doc = await this.store.get<Record<string, unknown> & { id: string; userId: string }>(containers.usage, userId, SCORE_DOC);
+    const tracked = typeof doc?.skills === "number" ? (doc.skills as number) : null;
+    // Avant ce suivi, chaque compétence cochée avait rapporté POINTS.skill une fois (clés « k_skill_… »).
+    const current = tracked ?? Object.entries(doc ?? {}).filter(([k, v]) => k.startsWith("k_skill_") && v === 1).length * POINTS.skill;
+    const delta = target - current;
+    if (delta === 0 && tracked !== null) return 0;
+    await this.store.increment(containers.usage, userId, SCORE_DOC, { points: delta, skills: target - (tracked ?? 0) });
+    return delta;
   }
 
   /** Comme `award`, mais une erreur ne fait jamais échouer le geste de l'utilisateur. */

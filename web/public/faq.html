@@ -32,7 +32,7 @@
 <h3>スコアはどうやって増えますか？</h3>
 <p>Clean Work で就活を進めると、ポイントがたまります。プロフィールやスキルを書く、応募を追加して選考を進める（内定は50ポイント）、ESのレビューや面接練習、予定や目標の登録、こころの天気や日記などです。</p>
 <h3>ポイントは減りますか？</h3>
-<p>減りません。応募を削除しても、そのままです。同じことを何度くり返してもポイントは1回分だけで、1日にたまるのは150ポイントまでです。ランキングや連続記録はありません。自分のペースで大丈夫です。</p>
+<p>基本的に減りません。応募を削除しても、そのままです。ただしスキルは、○・◎ をつけるたびにポイントが増え、外すとそのスキルの分だけ戻ります。同じことを何度くり返してもポイントは1回分だけで、1日にたまるのは150ポイントまでです。ランキングや連続記録はありません。自分のペースで大丈夫です。</p>
 <h3>段階（種・芽・若葉・蕾・花・実）は？</h3>
 <p>種 0 → 芽 50 → 若葉 150 → 蕾 400 → 花 800 → 実 1500 ポイントです。</p>
 
@@ -70,7 +70,20 @@
 <li>ヘッダー：<code>Authorization: Bearer cwk_…</code>（あなたのキー）</li>
 </ul></li>
 </ol>
-<p>Claude Code の場合：</p>
+<h3>ChatGPT の場合</h3>
+<ol>
+<li>ChatGPT の「設定」→「アプリとコネクタ」→「詳細設定」で「開発者モード」をオンにします（有料プランで使えます）。</li>
+<li>「作成」を押し、名前は「Clean Work」、MCPサーバーのURLにキー入りのURL（<code>…/api/mcp/cwk_…</code>）を貼り、認証は「なし」を選びます。</li>
+<li>チャットで Clean Work を選んで、「今週の予定は？」などと頼みます。</li>
+</ol>
+<h3>Claude（Web・デスクトップ）の場合</h3>
+<ol>
+<li>「設定」→「コネクタ」→「カスタムコネクタを追加」を開きます。</li>
+<li>名前は「Clean Work」、URLにキー入りのURLを貼って追加します。</li>
+<li>チャットのツールで Clean Work をオンにして頼みます。</li>
+</ol>
+<p>キーを作ると、アプリの画面にそれぞれのURLやコマンドが表示され、ボタンでコピーできます。メニューの名前は、各サービスの更新で変わることがあります。</p>
+<h3>Claude Code の場合</h3>
 <pre><code>claude mcp add --transport http clean-work https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net/api/mcp --header "Authorization: Bearer cwk_…"</code></pre>
 <p>URLしか入力できないアプリ（カスタムコネクタなど）では、キーをURLの最後につけます：<code>…/api/mcp/cwk_…</code>。このURLはキーと同じなので、人に見せないでください。</p>
 
@@ -91,7 +104,7 @@
 <h3>How does my score go up?</h3>
 <p>You earn points as you move your job hunt forward in Clean Work: filling in your profile and skills, adding applications and moving them forward (an offer is worth 50), ES reviews and interview practice, planning events and goals, the Kokoro weather and your journal.</p>
 <h3>Can I lose points?</h3>
-<p>No. Deleting an application doesn't take points away. Repeating the same thing only counts once, and you can earn up to 150 points a day. There is no ranking and no streak to keep. Go at your own pace.</p>
+<p>Mostly no. Deleting an application doesn't take points away. Skills are the exception: each ○ or ◎ adds points, and removing a skill takes back what it gave. Repeating the same thing only counts once, and you can earn up to 150 points a day. There is no ranking and no streak to keep. Go at your own pace.</p>
 <h3>What are the stages (Seed, Sprout, Young leaf, Bud, Bloom, Fruit)?</h3>
 <p>種 0 → 芽 50 → 若葉 150 → 蕾 400 → 花 800 → 実 1,500 points.</p>
 
@@ -129,7 +142,20 @@
 <li>Header: <code>Authorization: Bearer cwk_…</code> (your key)</li>
 </ul></li>
 </ol>
-<p>With Claude Code:</p>
+<h3>With ChatGPT</h3>
+<ol>
+<li>In ChatGPT, open Settings → Apps &amp; Connectors → Advanced settings and turn on Developer mode (available on paid plans).</li>
+<li>Click Create, name it “Clean Work”, paste the URL with your key (<code>…/api/mcp/cwk_…</code>) as the MCP server URL, and choose “No authentication”.</li>
+<li>In a chat, pick Clean Work and ask, for example, “What do I have this week?”.</li>
+</ol>
+<h3>With Claude (web or desktop)</h3>
+<ol>
+<li>Open Settings → Connectors → Add custom connector.</li>
+<li>Name it “Clean Work”, paste the URL with your key and add it.</li>
+<li>Turn Clean Work on in the chat's tools, then ask.</li>
+</ol>
+<p>When you create a key, Clean Work shows the URL or command for each app, with a copy button. Menu names may change as these services are updated.</p>
+<h3>With Claude Code</h3>
 <pre><code>claude mcp add --transport http clean-work https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net/api/mcp --header "Authorization: Bearer cwk_…"</code></pre>
 <p>If your app only accepts a URL (custom connectors, for example), put the key at the end of it: <code>…/api/mcp/cwk_…</code>. That URL is as secret as the key itself.</p>
 

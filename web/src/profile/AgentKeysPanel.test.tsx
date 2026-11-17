@@ -35,12 +35,15 @@ describe("AgentKeysPanel", () => {
     await userEvent.type(screen.getByRole("textbox", { name: /キーの名前|Key name|Nom de la clé/ }), "Claude");
     await userEvent.click(screen.getByRole("button", { name: /キーを作る|Create a key|Créer une clé/ }));
     expect(await screen.findByText("cwk_secret")).toBeInTheDocument();
+    // ChatGPT d'abord : l'adresse avec la clé dedans.
+    expect(screen.getByText(/\/api\/mcp\/cwk_secret$/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "Claude Code" }));
     expect(screen.getByText(/^claude mcp add --transport http clean-work .*\/api\/mcp --header "Authorization: Bearer cwk_secret"$/)).toBeInTheDocument();
     const writeText = vi.fn(async () => {});
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     await userEvent.click(screen.getByRole("button", { name: /コマンドをコピー|Copy command|Copier la commande/ }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Bearer cwk_secret"));
-    expect(await screen.findByText("Claude")).toBeInTheDocument();
+    expect(await screen.findByText("Claude", { selector: ".agent-list strong" })).toBeInTheDocument();
     expect(screen.getByText(/\/api\/mcp$/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /削除|Revoke|Révoquer/ }));

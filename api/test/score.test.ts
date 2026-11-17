@@ -61,3 +61,32 @@ describe("/api/score", () => {
     expect((await score()).points).toBe(POINTS.application + POINTS.step);
   });
 });
+
+describe("compétences", () => {
+  it("○ puis ◎ font monter les points, retirer la compétence les rend", async () => {
+    const score = new ScoreService(new MemoryStore(), at("2026-11-17T03:00:00Z"));
+    expect(await score.syncSkills("u1", { swift: 1 })).toBe(POINTS.skill);
+    expect((await score.view("u1")).points).toBe(POINTS.skill);
+    expect(await score.syncSkills("u1", { swift: 2 })).toBe(POINTS.skill);
+    expect((await score.view("u1")).points).toBe(2 * POINTS.skill);
+    expect(await score.syncSkills("u1", {})).toBe(-2 * POINTS.skill);
+    expect((await score.view("u1")).points).toBe(0);
+    // Les autres points ne bougent pas.
+    await score.award("u1", [{ kind: "mood", key: "2026-11-17" }]);
+    await score.syncSkills("u1", { swift: 2, git: 1 });
+    await score.syncSkills("u1", { git: 1 });
+    expect((await score.view("u1")).points).toBe(POINTS.mood + POINTS.skill);
+  });
+
+  it("reprend les points déjà donnés par l'ancien système, sans les compter deux fois", async () => {
+    const store = new MemoryStore();
+    const score = new ScoreService(store, at("2026-11-17T03:00:00Z"));
+    await score.award("u1", [{ kind: "skill", key: "swift" }, { kind: "skill", key: "git" }]);
+    expect((await score.view("u1")).points).toBe(2 * POINTS.skill);
+    await score.syncSkills("u1", { swift: 1, git: 1 });
+    expect((await score.view("u1")).points).toBe(2 * POINTS.skill);
+    await score.syncSkills("u1", { swift: 2, git: 1 });
+    expect((await score.view("u1")).points).toBe(3 * POINTS.skill);
+  });
+});
+

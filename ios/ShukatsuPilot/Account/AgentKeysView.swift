@@ -12,6 +12,7 @@ struct AgentKeysView: View {
     @State private var busy = false
     @State private var revoking: AgentKey?
     @State private var copied: String?
+    @State private var app = "chatgpt"
 
     var body: some View {
         List {
@@ -30,18 +31,14 @@ struct AgentKeysView: View {
             if let fresh {
                 Section {
                     copyRow(fresh, id: "key")
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(tr("Claude Code なら、このコマンドをターミナルに貼りつけるだけ", "With Claude Code, just paste this command into a terminal", "Avec Claude Code, collez simplement cette commande dans un terminal"))
-                            .font(.caption.weight(.semibold)).foregroundStyle(Color.cwBlue800)
-                        copyRow(api.claudeCommand(key: fresh), id: "command", label: tr("コマンドをコピー", "Copy command", "Copier la commande"))
-                    }
+                    setup(for: fresh)
                     Button(tr("保存しました", "I've saved it", "Je l'ai notée")) { self.fresh = nil }
                 } header: {
                     Text(tr("新しいキー（一度しか表示されません）", "Your new key (shown only once)", "Votre nouvelle clé (affichée une seule fois)"))
                 } footer: {
-                    Text(tr("エージェントの設定で「Authorization: Bearer キー」として使ってください。パスワードと同じように、人に見せないでください。",
-                            "Use it in your agent's settings as “Authorization: Bearer <key>”. Keep it private, like a password.",
-                            "À utiliser dans les réglages de l'agent : « Authorization: Bearer <clé> ». Gardez-la secrète, comme un mot de passe."))
+                    Text(tr("キーとキー入りのURLは、パスワードと同じように人に見せないでください。",
+                            "Keep the key, and the URL that contains it, private like a password.",
+                            "Gardez la clé, et l'adresse qui la contient, secrètes comme un mot de passe."))
                 }
             }
             Section(tr("キー", "Keys", "Clés")) {
@@ -84,6 +81,45 @@ struct AgentKeysView: View {
             Button(tr("削除する", "Revoke", "Révoquer"), role: .destructive) {
                 if let key = revoking { Task { try? await api.revokeAgentKey(key.id); await load() } }
             }
+        }
+    }
+
+    /// Comment relier la clé, selon l'app de l'utilisateur (mêmes étapes que sur le site).
+    @ViewBuilder private func setup(for secret: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(tr("どのAIで使いますか？", "Which AI do you use?", "Avec quelle IA ?")).font(.caption.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+            Picker(tr("AI", "AI", "IA"), selection: $app) {
+                Text("ChatGPT").tag("chatgpt")
+                Text("Claude").tag("claude")
+                Text("Claude Code").tag("claudeCode")
+                Text(tr("その他", "Other", "Autre")).tag("other")
+            }
+            .pickerStyle(.segmented)
+            ForEach(Array(steps.enumerated()), id: \.offset) { i, step in
+                Text(steps.count > 1 ? "\(i + 1). \(step)" : step).font(.footnote)
+            }
+        }
+        if app == "claudeCode" {
+            copyRow(api.claudeCommand(key: secret), id: "command", label: tr("コマンドをコピー", "Copy command", "Copier la commande"))
+        } else {
+            copyRow(api.mcpURL + "/" + secret, id: "keyurl", label: tr("URLをコピー", "Copy URL", "Copier l'adresse"))
+        }
+    }
+
+    private var steps: [String] {
+        switch app {
+        case "chatgpt": [
+            tr("ChatGPT の「設定」→「アプリとコネクタ」→「詳細設定」で「開発者モード」をオンにします（有料プラン）。", "In ChatGPT, open Settings → Apps & Connectors → Advanced settings and turn on Developer mode (paid plans).", "Dans ChatGPT, ouvrez Paramètres → Applications et connecteurs → Paramètres avancés, et activez le mode développeur (offres payantes)."),
+            tr("「作成」を押し、名前は「Clean Work」、MCPサーバーのURLに下のURLを貼り、認証は「なし」を選びます。", "Tap Create, name it “Clean Work”, paste the URL below as the MCP server URL, and choose “No authentication”.", "Touchez Créer, nommez-le « Clean Work », collez l'adresse ci-dessous comme URL du serveur MCP et choisissez « Aucune authentification »."),
+            tr("チャットで Clean Work を選んで頼みます。", "In a chat, pick Clean Work and ask.", "Dans une conversation, choisissez Clean Work et demandez."),
+        ]
+        case "claude": [
+            tr("Claude の「設定」→「コネクタ」→「カスタムコネクタを追加」を開きます。", "In Claude, open Settings → Connectors → Add custom connector.", "Dans Claude, ouvrez Paramètres → Connecteurs → Ajouter un connecteur personnalisé."),
+            tr("名前は「Clean Work」、URLに下のURLを貼って追加します。", "Name it “Clean Work”, paste the URL below and add it.", "Nommez-le « Clean Work », collez l'adresse ci-dessous et ajoutez-le."),
+            tr("チャットのツールで Clean Work をオンにして頼みます。", "Turn Clean Work on in the chat's tools, then ask.", "Activez Clean Work dans les outils de la conversation, puis demandez."),
+        ]
+        case "claudeCode": [tr("このコマンドをターミナルに貼りつけるだけです。", "Just paste this command into a terminal.", "Collez simplement cette commande dans un terminal.")]
+        default: [tr("MCPに対応したエージェントなら使えます。ヘッダー「Authorization: Bearer キー」を追加するか、キー入りのURLを使ってください。", "Any MCP-compatible agent works: add the header “Authorization: Bearer <key>”, or use the URL with the key in it.", "Tout agent compatible MCP fonctionne : ajoutez l'en-tête « Authorization: Bearer <clé> », ou utilisez l'adresse qui contient la clé.")]
         }
     }
 

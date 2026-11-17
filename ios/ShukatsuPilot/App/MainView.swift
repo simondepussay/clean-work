@@ -377,7 +377,7 @@ struct ScoreBadge: View {
                     .overlay(Capsule().stroke(Color.cwLine, lineWidth: 1))
                     .overlay(alignment: .topTrailing) {
                         if let gain {
-                            Text("+\(gain)").font(.caption.bold()).foregroundStyle(Color.cwBordeaux)
+                            Text(gain > 0 ? "+\(gain)" : "−\(-gain)").font(.caption.bold()).foregroundStyle(gain > 0 ? Color.cwBordeaux : Color.cwMuted)
                                 .offset(x: -4, y: -14)
                                 .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
                         }
@@ -386,14 +386,14 @@ struct ScoreBadge: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(tr("スコア \(score.points) ポイント、\(ScoreLevel.kanji[level])", "Score: \(score.points) points, \(ScoreLevel.name(level))", "Score : \(score.points) points, \(ScoreLevel.name(level))"))
                 .popover(isPresented: $showingCard) { ScoreCard(score: score).presentationCompactAdaptation(.popover) }
-                .sensoryFeedback(.success, trigger: gain) { _, new in new != nil }
+                .sensoryFeedback(.success, trigger: gain) { _, new in (new ?? 0) > 0 }
             }
         }
         .task(id: reload) {
             // Plusieurs gestes d'affilée : une seule requête.
             if reload > 0 { try? await Task.sleep(for: .milliseconds(400)) }
             guard !Task.isCancelled, let next = try? await api.score() else { return }
-            if let old = score, next.points > old.points {
+            if let old = score, next.points != old.points {
                 withAnimation(.spring(duration: 0.4)) { gain = next.points - old.points }
                 Task {
                     try? await Task.sleep(for: .seconds(1.8))
@@ -435,14 +435,14 @@ private struct ScoreCard: View {
             Text(tr("ポイントがたまること", "How to earn points", "Comment gagner des points")).font(.footnote.bold()).foregroundStyle(Color.cwBlue800)
             VStack(alignment: .leading, spacing: 4) {
                 ForEach([
-                    tr("プロフィールやスキルを書く", "Fill in your profile and skills", "Remplir son profil et ses compétences"),
+                    tr("プロフィールを書く・スキルに ○ ◎ をつける", "Fill in your profile, mark skills ○ or ◎", "Remplir son profil, noter ses compétences ○ ou ◎"),
                     tr("応募を追加して、選考を進める", "Add applications and move them forward", "Ajouter des candidatures et les faire avancer"),
                     tr("ESのレビュー、面接練習、企業研究", "ES review, interview practice, company research", "Relecture d'ES, entretien simulé, recherche d'entreprise"),
                     tr("予定や目標をカレンダーに", "Plan events and goals in the calendar", "Noter événements et objectifs au calendrier"),
                     tr("こころの天気と日記", "Kokoro weather and journal", "Météo intérieure et journal"),
                 ], id: \.self) { Text("・\($0)").font(.footnote) }
             }
-            Text(tr("ポイントは減りません。自分のペースで大丈夫です。", "Points never go down. Go at your own pace.", "Les points ne baissent jamais. À votre rythme."))
+            Text(tr("ポイントは減りません（スキルを外したときだけ、その分が戻ります）。自分のペースで大丈夫です。", "Points don't go down (except when you remove a skill: its points go back). Go at your own pace.", "Les points ne baissent pas (sauf si vous retirez une compétence : ses points sont repris). À votre rythme."))
                 .font(.caption).foregroundStyle(Color.cwMuted)
         }
         .padding(18)
