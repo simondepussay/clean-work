@@ -29,6 +29,7 @@ private final class DemoAccount: AccountService {
 
 /// Répond aux appels de l'API avec des données d'exemple (dates autour d'aujourd'hui).
 private final class DemoURLProtocol: URLProtocol {
+    static let demoNotes = "・ミライの説明会で聞くこと：若手の配属、研修の長さ\n・自己PR：留学生チームのまとめ役の話を1分で"
     nonisolated(unsafe) static var demoScore = ProcessInfo.processInfo.arguments.contains("-newAccount") ? 0 : 265
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -44,6 +45,22 @@ private final class DemoURLProtocol: URLProtocol {
         // Score : chaque modification rapporte quelques points pendant la démo (seuils comme l'API).
         if method != "GET" && method != "DELETE" { Self.demoScore += 10 }
         switch (method, path) {
+        case ("GET", "/api/notes"):
+            let text: String = newAccount ? "" : Self.demoNotes
+            body = ["text": text, "updatedAt": NSNull()] as [String: Any]
+        case ("PUT", "/api/notes"):
+            let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
+            let text: String = sent["text"] as? String ?? ""
+            body = ["text": text, "updatedAt": "2026-11-17T09:00:00.000Z"] as [String: Any]
+        case ("GET", "/api/agent-keys"):
+            let demoKey: [String: Any] = ["id": "demo1", "name": "Claude", "scope": "write", "createdAt": "2026-11-10T09:00:00.000Z", "lastUsedAt": "2026-11-16T21:30:00.000Z"]
+            let list: [[String: Any]] = newAccount ? [] : [demoKey]
+            body = list
+        case ("POST", "/api/agent-keys"):
+            let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
+            let info: [String: Any] = ["id": "demo2", "name": sent["name"] as? String ?? "Agent", "scope": sent["scope"] as? String ?? "write", "createdAt": "2026-11-17T09:00:00.000Z"]
+            let secret: String = "cwk_demo" + UUID().uuidString.replacingOccurrences(of: "-", with: "")
+            body = ["key": secret, "info": info] as [String: Any]
         case ("GET", "/api/score"):
             let floors = [0, 50, 150, 400, 800, 1500]
             let level = floors.lastIndex { Self.demoScore >= $0 } ?? 0

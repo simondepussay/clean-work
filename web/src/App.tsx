@@ -26,6 +26,7 @@ const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (
 import { BriefcaseIcon, ChatIcon, DocIcon, HeartIcon, LightIcon, UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
 import { ScoreBadge } from "./ScoreBadge";
+import { AgentKeysPanel } from "./profile/AgentKeysPanel";
 import { welcomePostponed } from "./welcome/postponed";
 import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
@@ -119,6 +120,7 @@ function Account({ me, onSaved }: { me: Me | null | "error"; onSaved: () => void
         </div>
         {deleting === "error" && <p className="muted">{tr({ ja: "削除できませんでした", en: "Could not delete the account", fr: "Impossible de supprimer le compte" })}</p>}
       </section>
+      <AgentKeysPanel />
       <ProfileEditor onSaved={onSaved} />
     </>
   );
@@ -353,6 +355,7 @@ export default function App() {
       <footer className="footer">
         <span>© Clean Work</span>
         <a href="/privacy.html">{tr({ ja: "プライバシーポリシー", en: "Privacy policy", fr: "Confidentialité" })}</a>
+        <a href={tr.lang === "ja" ? "/faq.html" : "/faq.html?lang=en"}>{tr({ ja: "よくある質問", en: "FAQ", fr: "FAQ" })}</a>
         <a href="/terms.html">{tr({ ja: "利用規約", en: "Terms of use", fr: "Conditions d'utilisation" })}</a>
         <a href="#beta" className="footer-beta" onClick={(e) => { e.preventDefault(); open("beta"); }}>
           {tr({ ja: "βテストに参加", en: "Join the beta", fr: "Rejoindre la bêta" })}

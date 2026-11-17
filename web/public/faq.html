@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ja" data-lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>よくある質問 / FAQ — Clean Work</title>
+<meta name="description" content="Clean Work のよくある質問：スコア、メモ帳、AIエージェント（MCP）でできること。 / Clean Work FAQ: score, notepad, and what an AI agent (MCP) can do.">
+<link rel="stylesheet" href="/legal.css">
+<style>
+  h3 { font-size: 16px; margin: 22px 0 4px; }
+  code { font: 13px/1.5 ui-monospace, Menlo, monospace; background: rgba(127, 127, 127, .12); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+  pre { background: rgba(127, 127, 127, .1); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  .yes li::marker { content: "✓  "; color: #2f7a4b; }
+  .no li::marker { content: "✕  "; color: #b3261e; }
+  nav.toc { margin: 16px 0 0; font-size: 15px; }
+  nav.toc a { margin-right: 14px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="app"><a href="/">Clean Work</a></p>
+  <div class="switch" role="group" aria-label="Language"><button data-set="ja">日本語</button><button data-set="en">English</button></div>
+</header>
+
+<article data-lang="ja" lang="ja">
+<h1>よくある質問</h1>
+<nav class="toc"><a href="#score">スコア</a><a href="#notes">メモ帳</a><a href="#agents">AIエージェント</a></nav>
+
+<h2 id="score">スコア</h2>
+<h3>スコアはどうやって増えますか？</h3>
+<p>Clean Work で就活を進めると、ポイントがたまります。プロフィールやスキルを書く、応募を追加して選考を進める（内定は50ポイント）、ESのレビューや面接練習、予定や目標の登録、こころの天気や日記などです。</p>
+<h3>ポイントは減りますか？</h3>
+<p>減りません。応募を削除しても、そのままです。同じことを何度くり返してもポイントは1回分だけで、1日にたまるのは150ポイントまでです。ランキングや連続記録はありません。自分のペースで大丈夫です。</p>
+<h3>段階（種・芽・若葉・蕾・花・実）は？</h3>
+<p>種 0 → 芽 50 → 若葉 150 → 蕾 400 → 花 800 → 実 1500 ポイントです。</p>
+
+<h2 id="notes">メモ帳</h2>
+<h3>ホームのメモ帳は何に使いますか？</h3>
+<p>まだどこに入れるか決まっていないことを、自由に書いておく場所です（自己PRのアイデア、説明会で聞きたいことなど）。自動で保存され、Webと iPhone で同じ内容が見られます。アプリのAI（ES添削など）には送られません。</p>
+
+<h2 id="agents">AIエージェント</h2>
+<p>Claude や ChatGPT など、あなたが使っているAIエージェントに、Clean Work への入力を任せられます。たとえば「今日エントリーした3社を Clean Work に入れて」「来週の予定を教えて」と頼めます。しくみには MCP（Model Context Protocol）という共通の方法を使います。</p>
+
+<h3>エージェントにできること</h3>
+<ul class="yes">
+<li>応募の一覧と、これからの締切・面接・予定を読む</li>
+<li>応募を追加する（企業名、職種、選考段階、締切や面接の日時、求人ページ）</li>
+<li>応募を進める（段階を変える、次の面接の日時を足す、終わったステップにチェック、メモを1行足す）</li>
+<li>カレンダーに予定・目標・メモを追加する</li>
+<li>ESの下書きを保存する（あとでアプリで確認・修正できます）</li>
+<li>ホームのメモ帳を読む・1行足す</li>
+</ul>
+<h3>エージェントにできないこと</h3>
+<ul class="no">
+<li>何かを削除すること（応募、予定、ES、メモ）</li>
+<li>こころ（気分の記録）と日記を見ること・書くこと</li>
+<li>プロフィール、アカウント、通知の設定を変えること</li>
+<li>スコアをためること（スコアは、あなた自身の行動だけで増えます）</li>
+</ul>
+<p>「読むだけ」のキーにすると、エージェントは読むことしかできません。</p>
+
+<h3>つなぎ方</h3>
+<ol>
+<li>Clean Work の「アカウント」（右上の人のアイコン）→「AIエージェント」で、キーを作ります。キーはその画面で一度しか表示されません。</li>
+<li>エージェントの設定に、MCPサーバーのURLとキーを入れます。
+<ul>
+<li>URL：<code>https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net/api/mcp</code></li>
+<li>ヘッダー：<code>Authorization: Bearer cwk_…</code>（あなたのキー）</li>
+</ul></li>
+</ol>
+<p>Claude Code の場合：</p>
+<pre><code>claude mcp add --transport http clean-work https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net/api/mcp --header "Authorization: Bearer cwk_…"</code></pre>
+<p>URLしか入力できないアプリ（カスタムコネクタなど）では、キーをURLの最後につけます：<code>…/api/mcp/cwk_…</code>。このURLはキーと同じなので、人に見せないでください。</p>
+
+<h3>安全ですか？</h3>
+<ul>
+<li>キーはパスワードと同じです。人に見せないでください。Clean Work はキーそのものを保存せず、確認用の値（ハッシュ）だけを保存します。</li>
+<li>キーは5つまで作れて、「アカウント」からいつでも削除できます。削除するとすぐに使えなくなります。アカウントを削除すると、すべてのキーも使えなくなります。</li>
+<li>エージェントが読んだ内容は、そのエージェントのサービス（Anthropic、OpenAI など）に送られます。そのサービスのプライバシーポリシーも確認してください。</li>
+<li>エージェントが読んだWebページやメールに、悪意のある指示がまぎれていることがあります。そのため、エージェントは何も削除できないようにしています。追加された内容は、アプリで確認してください。</li>
+</ul>
+</article>
+
+<article data-lang="en" lang="en">
+<h1>Frequently asked questions</h1>
+<nav class="toc"><a href="#score-en">Score</a><a href="#notes-en">Notepad</a><a href="#agents-en">AI agents</a></nav>
+
+<h2 id="score-en">Score</h2>
+<h3>How does my score go up?</h3>
+<p>You earn points as you move your job hunt forward in Clean Work: filling in your profile and skills, adding applications and moving them forward (an offer is worth 50), ES reviews and interview practice, planning events and goals, the Kokoro weather and your journal.</p>
+<h3>Can I lose points?</h3>
+<p>No. Deleting an application doesn't take points away. Repeating the same thing only counts once, and you can earn up to 150 points a day. There is no ranking and no streak to keep. Go at your own pace.</p>
+<h3>What are the stages (Seed, Sprout, Young leaf, Bud, Bloom, Fruit)?</h3>
+<p>種 0 → 芽 50 → 若葉 150 → 蕾 400 → 花 800 → 実 1,500 points.</p>
+
+<h2 id="notes-en">Notepad</h2>
+<h3>What is the notepad on the Home page for?</h3>
+<p>A free place for things that don't have a home yet: self-PR ideas, questions for an info session, things to look up. It saves automatically and is the same on the web and on iPhone. It is never sent to the app's AI (such as ES review).</p>
+
+<h2 id="agents-en">AI agents</h2>
+<p>You can let your own AI agent, such as Claude or ChatGPT, fill in Clean Work for you. For example: “Add the three companies I applied to today to Clean Work” or “What do I have next week?”. It works through MCP (Model Context Protocol), a common standard for connecting agents to apps.</p>
+
+<h3>What an agent can do</h3>
+<ul class="yes">
+<li>Read your applications and upcoming deadlines, interviews and events</li>
+<li>Add an application (company, position, stage, deadline and interview dates, job posting)</li>
+<li>Move an application forward (change its stage, add the next interview date, mark a step done, add a line to its notes)</li>
+<li>Add events, goals and notes to your calendar</li>
+<li>Save an ES draft, which you can review and edit in the app</li>
+<li>Read the Home notepad and add a line to it</li>
+</ul>
+<h3>What an agent can't do</h3>
+<ul class="no">
+<li>Delete anything (applications, calendar items, ES, notes)</li>
+<li>Read or write Kokoro (your mood log) or your journal</li>
+<li>Change your profile, account or notification settings</li>
+<li>Earn points: your score only grows with what you do yourself</li>
+</ul>
+<p>With a read-only key, the agent can only read.</p>
+
+<h3>How to connect</h3>
+<ol>
+<li>In Clean Work, open Account (the person icon, top right) → AI agents and create a key. The key is shown only once.</li>
+<li>In your agent's settings, add the MCP server URL and your key:
+<ul>
+<li>URL: <code>https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net/api/mcp</code></li>
+<li>Header: <code>Authorization: Bearer cwk_…</code> (your key)</li>
+</ul></li>
+</ol>
+<p>With Claude Code:</p>
+<pre><code>claude mcp add --transport http clean-work https://func-shukatsu-ijdqobb4nlsxu.azurewebsites.net/api/mcp --header "Authorization: Bearer cwk_…"</code></pre>
+<p>If your app only accepts a URL (custom connectors, for example), put the key at the end of it: <code>…/api/mcp/cwk_…</code>. That URL is as secret as the key itself.</p>
+
+<h3>Is it safe?</h3>
+<ul>
+<li>A key is like a password: keep it private. Clean Work never stores the key itself, only a fingerprint (hash) to check it.</li>
+<li>You can have up to 5 keys and revoke any of them from Account at any time; a revoked key stops working immediately. Deleting your account disables all your keys.</li>
+<li>What your agent reads is sent to the agent's provider (Anthropic, OpenAI…). Check their privacy policy too.</li>
+<li>Web pages or emails your agent reads can hide malicious instructions. That's why an agent can never delete anything in Clean Work. Check what it added in the app.</li>
+</ul>
+</article>
+<script src="/legal.js"></script>
+</main>
+</body>
+</html>

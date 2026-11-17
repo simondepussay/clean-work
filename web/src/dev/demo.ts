@@ -191,6 +191,8 @@ const routes: Record<string, unknown> = {
 
 /** Remplace `fetch` pour les appels à /api par les données d'exemple ci-dessus. */
 let demoScore = demoNew ? 0 : 265;
+let demoNotes = { text: demoNew ? "" : "・ミライの説明会で聞くこと：若手の配属、研修の長さ\n・自己PR：留学生チームのまとめ役の話を1分で", updatedAt: null as string | null };
+let demoKeys: { id: string; name: string; scope: string; createdAt: string; lastUsedAt?: string }[] = demoNew ? [] : [{ id: "demo1", name: "Claude", scope: "write", createdAt: "2026-11-10T09:00:00.000Z", lastUsedAt: "2026-11-16T21:30:00.000Z" }];
 
 export function installDemoApi() {
   const real = globalThis.fetch.bind(globalThis);
@@ -199,15 +201,30 @@ export function installDemoApi() {
     if (!url.startsWith("/api/")) return real(input, init);
     const method = init?.method ?? "GET";
     const key = `${method} ${url}`;
+    // Ajout ou modification : on renvoie ce qui a été envoyé, avec un identifiant.
+    const sent = typeof init?.body === "string" ? JSON.parse(init.body) : {};
     // Score : chaque modification rapporte quelques points pendant la démo (seuils comme l'API).
     if (method !== "GET" && method !== "DELETE") demoScore += 10;
+    if (key === "GET /api/notes") return new Response(JSON.stringify(demoNotes), { status: 200, headers: { "content-type": "application/json" } });
+    if (key === "PUT /api/notes") {
+      demoNotes = { text: String(sent.text ?? ""), updatedAt: new Date().toISOString() };
+      return new Response(JSON.stringify(demoNotes), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (key === "GET /api/agent-keys") return new Response(JSON.stringify(demoKeys), { status: 200, headers: { "content-type": "application/json" } });
+    if (key === "POST /api/agent-keys") {
+      const info = { id: crypto.randomUUID().slice(0, 12), name: sent.name, scope: sent.scope ?? "write", createdAt: new Date().toISOString() };
+      demoKeys.push(info);
+      return new Response(JSON.stringify({ key: `cwk_demo${crypto.randomUUID().replace(/-/g, "")}`, info }), { status: 201, headers: { "content-type": "application/json" } });
+    }
+    if (method === "DELETE" && url.startsWith("/api/agent-keys/")) {
+      demoKeys = demoKeys.filter((k) => k.id !== url.split("/").at(-1));
+      return new Response(null, { status: 204 });
+    }
     if (key === "GET /api/score") {
       const floors = [0, 50, 150, 400, 800, 1500];
       const level = floors.filter((f) => demoScore >= f).length - 1;
       return new Response(JSON.stringify({ points: demoScore, level, floor: floors[level], next: floors[level + 1] ?? null }), { status: 200, headers: { "content-type": "application/json" } });
     }
-    // Ajout ou modification : on renvoie ce qui a été envoyé, avec un identifiant.
-    const sent = typeof init?.body === "string" ? JSON.parse(init.body) : {};
     // こころ : la météo choisie reste affichée pendant la démo.
     if (key === "PUT /api/kokoro/mood") {
       kokoro.moods = [...kokoro.moods.filter((m) => m.date !== sent.date), ...(sent.weather ? [{ date: sent.date, weather: sent.weather, ...(sent.word ? { word: sent.word } : {}) }] : [])];

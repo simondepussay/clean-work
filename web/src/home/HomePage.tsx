@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader } from "../Loader";
 import { createPlan, deletePlan, getHolidays, getProfile, getWeather, isLink, listApplications, listPlans, updatePlan, type Application, type DayWeather, type Issue, type Plan, type PlanKind } from "../api";
 import { WeatherChip } from "./WeatherChip";
+import { NotesCard } from "./NotesCard";
 import { useAuth } from "../auth/auth";
 import { CalendarIcon, CheckIcon, LinkIcon, PinIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, FlagIcon, MicIcon, PenIcon, PlusIcon, TrashIcon } from "../icons";
 import { apiMessage, formatDay, useTr, type Lang, type T3, type Tr } from "../i18n";
@@ -396,6 +397,7 @@ export function HomePage({ name, onOpenApps, onPractice }: {
           </ul>
         </section>
       </div>
+      <NotesCard />
     </div>
   );
 }

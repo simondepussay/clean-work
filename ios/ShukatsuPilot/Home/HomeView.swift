@@ -52,6 +52,7 @@ private struct HomeContent: View {
                     dayDetail.card()
                     goals.card()
                 }
+                if let api = model.apiClient { NotesCard(api: api).card() }
             }
             .padding(16)
         }

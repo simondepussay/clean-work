@@ -471,6 +471,33 @@ button.link:hover { color: var(--bordeaux); background: none; }
   .calendar { padding: 12px; }
 }
 
+/* Page du compte : agents IA (clés du serveur MCP) */
+.agent-keys { margin-top: 18px; }
+.agent-keys h2 { margin-top: 0; }
+.agent-url { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.agent-url code { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; padding: 8px 12px; border-radius: 10px; background: var(--blue-50); border: 1px solid var(--line); font-size: 13px; }
+.agent-fresh { margin-top: 14px; padding: 14px 16px; border-radius: 12px; background: var(--bordeaux-50); border: 1px solid rgba(123, 30, 46, .18); }
+.agent-fresh p { margin: 8px 0; font-size: 13px; }
+.agent-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.agent-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.agent-list li div { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.agent-list small { flex-basis: 100%; }
+.agent-scope { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--blue-100); color: var(--blue-800); }
+.agent-scope.write { background: var(--bordeaux-50); color: var(--bordeaux); }
+.agent-new { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.agent-new input { flex: 1 1 200px; }
+
+/* Bloc-notes, en bas de l'accueil : une feuille lignée, calme */
+.notes-card { margin-top: 18px; }
+.notes-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.notes-head h2 { margin: 0; }
+.notes-status { font-size: 12px; color: var(--muted); }
+.notes-status.error { color: var(--bordeaux); }
+.notes-area { display: block; width: 100%; min-height: 180px; margin-top: 12px; padding: 10px 14px; resize: vertical; font: inherit; font-size: 15px; line-height: 28px; color: var(--fg);
+  border: 1px solid var(--line); border-radius: 12px; outline: none;
+  background: var(--white) repeating-linear-gradient(transparent 0 27px, var(--blue-100) 27px 28px) 0 9px / 100% 28px local; }
+.notes-area:focus { border-color: var(--blue-500); }
+.notes-foot { margin: 6px 2px 0; font-size: 12px; }
 .home-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; align-items: start; }
 @media (max-width: 860px) { .home-grid { grid-template-columns: 1fr; } }
 .day-detail h2 span { color: var(--bordeaux); font-weight: 600; }

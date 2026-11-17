@@ -24,6 +24,11 @@ struct AccountView: View {
                     } label: {
                         Label(tr("プロフィール", "Profile", "Profil"), systemImage: "person.text.rectangle")
                     }
+                    NavigationLink {
+                        AgentKeysView(api: api)
+                    } label: {
+                        Label(tr("AIエージェント", "AI agents", "Agents IA"), systemImage: "sparkles")
+                    }
                 }
             }
             Section {

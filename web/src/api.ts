@@ -627,3 +627,52 @@ export async function getScore(token: string, fetcher: typeof fetch = fetch): Pr
     return null;
   }
 }
+
+// ------------------------------------------------------------------ bloc-notes de l'accueil
+
+export type Notes = { text: string; updatedAt: string | null };
+
+export async function getNotes(token: string, fetcher: typeof fetch = fetch): Promise<Notes | null> {
+  try {
+    const res = await fetcher(API_BASE + "/api/notes", { headers: { [TOKEN_HEADER]: token } });
+    return res.ok ? ((await res.json()) as Notes) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Enregistre le bloc-notes. Sans passer par `call` : la saisie enregistre souvent, elle ne doit pas recharger toute l'app. */
+export async function saveNotes(token: string, text: string, fetcher: typeof fetch = fetch): Promise<Notes | null> {
+  const res = await fetcher(API_BASE + "/api/notes", {
+    method: "PUT",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  return res.ok ? ((await res.json()) as Notes) : null;
+}
+
+// ------------------------------------------------------------------ clés pour agent IA (serveur MCP)
+
+export type AgentScope = "read" | "write";
+export type AgentKey = { id: string; name: string; scope: AgentScope; createdAt: string; lastUsedAt?: string };
+
+export const listAgentKeys = (token: string, f?: typeof fetch) => call<AgentKey[]>(token, "GET", "/api/agent-keys", undefined, f);
+
+export async function createAgentKey(token: string, name: string, scope: AgentScope, fetcher: typeof fetch = fetch):
+  Promise<{ ok: true; key: string; info: AgentKey } | { ok: false; error: "too_many" | "failed" }> {
+  clearApiCache();
+  const res = await fetcher(API_BASE + "/api/agent-keys", {
+    method: "POST",
+    headers: { [TOKEN_HEADER]: token, "content-type": "application/json" },
+    body: JSON.stringify({ name, scope }),
+  }).catch(() => null);
+  if (res?.status === 409) return { ok: false, error: "too_many" };
+  if (!res?.ok) return { ok: false, error: "failed" };
+  return { ok: true, ...((await res.json()) as { key: string; info: AgentKey }) };
+}
+
+export async function revokeAgentKey(token: string, id: string, fetcher: typeof fetch = fetch) {
+  clearApiCache();
+  const res = await fetcher(`${API_BASE}/api/agent-keys/${encodeURIComponent(id)}`, { method: "DELETE", headers: { [TOKEN_HEADER]: token } }).catch(() => null);
+  return !!res?.ok;
+}
