@@ -27,10 +27,19 @@ describe("AgentKeysPanel", () => {
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("confirm", () => true);
     wrap(<AgentKeysPanel />);
+    const panel = document.querySelector("details.agent-keys") as HTMLDetailsElement;
+    expect(panel.open).toBe(false);
+    await userEvent.click(screen.getByText(/^AIエージェント$|^AI agents$|^Agents IA$/));
+    expect(panel.open).toBe(true);
 
     await userEvent.type(screen.getByRole("textbox", { name: /キーの名前|Key name|Nom de la clé/ }), "Claude");
     await userEvent.click(screen.getByRole("button", { name: /キーを作る|Create a key|Créer une clé/ }));
     expect(await screen.findByText("cwk_secret")).toBeInTheDocument();
+    expect(screen.getByText(/^claude mcp add --transport http clean-work .*\/api\/mcp --header "Authorization: Bearer cwk_secret"$/)).toBeInTheDocument();
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await userEvent.click(screen.getByRole("button", { name: /コマンドをコピー|Copy command|Copier la commande/ }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Bearer cwk_secret"));
     expect(await screen.findByText("Claude")).toBeInTheDocument();
     expect(screen.getByText(/\/api\/mcp$/)).toBeInTheDocument();
 

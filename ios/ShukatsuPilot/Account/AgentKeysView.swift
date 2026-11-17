@@ -30,6 +30,11 @@ struct AgentKeysView: View {
             if let fresh {
                 Section {
                     copyRow(fresh, id: "key")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(tr("Claude Code なら、このコマンドをターミナルに貼りつけるだけ", "With Claude Code, just paste this command into a terminal", "Avec Claude Code, collez simplement cette commande dans un terminal"))
+                            .font(.caption.weight(.semibold)).foregroundStyle(Color.cwBlue800)
+                        copyRow(api.claudeCommand(key: fresh), id: "command", label: tr("コマンドをコピー", "Copy command", "Copier la commande"))
+                    }
                     Button(tr("保存しました", "I've saved it", "Je l'ai notée")) { self.fresh = nil }
                 } header: {
                     Text(tr("新しいキー（一度しか表示されません）", "Your new key (shown only once)", "Votre nouvelle clé (affichée une seule fois)"))
@@ -82,19 +87,19 @@ struct AgentKeysView: View {
         }
     }
 
-    private func copyRow(_ value: String, id: String) -> some View {
+    private func copyRow(_ value: String, id: String, label: String? = nil) -> some View {
         Button {
             UIPasteboard.general.string = value
             copied = id
             Task { try? await Task.sleep(for: .seconds(1.5)); if copied == id { copied = nil } }
         } label: {
             HStack {
-                Text(value).font(.system(.footnote, design: .monospaced)).foregroundStyle(Color.cwBlue950).lineLimit(2).truncationMode(.middle)
+                Text(value).font(.system(.footnote, design: .monospaced)).foregroundStyle(Color.cwBlue950).lineLimit(label == nil ? 2 : 4).truncationMode(.middle)
                 Spacer()
                 Image(systemName: copied == id ? "checkmark" : "doc.on.doc").foregroundStyle(Color.cwBlue700)
             }
         }
-        .accessibilityLabel(tr("コピー", "Copy", "Copier"))
+        .accessibilityLabel(label ?? tr("コピー", "Copy", "Copier"))
     }
 
     private func day(_ iso: String) -> String {

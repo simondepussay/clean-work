@@ -1,10 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { API_BASE, createAgentKey, listAgentKeys, revokeAgentKey, type AgentKey, type AgentScope } from "../api";
 import { useAuth } from "../auth/auth";
+import { ChevronRightIcon } from "../icons";
 import { useTr } from "../i18n";
 
 /** Adresse du serveur MCP, à donner à l'agent IA. */
 export const mcpUrl = () => `${API_BASE || window.location.origin}/api/mcp`;
+
+/** La commande à coller dans un terminal pour relier Claude Code (avec la clé, ou un exemple sans). */
+export const claudeCommand = (key = "cwk_…") =>
+  `claude mcp add --transport http clean-work ${mcpUrl()} --header "Authorization: Bearer ${key}"`;
 
 /**
  * Page du compte : relier son agent IA (Claude, ChatGPT…) à Clean Work par une clé.
@@ -17,7 +22,9 @@ export function AgentKeysPanel() {
   const [name, setName] = useState("");
   const [scope, setScope] = useState<AgentScope>("write");
   const [fresh, setFresh] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"key" | "url" | null>(null);
+  const [copied, setCopied] = useState<"key" | "url" | "command" | null>(null);
+  /** Repliée par défaut : la plupart des gens n'en ont pas besoin. */
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -54,7 +61,7 @@ export function AgentKeysPanel() {
     if (token && (await revokeAgentKey(token, k.id))) await load();
   }
 
-  const copy = async (what: "key" | "url", value: string) => {
+  const copy = async (what: "key" | "url" | "command", value: string) => {
     await navigator.clipboard?.writeText(value).catch(() => undefined);
     setCopied(what);
     setTimeout(() => setCopied(null), 1500);
@@ -62,8 +69,16 @@ export function AgentKeysPanel() {
   const date = (iso: string) => new Date(iso).toLocaleDateString(tr.lang === "ja" ? "ja-JP" : tr.lang === "fr" ? "fr-FR" : "en-US");
 
   return (
-    <section className="card agent-keys" aria-labelledby="agent-keys-title">
-      <h2 id="agent-keys-title">{tr({ ja: "AIエージェント", en: "AI agents", fr: "Agents IA" })}</h2>
+    <details className="card agent-keys" open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary>
+        <span className="agent-keys-title">
+          <h2 id="agent-keys-title">{tr({ ja: "AIエージェント", en: "AI agents", fr: "Agents IA" })}</h2>
+          {!open && <small className="muted">{keys && keys.length > 0
+            ? tr({ ja: `キー ${keys.length}個`, en: `${keys.length} key${keys.length > 1 ? "s" : ""}`, fr: `${keys.length} clé${keys.length > 1 ? "s" : ""}` })
+            : tr({ ja: "Claude や ChatGPT とつなぐ", en: "Connect Claude or ChatGPT", fr: "Relier Claude ou ChatGPT" })}</small>}
+        </span>
+        <ChevronRightIcon size={20} className="agent-keys-chevron" aria-hidden="true" />
+      </summary>
       <p className="muted">{tr({
         ja: "Claude や ChatGPT などのAIエージェントに、応募の追加や予定の登録を任せられます。こころと日記には触れず、何も削除できません。",
         en: "Let an AI agent such as Claude or ChatGPT add applications or calendar items for you. It never touches Kokoro or your journal, and can't delete anything.",
@@ -82,10 +97,14 @@ export function AgentKeysPanel() {
           <div className="agent-url"><code>{fresh}</code>
             <button type="button" onClick={() => copy("key", fresh)}>{copied === "key" ? tr({ ja: "コピーしました", en: "Copied", fr: "Copié" }) : tr({ ja: "コピー", en: "Copy", fr: "Copier" })}</button>
           </div>
+          <p className="agent-label">{tr({ ja: "Claude Code ならこのコマンドをターミナルに貼りつけるだけ：", en: "With Claude Code, just paste this command into a terminal:", fr: "Avec Claude Code, collez simplement cette commande dans un terminal :" })}</p>
+          <div className="agent-url"><code className="agent-command">{claudeCommand(fresh)}</code>
+            <button type="button" className="primary" onClick={() => copy("command", claudeCommand(fresh))}>{copied === "command" ? tr({ ja: "コピーしました", en: "Copied", fr: "Copié" }) : tr({ ja: "コマンドをコピー", en: "Copy command", fr: "Copier la commande" })}</button>
+          </div>
           <p className="muted">{tr({
-            ja: "エージェントの設定で「Authorization: Bearer キー」として使ってください。パスワードと同じように、人に見せないでください。",
-            en: "Use it in your agent's settings as “Authorization: Bearer <key>”. Keep it private, like a password.",
-            fr: "À utiliser dans les réglages de l'agent : « Authorization: Bearer <clé> ». Gardez-la secrète, comme un mot de passe.",
+            ja: "ほかのエージェントでは、設定で「Authorization: Bearer キー」として使ってください。パスワードと同じように、人に見せないでください。",
+            en: "With other agents, add it in their settings as “Authorization: Bearer <key>”. Keep it private, like a password.",
+            fr: "Avec les autres agents, ajoutez-la dans leurs réglages : « Authorization: Bearer <clé> ». Gardez-la secrète, comme un mot de passe.",
           })}</p>
           <button type="button" onClick={() => setFresh(null)}>{tr({ ja: "保存しました", en: "I've saved it", fr: "Je l'ai notée" })}</button>
         </div>
@@ -117,7 +136,12 @@ export function AgentKeysPanel() {
         </select>
         <button className="primary" disabled={busy || !name.trim()}>{tr({ ja: "キーを作る", en: "Create a key", fr: "Créer une clé" })}</button>
       </form>
+      {!fresh && <p className="muted agent-hint">{tr({
+        ja: "キーを作ると、Claude Code にそのまま貼りつけられるコマンドも表示されます。",
+        en: "When you create a key, you also get a ready-to-paste command for Claude Code.",
+        fr: "En créant une clé, vous obtenez aussi une commande prête à coller dans Claude Code.",
+      })}</p>}
       {error && <p className="notice" role="alert">{error}</p>}
-    </section>
+    </details>
   );
 }

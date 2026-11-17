@@ -473,7 +473,19 @@ button.link:hover { color: var(--bordeaux); background: none; }
 
 /* Page du compte : agents IA (clés du serveur MCP) */
 .agent-keys { margin-top: 18px; }
-.agent-keys h2 { margin-top: 0; }
+.agent-keys h2 { margin: 0; }
+.agent-keys > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; border-radius: 10px; }
+.agent-keys > summary::-webkit-details-marker { display: none; }
+.agent-keys > summary:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 4px; }
+.agent-keys-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.agent-keys-title small { font-size: 13px; }
+.agent-keys-chevron { flex: none; color: var(--blue-700); transition: transform .2s ease; }
+.agent-keys[open] .agent-keys-chevron { transform: rotate(90deg); }
+.agent-keys[open] > summary { margin-bottom: 8px; }
+.agent-label { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--blue-800); }
+.agent-command { white-space: pre-wrap; }
+.agent-hint { font-size: 13px; margin: 10px 0 0; }
+@media (prefers-reduced-motion: reduce) { .agent-keys-chevron { transition: none; } }
 .agent-url { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .agent-url code { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; padding: 8px 12px; border-radius: 10px; background: var(--blue-50); border: 1px solid var(--line); font-size: 13px; }
 .agent-fresh { margin-top: 14px; padding: 14px 16px; border-radius: 12px; background: var(--bordeaux-50); border: 1px solid rgba(123, 30, 46, .18); }

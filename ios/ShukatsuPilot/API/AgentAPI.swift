@@ -49,4 +49,9 @@ extension APIClient {
 
     /// Adresse du serveur MCP, à donner à l'agent IA.
     var mcpURL: String { baseURL.appending(path: "api/mcp").absoluteString }
+
+    /// La commande à coller dans un terminal pour relier Claude Code.
+    func claudeCommand(key: String) -> String {
+        "claude mcp add --transport http clean-work \(mcpURL) --header \"Authorization: Bearer \(key)\""
+    }
 }
