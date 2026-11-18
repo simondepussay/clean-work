@@ -58,7 +58,8 @@ export const imageSchema = z.string().max(MAX_IMAGE_CHARS, messages.tooLong(MAX_
   .transform((v) => v.replace(/^data:image\/jpeg;base64,/, ""))
   .refine((v) => /^[A-Za-z0-9+/]+={0,2}$/.test(v) && v.startsWith("/9j/"), { message: "JPEG" });
 
-const publicCard = ({ userId: _u, ...card }: CardDoc): Card => card;
+/** Ce que voient l'app et le site : sans userId, et l'identifiant sans le préfixe de stockage (« card- »). */
+const publicCard = ({ userId: _u, ...card }: CardDoc): Card => ({ ...card, id: card.id.startsWith(CARD_PREFIX) ? card.id.slice(CARD_PREFIX.length) : card.id });
 
 export class CardService {
   constructor(private store: DocStore, private now: () => Date = () => new Date()) {}
@@ -71,7 +72,7 @@ export class CardService {
 
   async get(userId: string, id: string) {
     const doc = await this.store.get<CardDoc>(containers.profiles, userId, `${CARD_PREFIX}${id}`);
-    return doc ? publicCard({ ...doc, id }) : null;
+    return doc ? publicCard(doc) : null;
   }
 
   /** Crée une carte (et sa photo si elle est jointe). null si la limite de cartes est atteinte. */

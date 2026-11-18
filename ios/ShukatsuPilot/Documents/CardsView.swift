@@ -9,7 +9,7 @@ final class CardsModel {
     private(set) var cards: [BusinessCard]?
     private(set) var loadFailed = false
     private(set) var photos: [String: UIImage] = [:]
-    private var loadingPhotos: Set<String> = []
+    @ObservationIgnored private var downloads: [String: Task<Void, Never>] = [:]
 
     init(api: APIClient) { self.api = api }
 
@@ -22,11 +22,27 @@ final class CardsModel {
         }
     }
 
+    /// Charge la photo d'une carte. Le téléchargement ne dépend pas de l'écran qui le demande : quitter la liste
+    /// pour ouvrir la fiche l'annulait, et la fiche attendait alors une photo qui n'arrivait jamais.
     func photo(for card: BusinessCard) async {
-        guard card.hasImage, photos[card.id] == nil, !loadingPhotos.contains(card.id) else { return }
-        loadingPhotos.insert(card.id)
-        defer { loadingPhotos.remove(card.id) }
-        if let data = try? await api.cardImage(card.id), let image = UIImage(data: data) { photos[card.id] = image }
+        guard card.hasImage, photos[card.id] == nil else { return }
+        if let running = downloads[card.id] { return await running.value }
+        let api = api
+        let download = Task { [weak self] in
+            for attempt in 0..<3 {
+                if attempt > 0 { try? await Task.sleep(for: .seconds(Double(attempt) * 2)) }
+                do {
+                    let data = try await api.cardImage(card.id)
+                    if let image = UIImage(data: data) { self?.photos[card.id] = image; break }
+                    print("Photo du 名刺 illisible (\(data.count) octets)")
+                } catch {
+                    print("Photo du 名刺 non chargée (essai \(attempt + 1)) : \(error)")
+                }
+            }
+            self?.downloads[card.id] = nil
+        }
+        downloads[card.id] = download
+        await download.value
     }
 
     func added(_ card: BusinessCard, photo: UIImage?) {
@@ -322,7 +338,7 @@ struct CardDetailView: View {
 
     var body: some View {
         Form {
-            if card.hasImage {
+            if card.hasImage || model.photos[card.id] != nil {
                 Section {
                     Button { showingPhoto = true } label: {
                         CardThumbnail(photo: model.photos[card.id], hasImage: true).frame(maxWidth: .infinity)

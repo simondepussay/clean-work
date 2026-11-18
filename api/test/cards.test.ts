@@ -72,6 +72,16 @@ describe("cartes de visite", () => {
     expect((res.jsonBody as { title?: string }).title).toBeUndefined();
   });
 
+  it("l'identifiant de la liste sert pour la photo, la modification et la suppression", async () => {
+    const t = setup();
+    const created = (await t.create({ name: "山田", image: JPEG })).jsonBody as { id: string };
+    const [listed] = (await t.list()).jsonBody as { id: string }[];
+    expect(listed.id).toBe(created.id);
+    expect((await t.image(listed.id)).status ?? 200).toBe(200);
+    expect((await t.update(listed.id, { notes: "メモ" })).jsonBody).toMatchObject({ id: created.id, notes: "メモ" });
+    expect((await t.remove(listed.id)).status).toBe(204);
+  });
+
   it("supprime la carte et sa photo", async () => {
     const t = setup();
     const { id } = (await t.create({ name: "山田", image: JPEG })).jsonBody as { id: string };
