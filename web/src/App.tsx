@@ -15,6 +15,7 @@ import { KokoroLoading } from "./kokoro/KokoroSky";
 const ApplicationsBoard = lazy(() => import("./apps/ApplicationsBoard").then((m) => (loadedFine(), { default: m.ApplicationsBoard })));
 const EsPage = lazy(() => import("./es/EsPage").then((m) => (loadedFine(), { default: m.EsPage })));
 const InterviewPage = lazy(() => import("./interview/InterviewPage").then((m) => (loadedFine(), { default: m.InterviewPage })));
+const CardsPanel = lazy(() => import("./profile/CardsPanel").then((m) => (loadedFine(), { default: m.CardsPanel })));
 const SkillsPanel = lazy(() => import("./profile/SkillsPanel").then((m) => (loadedFine(), { default: m.SkillsPanel })));
 const DocumentsPage = lazy(() => import("./profile/DocumentsPage").then((m) => (loadedFine(), { default: m.DocumentsPage })));
 const ResumePanel = lazy(() => import("./profile/ResumePanel").then((m) => (loadedFine(), { default: m.ResumePanel })));
@@ -23,7 +24,7 @@ const InfoPage = lazy(() => import("./info/InfoPage").then((m) => (loadedFine(),
 const BetaPage = lazy(() => import("./beta/BetaPage").then((m) => (loadedFine(), { default: m.BetaPage })));
 const WelcomeSetup = lazy(() => import("./welcome/WelcomeSetup").then((m) => (loadedFine(), { default: m.WelcomeSetup })));
 const ProfileEditor = lazy(() => import("./profile/ProfileEditor").then((m) => (loadedFine(), { default: m.ProfileEditor })));
-import { BriefcaseIcon, ChatIcon, DocIcon, HeartIcon, LightIcon, UserIcon } from "./icons";
+import { BriefcaseIcon, ChatIcon, ChevronRightIcon, DocIcon, HeartIcon, LightIcon, UserIcon } from "./icons";
 import { LanguageMenu } from "./LanguageMenu";
 import { ScoreBadge } from "./ScoreBadge";
 import { AgentKeysPanel } from "./profile/AgentKeysPanel";
@@ -32,7 +33,7 @@ import { useTr, type T3 } from "./i18n";
 import type { InterviewSeed } from "./interview/InterviewPage";
 
 type HealthState = { kind: "loading" } | { kind: "ready"; health: Health } | { kind: "offline" };
-const VIEWS = ["home", "kokoro", "apps", "es", "interview", "documents", "skills", "info", "account", "beta"] as const;
+const VIEWS = ["home", "kokoro", "apps", "es", "interview", "documents", "cards", "skills", "info", "account", "beta"] as const;
 type View = (typeof VIEWS)[number];
 
 function viewFromHash(): View {
@@ -62,6 +63,7 @@ const VIEW_TITLES: Record<View, T3> = {
   interview: { ja: "面接", en: "Interview", fr: "Entretiens" },
   documents: { ja: "書類", en: "Documents", fr: "Documents" },
   skills: { ja: "スキル辞典", en: "Skills", fr: "Compétences" },
+  cards: { ja: "名刺", en: "Business cards", fr: "Cartes de visite" },
   info: { ja: "情報", en: "Info", fr: "Infos" },
   account: { ja: "アカウント", en: "Account", fr: "Compte" },
   beta: { ja: "βテストに参加", en: "Join the beta", fr: "Rejoindre la bêta" },
@@ -121,6 +123,13 @@ function Account({ me, onSaved }: { me: Me | null | "error"; onSaved: () => void
         {deleting === "error" && <p className="muted">{tr({ ja: "削除できませんでした", en: "Could not delete the account", fr: "Impossible de supprimer le compte" })}</p>}
       </section>
       <AgentKeysPanel />
+      <a className="card skills-link" href="#skills">
+        <span>
+          <strong>{tr({ ja: "スキル辞典", en: "Skills", fr: "Compétences" })}</strong>
+          <span className="muted">{tr({ ja: "できることに ○ ◎ をつけると、履歴書や面接の練習に使われます。", en: "Mark what you can do with ○ or ◎: your résumé and interview practice use it.", fr: "Notez ce que vous savez faire (○ ou ◎) : le CV et l'entraînement aux entretiens s'en servent." })}</span>
+        </span>
+        <ChevronRightIcon size={20} aria-hidden="true" />
+      </a>
       <ProfileEditor onSaved={onSaved} />
     </>
   );
@@ -303,7 +312,7 @@ export default function App() {
         {signedIn && !showWelcome && (
           <nav className="tabs" role="tablist" aria-label={tr({ ja: "メニュー", en: "Menu", fr: "Menu" })}>
             {[{ view: "home" as View, ja: "ホーム", en: "Home" }, ...SERVICES].map((s) => (
-              <button key={s.view} data-view={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && (view === "es" || view === "skills"))} onClick={() => open(s.view)}>
+              <button key={s.view} data-view={s.view} role="tab" aria-selected={view === s.view || (s.view === "documents" && (view === "es" || view === "cards"))} onClick={() => open(s.view)}>
                 {s.ja}<span>{s.en}</span>
               </button>
             ))}
@@ -331,10 +340,17 @@ export default function App() {
                   onWriteEs={(a) => { setEsSeed({ company: a.company, applicationId: a.id, nonce: Date.now() }); open("es"); }}
                   onPractice={(a) => { setInterviewSeed({ applicationId: a.id, nonce: Date.now() }); open("interview"); }} />
               )}
-              {signedIn && (view === "es" || view === "documents" || view === "skills") && (
-                <DocumentsPage current={view === "es" ? "es" : view === "skills" ? "skills" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : d === "skills" ? "skills" : "documents")}>
-                  {view === "es" ? <EsPage seed={esSeed} /> : view === "skills" ? <SkillsPanel /> : <ResumePanel />}
+              {signedIn && (view === "es" || view === "documents" || view === "cards") && (
+                <DocumentsPage current={view === "es" ? "es" : view === "cards" ? "cards" : "pdf"} onChoose={(d) => open(d === "es" ? "es" : d === "cards" ? "cards" : "documents")}>
+                  {view === "es" ? <EsPage seed={esSeed} /> : view === "cards" ? <CardsPanel /> : <ResumePanel />}
                 </DocumentsPage>
+              )}
+              {/* La スキル辞典 fait partie du profil : on y arrive depuis le compte, et on y revient. */}
+              {signedIn && view === "skills" && (
+                <>
+                  <button className="link back-link" onClick={() => open("account")}>← {tr({ ja: "プロフィールに戻る", en: "Back to profile", fr: "Retour au profil" })}</button>
+                  <SkillsPanel />
+                </>
               )}
               {signedIn && view === "interview" && <InterviewPage seed={interviewSeed} />}
               {signedIn && view === "kokoro" && (

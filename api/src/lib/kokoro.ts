@@ -184,8 +184,7 @@ export class KokoroService {
 
   /** Les pages du journal, la plus récente d'abord. */
   async journal(userId: string): Promise<JournalEntry[]> {
-    return (await this.store.list<JournalDoc>(containers.profiles, userId))
-      .filter((d) => d.id.startsWith(JOURNAL_PREFIX))
+    return (await this.store.listPrefix<JournalDoc>(containers.profiles, userId, JOURNAL_PREFIX))
       .map(({ date, text, updatedAt }) => ({ date, text, updatedAt }))
       .sort((a, b) => b.date.localeCompare(a.date));
   }
@@ -208,7 +207,7 @@ export class KokoroService {
 
   /** Efface tout (humeurs, valeurs, phrases, journal), tout de suite : rien à garder pour une restauration. */
   async erase(userId: string) {
-    const pages = (await this.store.list<JournalDoc>(containers.profiles, userId)).filter((d) => d.id.startsWith(JOURNAL_PREFIX));
+    const pages = await this.store.listPrefix<JournalDoc>(containers.profiles, userId, JOURNAL_PREFIX);
     for (const p of pages) await this.store.remove(containers.profiles, userId, p.id);
     return this.store.remove(containers.profiles, userId, DOC_ID);
   }

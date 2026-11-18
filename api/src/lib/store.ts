@@ -24,6 +24,8 @@ const isDeleted = (doc: object) => "deletedAt" in doc;
 export interface DocStore {
   get<T extends Doc>(container: ContainerName, userId: string, id: string): Promise<T | null>;
   list<T extends Doc>(container: ContainerName, userId: string): Promise<T[]>;
+  /** Les documents dont l'identifiant commence par `prefix` (sans lire les autres : cartes, journal…). */
+  listPrefix<T extends Doc>(container: ContainerName, userId: string, prefix: string): Promise<T[]>;
   put<T extends Doc>(container: ContainerName, doc: T): Promise<T>;
   remove(container: ContainerName, userId: string, id: string): Promise<boolean>;
   /** Marque tous les documents de l'utilisateur comme supprimés ; renvoie leur nombre. */
@@ -56,6 +58,10 @@ export class MemoryStore implements DocStore {
 
   async list<T extends Doc>(container: ContainerName, userId: string) {
     return this.all(container, userId).filter((d) => !isDeleted(d)) as T[];
+  }
+
+  async listPrefix<T extends Doc>(container: ContainerName, userId: string, prefix: string) {
+    return (await this.list<T>(container, userId)).filter((d) => d.id.startsWith(prefix));
   }
 
   /** Tous les documents de l'utilisateur, supprimés compris (pour les tests et la restauration). */
@@ -123,10 +129,14 @@ export class CosmosStore implements DocStore {
     return this.query<T>(container, userId, "NOT IS_DEFINED(c.deletedAt)");
   }
 
-  private async query<T>(container: ContainerName, userId: string, condition: string) {
+  async listPrefix<T extends Doc>(container: ContainerName, userId: string, prefix: string) {
+    return this.query<T>(container, userId, "STARTSWITH(c.id, @p) AND NOT IS_DEFINED(c.deletedAt)", [{ name: "@p", value: prefix }]);
+  }
+
+  private async query<T>(container: ContainerName, userId: string, condition: string, extra: { name: string; value: string }[] = []) {
     const { resources } = await this.db
       .container(container)
-      .items.query<T>({ query: `SELECT * FROM c WHERE c.userId = @u AND ${condition}`, parameters: [{ name: "@u", value: userId }] },
+      .items.query<T>({ query: `SELECT * FROM c WHERE c.userId = @u AND ${condition}`, parameters: [{ name: "@u", value: userId }, ...extra] },
         { partitionKey: userId })
       .fetchAll();
     return resources.map(strip);

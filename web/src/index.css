@@ -1307,3 +1307,54 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
   .skill-mark .ring { transition: none; }
   .skill .skill-mark, .skill-mark .burst path { animation: none; }
 }
+
+/* ------------------------------------------------------------------ 名刺 (cartes de visite) */
+.skills-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; text-decoration: none; color: var(--blue-800); }
+.skills-link > span { display: flex; flex-direction: column; gap: 2px; }
+.skills-link strong { font-size: 17px; }
+.skills-link .muted { font-size: 14px; }
+.skills-link:hover { border-color: var(--blue-300); }
+.back-link { margin-bottom: 12px; }
+.cards-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.cards-head h2 { margin: 0; }
+.cards-search { margin: 0; min-width: min(320px, 100%); }
+.cards-grid { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.card-tile { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 4px; text-align: left; padding: 10px; border-radius: 14px; }
+.card-thumb { width: 100%; aspect-ratio: 91 / 55; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--blue-50); }
+.card-thumb.placeholder { display: grid; place-items: center; color: var(--blue-300); font-weight: 700; letter-spacing: .2em; }
+.card-name { margin-top: 4px; font-weight: 700; color: var(--blue-800); }
+.card-company { font-size: 13px; color: var(--muted); }
+.card-notes { font-size: 12px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-detail-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(15, 30, 60, .35); display: grid; place-items: start center; overflow-y: auto; padding: 32px 12px; }
+.card-detail { position: relative; width: min(720px, 100%); margin: 0; }
+.card-detail-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; }
+.card-photo { display: block; width: min(100%, 460px); aspect-ratio: 91 / 55; object-fit: contain; margin: 4px auto 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--blue-50); }
+.card-photo.placeholder { display: none; }
+.card-quick { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 12px; }
+.card-quick a { display: inline-flex; align-items: center; gap: 6px; }
+.card-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 14px; }
+.card-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.card-form .wide { grid-column: 1 / -1; }
+.card-detail .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
+.card-delete { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.cards-empty { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 32px 20px; }
+.cards-empty p { max-width: 520px; }
+.cards-empty-art { width: 150px; aspect-ratio: 91 / 55; border-radius: 10px; border: 1.5px solid var(--blue-300); background: var(--white); display: grid; place-items: center; box-shadow: 6px 6px 0 var(--blue-100); transform: rotate(-4deg); margin-bottom: 10px; }
+.cards-empty-art span { color: var(--bordeaux); font-weight: 700; letter-spacing: .3em; }
+a.button.primary { background: var(--bordeaux); border-color: var(--bordeaux); color: #fff; font-weight: 600; }
+a.button.primary:hover { background: var(--bordeaux-600); border-color: var(--bordeaux-600); }
+/* Téléphone : la recherche prend toute la largeur, les cartes passent en lignes (miniature à gauche). */
+@media (max-width: 560px) {
+  .cards-search { min-width: 0; width: 100%; box-sizing: border-box; }
+  .cards-grid { grid-template-columns: 1fr; gap: 10px; }
+  .card-tile { display: grid; grid-template-columns: 96px 1fr; column-gap: 12px; row-gap: 2px; align-items: start; }
+  .card-tile .card-thumb { grid-row: 1 / span 3; }
+  .card-tile .card-name { margin-top: 0; }
+}
+/* « Clean Work » sur une ligne, même sur un téléphone étroit (globe, compte et score à droite). */
+.brand span { white-space: nowrap; }
+@media (max-width: 400px) {
+  .topbar { gap: 8px; }
+  .topbar-tools { gap: 6px; }
+  .brand { gap: 6px; font-size: 16px; }
+}

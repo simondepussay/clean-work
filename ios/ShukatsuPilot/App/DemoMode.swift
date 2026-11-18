@@ -61,6 +61,32 @@ private final class DemoURLProtocol: URLProtocol {
             let info: [String: Any] = ["id": "demo2", "name": sent["name"] as? String ?? "Agent", "scope": sent["scope"] as? String ?? "write", "createdAt": "2026-11-17T09:00:00.000Z"]
             let secret: String = "cwk_demo" + UUID().uuidString.replacingOccurrences(of: "-", with: "")
             body = ["key": secret, "info": info] as [String: Any]
+        case ("GET", "/api/cards"):
+            let sato: [String: Any] = ["id": "dc1", "name": "佐藤 美咲", "nameKana": "さとう みさき", "company": "株式会社ミライテック", "department": "人事部 新卒採用課",
+                                       "title": "採用担当", "email": "m.sato@miraitech.example", "phone": "03-0000-1111", "metAt": "合同説明会（東京ビッグサイト）",
+                                       "metOn": "2026-11-05", "notes": "若手の配属先の話。12月に社員座談会あり → 申し込む", "hasImage": false,
+                                       "createdAt": "2026-11-05T08:00:00.000Z", "updatedAt": "2026-11-05T08:00:00.000Z"]
+            let moreau: [String: Any] = ["id": "dc2", "name": "Daniel Moreau", "company": "Kumo Games Inc.", "title": "Lead Engineer",
+                                         "email": "d.moreau@kumogames.example", "metAt": "OB訪問", "metOn": "2026-11-12",
+                                         "notes": "フランス出身の先輩。ポートフォリオを見てもらえる", "hasImage": false,
+                                         "createdAt": "2026-11-12T10:00:00.000Z", "updatedAt": "2026-11-12T10:00:00.000Z"]
+            let list: [[String: Any]] = newAccount ? [] : [sato, moreau]
+            body = list
+        case ("POST", "/api/cards/read"):
+            body = ["name": "山田 花子", "nameKana": "やまだ はなこ", "company": "株式会社サンプル", "department": "人事部", "title": "採用担当",
+                    "email": "hanako@sample.example", "phone": "03-0000-2222", "mobile": "", "address": "", "website": ""] as [String: Any]
+            status = 200
+        case ("POST", "/api/cards"), ("PUT", _) where path.hasPrefix("/api/cards/"):
+            var sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
+            let hasImage: Bool = sent["image"] != nil
+            sent["image"] = nil
+            sent = sent.filter { !($0.value is NSNull) }
+            let id: String = method == "POST" ? "dc\(Int.random(in: 100...999))" : String(path.split(separator: "/").last ?? "")
+            sent["id"] = id
+            sent["hasImage"] = hasImage
+            sent["createdAt"] = "2026-11-18T09:00:00.000Z"
+            sent["updatedAt"] = "2026-11-18T09:00:00.000Z"
+            body = sent
         case ("GET", "/api/score"):
             let floors = [0, 50, 150, 400, 800, 1500]
             let level = floors.lastIndex { Self.demoScore >= $0 } ?? 0

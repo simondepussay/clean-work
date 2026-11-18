@@ -194,6 +194,16 @@ let demoScore = demoNew ? 0 : 265;
 let demoNotes = { text: demoNew ? "" : "・ミライの説明会で聞くこと：若手の配属、研修の長さ\n・自己PR：留学生チームのまとめ役の話を1分で", updatedAt: null as string | null };
 let demoKeys: { id: string; name: string; scope: string; createdAt: string; lastUsedAt?: string }[] = demoNew ? [] : [{ id: "demo1", name: "Claude", scope: "write", createdAt: "2026-11-10T09:00:00.000Z", lastUsedAt: "2026-11-16T21:30:00.000Z" }];
 
+/** Cartes de visite de démonstration (fictives) : sans photo, la démo n'a pas d'iPhone pour scanner. */
+let demoCards: Record<string, unknown>[] = demoNew ? [] : [
+  { id: "dc1", name: "佐藤 美咲", nameKana: "さとう みさき", company: "株式会社ミライテック", department: "人事部 新卒採用課", title: "採用担当",
+    email: "m.sato@miraitech.example", phone: "03-0000-1111", metAt: "合同説明会（東京ビッグサイト）", metOn: "2026-11-05",
+    notes: "若手の配属先の話。12月に社員座談会あり → 申し込む", hasImage: false, createdAt: "2026-11-05T08:00:00.000Z", updatedAt: "2026-11-05T08:00:00.000Z" },
+  { id: "dc2", name: "Daniel Moreau", company: "Kumo Games Inc.", title: "Lead Engineer", email: "d.moreau@kumogames.example",
+    metAt: "OB訪問", metOn: "2026-11-12", notes: "フランス出身の先輩。ポートフォリオを見てもらえる", hasImage: false,
+    createdAt: "2026-11-12T10:00:00.000Z", updatedAt: "2026-11-12T10:00:00.000Z" },
+];
+
 export function installDemoApi() {
   const real = globalThis.fetch.bind(globalThis);
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -218,6 +228,19 @@ export function installDemoApi() {
     }
     if (method === "DELETE" && url.startsWith("/api/agent-keys/")) {
       demoKeys = demoKeys.filter((k) => k.id !== url.split("/").at(-1));
+      return new Response(null, { status: 204 });
+    }
+    if (key === "GET /api/cards") return new Response(JSON.stringify(demoCards), { status: 200, headers: { "content-type": "application/json" } });
+    if (url.startsWith("/api/cards/") && url.endsWith("/image")) return new Response(null, { status: 404 });
+    if (method === "PUT" && url.startsWith("/api/cards/")) {
+      const id = url.split("/").at(-1);
+      demoCards = demoCards.map((c) => (c.id === id
+        ? Object.fromEntries(Object.entries({ ...c, ...sent, updatedAt: new Date().toISOString() }).filter(([, v]) => v !== null))
+        : c));
+      return new Response(JSON.stringify(demoCards.find((c) => c.id === id)), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (method === "DELETE" && url.startsWith("/api/cards/")) {
+      demoCards = demoCards.filter((c) => c.id !== url.split("/").at(-1));
       return new Response(null, { status: 204 });
     }
     if (key === "GET /api/score") {

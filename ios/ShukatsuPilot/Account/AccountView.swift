@@ -24,6 +24,12 @@ struct AccountView: View {
                     } label: {
                         Label(tr("プロフィール", "Profile", "Profil"), systemImage: "person.text.rectangle")
                     }
+                    // La スキル辞典 fait partie du profil (書類 garde les ES, les CV et les 名刺).
+                    NavigationLink {
+                        SkillsView(api: api).navigationTitle(tr("スキル辞典", "Skills", "Compétences"))
+                    } label: {
+                        Label(tr("スキル辞典", "Skills", "Compétences"), systemImage: "checklist")
+                    }
                     NavigationLink {
                         AgentKeysView(api: api)
                     } label: {

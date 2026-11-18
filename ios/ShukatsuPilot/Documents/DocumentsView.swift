@@ -1,19 +1,19 @@
 import SwiftUI
 
-/// Onglet « 書類 » : les ES (guide et relecture par IA), les CV en PDF ou la スキル辞典, choisis par
-/// trois petits boutons en haut de la feuille (comme sur le site).
+/// Onglet « 書類 » : les ES (guide et relecture par IA), les CV en PDF ou les cartes de visite (名刺),
+/// choisis par trois petits boutons en haut de la feuille (comme sur le site). La スキル辞典 est dans le compte.
 struct DocumentsView: View {
     let api: APIClient
     @State private var kind: Kind = .es
 
-    enum Kind { case es, pdf, skills }
+    enum Kind { case es, pdf, cards }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 4) {
                 switchButton(.es, title: "ES") { EsIcon() }
                 switchButton(.pdf, title: tr("履歴書PDF", "CV in PDF", "CV en PDF")) { CvIcon() }
-                switchButton(.skills, title: tr("スキル", "Skills", "Compétences")) { SkillsIcon() }
+                switchButton(.cards, title: tr("名刺", "Cards", "Cartes")) { CardsIcon() }
             }
             .padding(4)
             .background(Color.cwBlue50, in: Capsule())
@@ -29,8 +29,8 @@ struct DocumentsView: View {
                 }
             case .pdf:
                 NavigationStack { ResumeView(api: api).toolbar(.hidden, for: .navigationBar) }
-            case .skills:
-                SkillsView(api: api)
+            case .cards:
+                NavigationStack { CardsView(api: api).toolbar(.hidden, for: .navigationBar) }
             }
         }
     }
@@ -92,6 +92,24 @@ struct CvIcon: View {
             c.stroke(line, with: .color(.cwBlue800), style: StrokeStyle(lineWidth: 1.6 * s, lineCap: .round))
             c.fill(Path(roundedRect: CGRect(x: 13 * s, y: 18 * s, width: 12 * s, height: 7 * s), cornerRadius: 2 * s), with: .color(.cwBordeaux))
             c.draw(Text("PDF").font(.system(size: 5.2 * s, weight: .bold)).foregroundColor(.white), at: CGPoint(x: 19 * s, y: 21.6 * s))
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// 名刺 : une carte de visite, deux lignes et le petit carré bordeaux du logo (même dessin que le site).
+struct CardsIcon: View {
+    var body: some View {
+        Canvas { c, size in
+            let s = size.width / 28
+            let card = Path(roundedRect: CGRect(x: 2.5 * s, y: 7 * s, width: 23 * s, height: 14.5 * s), cornerRadius: 2.5 * s)
+            c.fill(card, with: .color(.cwBlue100)); c.stroke(card, with: .color(.cwBlue800), lineWidth: 1.6 * s)
+            c.fill(Path(roundedRect: CGRect(x: 5.5 * s, y: 10 * s, width: 4 * s, height: 4 * s), cornerRadius: 1 * s), with: .color(.cwBordeaux))
+            var lines = Path()
+            lines.move(to: CGPoint(x: 12 * s, y: 11 * s)); lines.addLine(to: CGPoint(x: 21.5 * s, y: 11 * s))
+            lines.move(to: CGPoint(x: 12 * s, y: 14.5 * s)); lines.addLine(to: CGPoint(x: 18 * s, y: 14.5 * s))
+            lines.move(to: CGPoint(x: 5.5 * s, y: 18 * s)); lines.addLine(to: CGPoint(x: 14.5 * s, y: 18 * s))
+            c.stroke(lines, with: .color(.cwBlue800), style: StrokeStyle(lineWidth: 1.6 * s, lineCap: .round))
         }
         .accessibilityHidden(true)
     }

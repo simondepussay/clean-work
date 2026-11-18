@@ -39,6 +39,10 @@ export const DEBRIEF_LIMITS = { ...LIMITS, perDay: 5, perMonth: 30 };
 export const RESEARCH: Counter = { monthField: "research", dayPrefix: "rday_" };
 export const RESEARCH_LIMITS = { ...LIMITS, perDay: 5, perMonth: 30 };
 
+/** Lecture d'une carte de visite (名刺) par l'IA : un appel très court. */
+export const CARD_READS: Counter = { monthField: "cardReads", dayPrefix: "cday_" };
+export const CARD_READ_LIMITS = { ...LIMITS, perDay: 30, perMonth: 150 };
+
 export type Refusal = { reason: "day" | "month" | "budget"; retryAfter: string };
 export type Reservation = { release(): Promise<void> };
 

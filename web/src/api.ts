@@ -676,3 +676,38 @@ export async function revokeAgentKey(token: string, id: string, fetcher: typeof 
   const res = await fetcher(`${API_BASE}/api/agent-keys/${encodeURIComponent(id)}`, { method: "DELETE", headers: { [TOKEN_HEADER]: token } }).catch(() => null);
   return !!res?.ok;
 }
+
+// ------------------------------------------------------------------ cartes de visite (名刺)
+
+export type BusinessCard = {
+  id: string; createdAt: string; updatedAt: string; hasImage: boolean;
+  name?: string; nameKana?: string; company?: string; department?: string; title?: string;
+  email?: string; phone?: string; mobile?: string; address?: string; website?: string;
+  metAt?: string; metOn?: string; notes?: string; applicationId?: string; rawText?: string;
+};
+/** Les champs modifiables : null efface un champ. */
+export type BusinessCardInput = Partial<Record<Exclude<keyof BusinessCard, "id" | "createdAt" | "updatedAt" | "hasImage">, string | null>>;
+
+export const listCards = (token: string, f?: typeof fetch) => call<BusinessCard[]>(token, "GET", "/api/cards", undefined, f);
+export const updateCard = (token: string, id: string, c: BusinessCardInput, f?: typeof fetch) =>
+  call<BusinessCard>(token, "PUT", `/api/cards/${encodeURIComponent(id)}`, c, f);
+export const deleteCard = (token: string, id: string, f?: typeof fetch) =>
+  call<null>(token, "DELETE", `/api/cards/${encodeURIComponent(id)}`, undefined, f);
+
+/** La photo d'une carte, en adresse locale (blob:) à libérer avec URL.revokeObjectURL ; null si absente. */
+export async function cardImageUrl(token: string, id: string, fetcher: typeof fetch = fetch): Promise<string | null> {
+  try {
+    const res = await fetcher(`${API_BASE}/api/cards/${encodeURIComponent(id)}/image`, { headers: { [TOKEN_HEADER]: token } });
+    return res.ok ? URL.createObjectURL(await res.blob()) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Recherche par mots-clés, comme le serveur : chaque mot doit apparaître (pleine largeur et majuscules confondues). */
+export function cardMatches(card: BusinessCard, query: string) {
+  const fold = (s: string) => s.normalize("NFKC").toLowerCase();
+  const haystack = fold([card.name, card.nameKana, card.company, card.department, card.title, card.email, card.phone,
+    card.mobile, card.address, card.website, card.metAt, card.metOn, card.notes, card.rawText].filter(Boolean).join(" "));
+  return fold(query).split(/\s+/).filter(Boolean).every((w) => haystack.includes(w));
+}

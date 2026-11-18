@@ -37,6 +37,7 @@ export const POINTS = {
   document: 5,
   mood: 5,
   journal: 5,
+  card: 5,
 } as const;
 
 export type ScoreKind = keyof typeof POINTS;
