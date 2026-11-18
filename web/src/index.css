@@ -167,15 +167,15 @@ label small { color: var(--bordeaux); }
 .list .remove { justify-self: start; margin-bottom: 8px; font-size: 13px; }
 .es { display: grid; grid-template-columns: 240px 1fr; gap: 24px; margin-top: 24px; }
 @media (max-width: 720px) { .es { grid-template-columns: 1fr; } }
-.es aside ul { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
-.es aside li button { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; }
-.es aside li button span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.es aside li button.current { border-color: var(--accent); }
+.es > aside ul { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.es > aside li button { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+.es > aside li button span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.es > aside li button.current { border-color: var(--accent); }
 /* Même hauteur que les champs voisins (un select natif est plus bas qu'un input en japonais). */
 .es .editor select { height: 2.75rem; }
 .count { font-family: ui-monospace, Menlo, monospace; text-align: right; margin: 0; }
 .count.over { color: var(--bordeaux); font-weight: 700; }
-.es aside li button .excerpt { font-size: 12px; opacity: .8; }
+.es > aside li button .excerpt { font-size: 12px; opacity: .8; }
 .checklist ul { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 .checklist li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
 .checklist .mark { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 999px; font-size: 12px; font-weight: 700; }
@@ -343,8 +343,8 @@ button.link:hover { color: var(--bordeaux); background: none; }
 @media (max-width: 520px) { .card { padding: 16px 18px; } }
 
 /* Boutons en bloc (plusieurs lignes) : coins arrondis, pas en pilule. */
-.es aside li button, .kinds button, .history button, .interview-history button { border-radius: 12px; }
-.es aside li button.current { border-color: var(--bordeaux); box-shadow: inset 3px 0 0 var(--bordeaux); }
+.es > aside li button, .kinds button, .history button, .interview-history button { border-radius: 12px; }
+.es > aside li button.current { border-color: var(--bordeaux); box-shadow: inset 3px 0 0 var(--bordeaux); }
 .upcoming .when { min-width: 180px; margin-right: 8px; }
 .upcoming { background: rgba(227, 237, 249, .7); }
 .intro { background: rgba(227, 237, 249, .7); }
@@ -1227,13 +1227,13 @@ a.button:hover { border-color: var(--blue-500); background: var(--blue-50); }
 /* ------------------------------------------------------------------ liste des ES : recherche, dossiers par entreprise */
 /* La liste garde sa place et défile à part : avec des dizaines d'ES, l'éditeur reste à côté. */
 @media (min-width: 721px) {
-  .es aside { position: sticky; top: 12px; align-self: start; max-height: calc(100vh - 24px); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+  .es > aside { position: sticky; top: 12px; align-self: start; max-height: calc(100vh - 24px); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
 }
 .es-search { display: flex; flex-direction: row; align-items: center; gap: 6px; margin: 12px 0 0; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--muted); }
 .es-search input { border: 0; background: none; padding: 8px 0; width: 100%; min-width: 0; font-size: 14px; outline: none; }
 .es-search:focus-within { outline: 2px solid var(--blue-500); outline-offset: 2px; }
-.es aside li button .es-meta { font-size: 11px; opacity: .75; }
-.es aside li button .es-question { color: var(--blue-800); font-size: 14px; font-weight: 600; }
+.es > aside li button .es-meta { font-size: 11px; opacity: .75; }
+.es > aside li button .es-question { color: var(--blue-800); font-size: 14px; font-weight: 600; }
 /* minmax(0, …) : un long nom d'entreprise ou une longue question se coupe au lieu d'élargir la colonne. */
 .es-groups { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .es-groups details li button { min-width: 0; overflow: hidden; }
