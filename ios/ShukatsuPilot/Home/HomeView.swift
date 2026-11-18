@@ -123,20 +123,15 @@ private struct HomeContent: View {
         VStack(spacing: 10) {
             // Comme sur le web : grand chiffre du mois en bordeaux, nom du mois (霜月…) et année, puis ‹ 今日 › en une pastille.
             HStack(alignment: .center, spacing: 12) {
-                HStack(spacing: 12) {
+                // Le numéro du mois en grand, l'année juste en dessous (le nom du mois prenait trop de place sur iPhone).
+                VStack(alignment: .leading, spacing: 0) {
                     Text("\(home.month.month ?? 1)")
                         .font(.system(size: 40, weight: .heavy)).monospacedDigit()
                         .foregroundStyle(Color.cwBordeaux)
-                        .frame(minWidth: 44, alignment: .trailing)
-                    Rectangle().fill(Color.cwLine).frame(width: 1, height: 38)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Self.monthName(year: home.month.year ?? 2026, month: home.month.month ?? 1))
-                            .font(.title3.bold()).foregroundStyle(Color.cwBlue800)
-                            // « Novembre », « Septembre » : sur une ligne, quitte à rapetisser un peu.
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                        Text(tr("\(String(home.month.year ?? 2026))年", String(home.month.year ?? 2026), String(home.month.year ?? 2026)))
-                            .font(.caption.weight(.semibold)).tracking(1.6).foregroundStyle(Color.cwMuted)
-                    }
+                        .lineLimit(1).fixedSize()
+                    Text(String(home.month.year ?? 2026))
+                        .font(.caption.weight(.semibold)).tracking(1.6).foregroundStyle(Color.cwMuted)
+                        .lineLimit(1).fixedSize()
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(monthTitle)

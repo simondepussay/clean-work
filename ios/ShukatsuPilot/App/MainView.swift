@@ -387,6 +387,23 @@ struct ScoreBadge: View {
                 .accessibilityLabel(tr("スコア \(score.points) ポイント、\(ScoreLevel.kanji[level])", "Score: \(score.points) points, \(ScoreLevel.name(level))", "Score : \(score.points) points, \(ScoreLevel.name(level))"))
                 .popover(isPresented: $showingCard) { ScoreCard(score: score).presentationCompactAdaptation(.popover) }
                 .sensoryFeedback(.success, trigger: gain) { _, new in (new ?? 0) > 0 }
+            } else {
+                // Pas encore de score (chargement, ou serveur injoignable) : le badge reste à sa place, toucher réessaie.
+                Button { reload += 1 } label: {
+                    HStack(spacing: 6) {
+                        Text(ScoreLevel.kanji[0])
+                            .font(.custom("HiraMinProN-W6", size: 14)).foregroundStyle(Color.cwMuted)
+                            .frame(width: 30, height: 30)
+                            .overlay(Circle().stroke(Color.cwBlue100, lineWidth: 2.5))
+                        Text("–").font(.subheadline.bold()).foregroundStyle(Color.cwMuted)
+                    }
+                    .padding(.leading, 4).padding(.trailing, 12)
+                    .frame(height: 40)
+                    .background(.white, in: Capsule())
+                    .overlay(Capsule().stroke(Color.cwLine, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tr("スコア（読み込み中）", "Score (loading)", "Score (chargement)"))
             }
         }
         .task(id: reload) {
@@ -396,7 +413,10 @@ struct ScoreBadge: View {
             var fetched: Score?
             for attempt in 0..<3 where !Task.isCancelled {
                 if attempt > 0 { try? await Task.sleep(for: .seconds(Double(attempt) * 3)) }
-                if let s = try? await api.score() { fetched = s; break }
+                do { fetched = try await api.score(); break } catch {
+                    // Visible dans la console Xcode : pour comprendre un badge qui reste à « – ».
+                    print("Score non chargé (essai \(attempt + 1)) : \(error)")
+                }
             }
             guard !Task.isCancelled, let next = fetched else { return }
             if let old = score, next.points != old.points {

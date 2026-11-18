@@ -108,6 +108,12 @@ html[data-mood="rainy"] .waves::after { opacity: 1; }
 .menu button { width: 100%; display: flex; justify-content: space-between; align-items: center; border: 0; border-radius: 10px; padding: 8px 10px; }
 .menu button[aria-checked="true"] { background: var(--blue-100); color: var(--blue-700); font-weight: 700; }
 .menu-note { margin: 6px 8px 2px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+/* Téléphone : le globe n'est plus tout à droite (compte et score à côté), le menu dépasserait à gauche.
+   On l'accroche au bord droit de l'en-tête, sans jamais dépasser la largeur de l'écran. */
+@media (max-width: 560px) {
+  .language-menu { position: static; }
+  .language-menu .menu { right: 12px; top: calc(100% + 6px); width: min(250px, calc(100vw - 24px)); }
+}
 
 .shell { max-width: 1200px; margin: 0 auto; padding: 32px 16px 48px; min-height: 60vh; }
 h1, h2, h3 { color: var(--blue-800); letter-spacing: .01em; }
