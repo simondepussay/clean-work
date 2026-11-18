@@ -119,7 +119,7 @@ struct CleanHeader: View {
     var body: some View {
         HStack(spacing: 10) {
             LogoMark(size: 30)
-            Text("Clean Work").font(.title3.bold()).foregroundStyle(Color.cwBlue800)
+            Text("Clean Work").font(.title3.bold()).foregroundStyle(Color.cwBlue800).lineLimit(1).minimumScaleFactor(0.8)
             Spacer()
             Menu {
                 Picker(tr("表示言語", "Language", "Langue"), selection: $language) {
@@ -246,7 +246,7 @@ struct WelcomeSetupView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(spacing: 10) {
                         LogoMark(size: 30)
-                        Text("Clean Work").font(.title3.bold()).foregroundStyle(Color.cwBlue800)
+                        Text("Clean Work").font(.title3.bold()).foregroundStyle(Color.cwBlue800).lineLimit(1).minimumScaleFactor(0.8)
                     }
                     Text(me.name.map { tr("\($0)さん、ようこそ", "Welcome, \($0)", "Bienvenue, \($0)") } ?? tr("ようこそ", "Welcome", "Bienvenue"))
                         .font(.largeTitle.bold()).foregroundStyle(Color.cwBlue700)
@@ -392,7 +392,13 @@ struct ScoreBadge: View {
         .task(id: reload) {
             // Plusieurs gestes d'affilée : une seule requête.
             if reload > 0 { try? await Task.sleep(for: .milliseconds(400)) }
-            guard !Task.isCancelled, let next = try? await api.score() else { return }
+            // Au réveil du serveur (démarrage à froid), la première requête peut échouer : on réessaie un peu plus tard.
+            var fetched: Score?
+            for attempt in 0..<3 where !Task.isCancelled {
+                if attempt > 0 { try? await Task.sleep(for: .seconds(Double(attempt) * 3)) }
+                if let s = try? await api.score() { fetched = s; break }
+            }
+            guard !Task.isCancelled, let next = fetched else { return }
             if let old = score, next.points != old.points {
                 withAnimation(.spring(duration: 0.4)) { gain = next.points - old.points }
                 Task {
@@ -403,6 +409,8 @@ struct ScoreBadge: View {
             withAnimation(.easeOut(duration: 0.6)) { score = next }
         }
         .onReceive(NotificationCenter.default.publisher(for: .cwScoreMaybeChanged)) { _ in reload += 1 }
+        // Retour dans l'app : les points ont pu changer ailleurs (site web, agent IA) ou ne pas avoir pu se charger.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in reload += 1 }
     }
 }
 

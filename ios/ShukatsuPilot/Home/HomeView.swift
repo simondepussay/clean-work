@@ -132,6 +132,8 @@ private struct HomeContent: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Self.monthName(year: home.month.year ?? 2026, month: home.month.month ?? 1))
                             .font(.title3.bold()).foregroundStyle(Color.cwBlue800)
+                            // « Novembre », « Septembre » : sur une ligne, quitte à rapetisser un peu.
+                            .lineLimit(1).minimumScaleFactor(0.7)
                         Text(tr("\(String(home.month.year ?? 2026))年", String(home.month.year ?? 2026), String(home.month.year ?? 2026)))
                             .font(.caption.weight(.semibold)).tracking(1.6).foregroundStyle(Color.cwMuted)
                     }
@@ -139,14 +141,15 @@ private struct HomeContent: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(monthTitle)
                 .accessibilityAddTraits(.isHeader)
-                Spacer()
+                .layoutPriority(1)
+                Spacer(minLength: 4)
                 HStack(spacing: 0) {
-                    Button { home.shift(-1) } label: { Image(systemName: "chevron.left").frame(width: 34, height: 30) }
+                    Button { home.shift(-1) } label: { Image(systemName: "chevron.left").frame(width: 30, height: 30) }
                         .accessibilityLabel(tr("前の月", "Previous month", "Mois précédent"))
                     Divider().frame(height: 30)
-                    Button { home.goToday() } label: { Text(tr("今日", "Today", "Aujourd'hui")).font(.footnote).padding(.horizontal, 12).frame(height: 30) }
+                    Button { home.goToday() } label: { Text(tr("今日", "Today", "Aujourd'hui")).font(.footnote).lineLimit(1).fixedSize().padding(.horizontal, 10).frame(height: 30) }
                     Divider().frame(height: 30)
-                    Button { home.shift(1) } label: { Image(systemName: "chevron.right").frame(width: 34, height: 30) }
+                    Button { home.shift(1) } label: { Image(systemName: "chevron.right").frame(width: 30, height: 30) }
                         .accessibilityLabel(tr("次の月", "Next month", "Mois suivant"))
                 }
                 .foregroundStyle(Color.cwBlue800)
@@ -256,17 +259,17 @@ private struct HomeContent: View {
 
     private var legend: some View {
         let kinds: [AgendaItem.Kind] = [.interview, .step, .event, .goal, .note]
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(kinds, id: \.self) { k in
-                    HStack(spacing: 4) {
-                        dot(k)
-                        Text(AgendaItem(id: "", date: "", time: nil, kind: k, title: "", detail: nil, done: false).kindName)
-                            .font(.caption2).foregroundStyle(Color.cwMuted)
-                    }
+        // Passe à la ligne au lieu de couper (« Note » disparaissait en français sur iPhone).
+        return FlowLayout(spacing: 12, lineSpacing: 4) {
+            ForEach(kinds, id: \.self) { k in
+                HStack(spacing: 4) {
+                    dot(k)
+                    Text(AgendaItem(id: "", date: "", time: nil, kind: k, title: "", detail: nil, done: false).kindName)
+                        .font(.caption2).foregroundStyle(Color.cwMuted).lineLimit(1).fixedSize()
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Jour choisi
@@ -492,3 +495,45 @@ private struct CutCorner: Shape {
     }
 }
 
+
+/// Met les éléments côte à côte et passe à la ligne quand il n'y a plus de place.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    var lineSpacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(width: proposal.width ?? .infinity, subviews: subviews)
+        let width = rows.map { $0.width }.max() ?? 0
+        let height = rows.reduce(0) { $0 + $1.height } + lineSpacing * CGFloat(max(rows.count - 1, 0))
+        return CGSize(width: proposal.width ?? width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(width: bounds.width, subviews: subviews) {
+            var x = bounds.minX
+            for index in row.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: .unspecified)
+                x += size.width + spacing
+            }
+            y += row.height + lineSpacing
+        }
+    }
+
+    private func rows(width: CGFloat, subviews: Subviews) -> [(indices: [Int], width: CGFloat, height: CGFloat)] {
+        var rows: [(indices: [Int], width: CGFloat, height: CGFloat)] = []
+        for (index, subview) in subviews.enumerated() {
+            let size = subview.sizeThatFits(.unspecified)
+            if var last = rows.last, last.width + spacing + size.width <= width {
+                last.indices.append(index)
+                last.width += spacing + size.width
+                last.height = max(last.height, size.height)
+                rows[rows.count - 1] = last
+            } else {
+                rows.append(([index], size.width, size.height))
+            }
+        }
+        return rows
+    }
+}

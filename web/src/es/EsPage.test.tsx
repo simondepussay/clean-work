@@ -170,6 +170,16 @@ describe("EsPage", () => {
     const panel = screen.getByRole("complementary", { name: /How to write/ });
     expect(panel).toHaveTextContent("This is the STAR format");
     expect(panel).toHaveTextContent(/See an example/);
+    // Le guide se replie (et reste replié), puis se rouvre.
+    const fold = panel.querySelector("details.guide-fold") as HTMLDetailsElement;
+    expect(fold.open).toBe(true);
+    await userEvent.click(fold.querySelector("summary")!);
+    expect(fold.open).toBe(false);
+    expect(panel).toHaveTextContent(/Show the writing guide/);
+    expect(localStorage.getItem("cw.esGuideOpen")).toBe("0");
+    await userEvent.click(fold.querySelector("summary")!);
+    expect(fold.open).toBe(true);
+    localStorage.removeItem("cw.esGuideOpen");
   });
 
   it("ouverte depuis une candidature : entreprise préremplie et ES reliée", async () => {
