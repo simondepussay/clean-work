@@ -121,10 +121,41 @@ final class EsEditorModelTests: XCTestCase {
         XCTAssertEqual(model.review?.score, 65)
         XCTAssertEqual(model.usage, Usage(today: 9, month: 29))
 
+        XCTAssertEqual(model.state(of: model.review!.issues[0]), .open)
         model.apply(0)
         XCTAssertEqual(model.input.body, "貴社で働きたい")
-        XCTAssertTrue(model.applied.contains(0))
+        XCTAssertEqual(model.state(of: model.review!.issues[0]), .applied, "déjà appliquée : plus de bouton")
         XCTAssertEqual(model.status, .idle, "le texte a changé : il faudra enregistrer")
+    }
+
+    func testLocateToleratesSpacesAndReportsMissingPassages() {
+        let body = "私の強みは\n継続力です。売上が2倍(200%)に"
+        XCTAssertNotNil(EsEditorModel.locate("私の強みは継続力です。", in: body), "retour à la ligne ignoré")
+        XCTAssertNotNil(EsEditorModel.locate("2倍(200%)", in: body), "caractères spéciaux pris tels quels")
+        XCTAssertNil(EsEditorModel.locate("御社", in: body))
+        XCTAssertNil(EsEditorModel.locate("  ", in: body))
+        let model = EsEditorModel(api: api(), draft: nil, input: DraftInput(kind: "free", question: "Q", body: "別の文章"))
+        XCTAssertEqual(model.state(of: .init(category: "keigo", quote: "御社", problem: "", suggestion: "貴社")), .gone)
+    }
+
+    func testTwoSuggestionsForTheSameSentence() async {
+        let twin = #"{"id":"r2","createdAt":"t","bodySnapshot":"Webデザインです。","score":60,"summary":"s","strengths":[],"issues":[{"category":"structure","quote":"Webデザインです。","problem":"p","suggestion":"Webデザインで貢献できます。"},{"category":"fit","quote":"Webデザインです。","problem":"p","suggestion":"貴社のサービス向上に貢献します。"}]}"#
+        StubURLProtocol.handler = { request in
+            request.url!.path.hasSuffix("/review") ? (201, Data(twin.utf8)) : (200, Data(#"{"today":9,"month":29}"#.utf8))
+        }
+        let draft = Draft(id: "d1", kind: "free", question: "Q", body: "Webデザインです。", updatedAt: "t")
+        let model = EsEditorModel(api: api(), draft: draft, input: nil)
+        await model.runReview(language: .fr)
+        let issues = model.review!.issues
+
+        model.apply(0)
+        XCTAssertEqual(model.input.body, "Webデザインで貢献できます。")
+        XCTAssertEqual(model.state(of: issues[1]), .alternative(current: "Webデザインで貢献できます。"))
+
+        model.apply(1)
+        XCTAssertEqual(model.input.body, "貴社のサービス向上に貢献します。", "l'autre proposition remplace la première")
+        XCTAssertEqual(model.state(of: issues[1]), .applied)
+        XCTAssertEqual(model.state(of: issues[0]), .alternative(current: "貴社のサービス向上に貢献します。"))
     }
 
     func testDailyLimitIsExplainedWithTheResumeDate() async {

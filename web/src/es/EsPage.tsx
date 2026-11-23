@@ -7,6 +7,7 @@ import { GuidePanel, Intro } from "./GuidePanel";
 import { useGuide, type Guide, type GuideType, type Lang } from "./guide";
 import { apiMessage, useTr } from "../i18n";
 import { ReviewPanel } from "./ReviewPanel";
+import { applyIssue } from "./apply";
 import { CheckIcon, CloseIcon, CopyIcon, LightIcon, PlusIcon, SearchIcon } from "../icons";
 import { runChecks, starterText, type CheckResult } from "./checks";
 import { INDUSTRIES } from "../apps/statuses";
@@ -291,7 +292,10 @@ export function EsPage({ seed }: { seed?: EsSeed } = {}) {
             body={form.body}
             language={lang}
             prepare={prepare}
-            onApply={(quote, suggestion) => edit({ body: form.body.replace(quote, suggestion) })}
+            onApply={(quote, suggestion) => {
+              const next = applyIssue(form.body, quote, suggestion);
+              if (next !== null) edit({ body: next });
+            }}
           />
         </form>
       )}

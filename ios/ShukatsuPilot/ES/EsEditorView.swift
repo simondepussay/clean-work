@@ -230,14 +230,34 @@ private struct ReviewSection: View {
             }
             Section(tr("指摘", "Issues", "Remarques")) {
                 ForEach(Array(review.issues.enumerated()), id: \.offset) { index, issue in
+                    // L'état vient du texte : une correction déjà dans le texte n'est plus proposée.
+                    let state = model.state(of: issue)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(Self.category(issue.category)).font(.caption).foregroundStyle(.secondary)
-                        Text(issue.quote).strikethrough().foregroundStyle(.red)
-                        Text("→ \(issue.suggestion)").foregroundStyle(.green)
-                        Text(issue.problem).font(.callout).foregroundStyle(.secondary)
-                        Button(model.applied.contains(index) ? tr("適用済み", "Applied", "Appliqué") : tr("適用", "Apply", "Appliquer")) { model.apply(index) }
-                            .disabled(model.applied.contains(index))
-                            .buttonStyle(.bordered)
+                        if state == .applied {
+                            Label(tr("適用済み", "Applied", "Appliqué"), systemImage: "checkmark").font(.subheadline).foregroundStyle(.secondary)
+                            Text(issue.suggestion).foregroundStyle(.green)
+                        } else {
+                            Text(issue.quote).strikethrough().foregroundStyle(.red)
+                            Text("→ \(issue.suggestion)").foregroundStyle(.green)
+                            Text(issue.problem).font(.callout).foregroundStyle(.secondary)
+                            if state == .open {
+                                Button(tr("適用", "Apply", "Appliquer")) { model.apply(index) }
+                                    .buttonStyle(.bordered)
+                            } else if case .alternative = state {
+                                Text(tr("同じ文に別の提案を適用しています。こちらの案にすることもできます。",
+                                        "Another suggestion for this sentence is already applied. You can use this one instead.",
+                                        "Une autre proposition pour cette phrase est déjà appliquée. Vous pouvez utiliser celle-ci à la place."))
+                                    .font(.callout).foregroundStyle(.secondary)
+                                Button(tr("こちらに替える", "Use this one instead", "Utiliser celle-ci")) { model.apply(index) }
+                                    .buttonStyle(.bordered)
+                            } else {
+                                Text(tr("この箇所は本文にありません。本文が変わった可能性があります。もう一度AI添削してください。",
+                                        "This passage is no longer in your text. It may have changed since the review: run the AI review again.",
+                                        "Ce passage n'est plus dans votre texte. Il a peut-être changé depuis la relecture : relancez la relecture."))
+                                    .font(.callout).foregroundStyle(.orange)
+                            }
+                        }
                     }
                     .padding(.vertical, 4)
                 }

@@ -48,13 +48,40 @@ describe("ReviewPanel", () => {
     expect(JSON.parse(post[1]!.body as string)).toEqual({ language: "fr" });
   });
 
-  it("applique une correction une seule fois", async () => {
+  it("applique une correction", async () => {
     api({ status: 201, body: review });
     const { onApply } = renderPanel();
     await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
     await userEvent.click(await screen.findByRole("button", { name: /^適用$/ }));
     expect(onApply).toHaveBeenCalledWith("御社", "貴社");
-    expect(screen.getByRole("button", { name: /適用済み/ })).toBeDisabled();
+  });
+
+  it("une correction déjà dans le texte n'est plus proposée", async () => {
+    api({ status: 201, body: review });
+    renderPanel(vi.fn(), vi.fn(async () => "d1"), "貴社で働きたい");
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
+    expect(await screen.findByText("適用済み", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^適用$/ })).not.toBeInTheDocument();
+  });
+
+  it("deux propositions sur la même phrase : on peut passer de l'une à l'autre", async () => {
+    const twin = { ...review, issues: [
+      { category: "structure", quote: "御社で働きたい", problem: "p1", suggestion: "貴社で働きたいです" },
+      { category: "fit", quote: "御社で働きたい", problem: "p2", suggestion: "貴社に貢献したいです" },
+    ] };
+    api({ status: 201, body: twin });
+    const { onApply } = renderPanel(vi.fn(), vi.fn(async () => "d1"), "貴社で働きたいです");
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "こちらに替える" }));
+    expect(onApply).toHaveBeenCalledWith("貴社で働きたいです", "貴社に貢献したいです");
+  });
+
+  it("prévient quand le passage n'est plus dans le texte", async () => {
+    api({ status: 201, body: review });
+    renderPanel(vi.fn(), vi.fn(async () => "d1"), "全く別の文章です");
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
+    expect(await screen.findByText(/本文にありません/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^適用$/ })).not.toBeInTheDocument();
   });
 
   it("explique la limite du jour avec la date de reprise", async () => {

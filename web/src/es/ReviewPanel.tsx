@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getUsage, listReviews, reviewDraft, type Review, type ReviewOutcome, type Usage } from "../api";
 import { useAuth } from "../auth/auth";
+import { issueState } from "./apply";
 import { diff, stats } from "./diff";
 import { ArrowRightIcon, CheckIcon } from "../icons";
 import { useTr, type T3, type Tr } from "../i18n";
@@ -53,12 +54,10 @@ export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
   const review = history[shown] ?? null;
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [applied, setApplied] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     setHistory([]);
     setShown(0);
-    setApplied(new Set());
     setMessage(null);
     auth.getToken().then(async (t) => {
       if (!t) return;
@@ -84,8 +83,7 @@ export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
       if (outcome.ok) {
         setHistory((h) => [outcome.review, ...h]);
         setShown(0);
-        setApplied(new Set());
-      } else {
+          } else {
         setMessage(refusal(outcome, tr));
       }
       const u = await getUsage(token);
@@ -113,7 +111,7 @@ export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
           {[...history].reverse().map((r, k) => {
             const index = history.length - 1 - k;
             return (
-              <button key={r.id} type="button" aria-pressed={index === shown} onClick={() => { setShown(index); setApplied(new Set()); }}
+              <button key={r.id} type="button" aria-pressed={index === shown} onClick={() => setShown(index)}
                 title={new Date(r.createdAt).toLocaleString(LOCALE[tr.lang])}>
                 {r.score}
               </button>
@@ -132,17 +130,49 @@ export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
             <ul className="strengths">{review.strengths.map((s) => <li key={s}><CheckIcon size={15} /> {s}</li>)}</ul>
           )}
           <ol className="issues">
-            {review.issues.map((issue, i) => (
-              <li key={i}>
-                <span className="tag">{CATEGORY[issue.category] ? tr(CATEGORY[issue.category]) : issue.category}</span>
-                <p><mark>{issue.quote}</mark> <ArrowRightIcon size={14} /> <ins>{issue.suggestion}</ins></p>
-                <p className="muted">{issue.problem}</p>
-                <button type="button" disabled={applied.has(i)}
-                  onClick={() => { onApply(issue.quote, issue.suggestion); setApplied((a) => new Set(a).add(i)); }}>
-                  {applied.has(i) ? tr({ ja: "適用済み", en: "Applied", fr: "Appliqué" }) : tr({ ja: "適用", en: "Apply", fr: "Appliquer" })}
-                </button>
-              </li>
-            ))}
+            {review.issues.map((issue, i) => {
+              // L'état vient du texte : une correction déjà dans le texte n'est plus proposée.
+              const { state, ...rest } = issueState(body, issue, review.issues);
+              const current = "current" in rest ? rest.current : null;
+              const tag = <span className="tag">{CATEGORY[issue.category] ? tr(CATEGORY[issue.category]) : issue.category}</span>;
+              if (state === "applied") {
+                return (
+                  <li key={i} className="done">
+                    {tag} <CheckIcon size={15} /> {tr({ ja: "適用済み", en: "Applied", fr: "Appliqué" })}
+                    <p><ins>{issue.suggestion}</ins></p>
+                  </li>
+                );
+              }
+              return (
+                <li key={i}>
+                  {tag}
+                  <p><mark>{issue.quote}</mark> <ArrowRightIcon size={14} /> <ins>{issue.suggestion}</ins></p>
+                  <p className="muted">{issue.problem}</p>
+                  {state === "open" ? (
+                    <button type="button" onClick={() => onApply(issue.quote, issue.suggestion)}>
+                      {tr({ ja: "適用", en: "Apply", fr: "Appliquer" })}
+                    </button>
+                  ) : current !== null ? (
+                    <>
+                      <p className="muted">{tr({
+                        ja: "同じ文に別の提案を適用しています。こちらの案にすることもできます。",
+                        en: "Another suggestion for this sentence is already applied. You can use this one instead.",
+                        fr: "Une autre proposition pour cette phrase est déjà appliquée. Vous pouvez utiliser celle-ci à la place.",
+                      })}</p>
+                      <button type="button" onClick={() => onApply(current, issue.suggestion)}>
+                        {tr({ ja: "こちらに替える", en: "Use this one instead", fr: "Utiliser celle-ci" })}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="notice">{tr({
+                      ja: "この箇所は本文にありません。本文が変わった可能性があります。もう一度AI添削してください。",
+                      en: "This passage is no longer in your text. It may have changed since the review: run the AI review again.",
+                      fr: "Ce passage n'est plus dans votre texte. Il a peut-être changé depuis la relecture : relancez la relecture.",
+                    })}</p>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </div>
       )}

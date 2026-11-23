@@ -30,6 +30,7 @@ private final class DemoAccount: AccountService {
 /// Répond aux appels de l'API avec des données d'exemple (dates autour d'aujourd'hui).
 private final class DemoURLProtocol: URLProtocol {
     static let demoNotes = "・ミライの説明会で聞くこと：若手の配属、研修の長さ\n・自己PR：留学生チームのまとめ役の話を1分で"
+    nonisolated(unsafe) static var draftBodies: [String: String] = [:]
     nonisolated(unsafe) static var demoScore = ProcessInfo.processInfo.arguments.contains("-newAccount") ? 0 : 265
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -157,6 +158,22 @@ private final class DemoURLProtocol: URLProtocol {
         case ("POST", "/api/plans"):
             let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
             body = sent.merging(["id": UUID().uuidString, "done": false]) { a, _ in a }
+        // ES enregistrées pendant la démo, relues par une « IA » d'exemple (première phrase).
+        case ("POST", "/api/drafts"), ("PUT", _) where path.hasPrefix("/api/drafts/"):
+            let sent = (try? JSONSerialization.jsonObject(with: Self.bodyData(of: request) ?? Data())) as? [String: Any] ?? [:]
+            let id = method == "POST" ? UUID().uuidString : String(path.split(separator: "/").last ?? "")
+            Self.draftBodies[id] = sent["body"] as? String ?? ""
+            body = sent.merging(["id": id, "updatedAt": ISO8601DateFormatter().string(from: Date())]) { _, b in b }
+        case ("GET", _) where path.hasSuffix("/reviews"): body = [] as [Any]
+        case ("POST", _) where path.hasPrefix("/api/drafts/") && path.hasSuffix("/review"):
+            let id = String(path.split(separator: "/").dropLast().last ?? "")
+            let text = Self.draftBodies[id] ?? Self.drafts.first { $0["id"] as? String == id }?["body"] as? String ?? ""
+            let first = text.firstIndex(of: "。").map { String(text[...$0]) } ?? text
+            let fixed = first.hasSuffix("。") ? String(first.dropLast()) + "（具体例：授業で作ったアプリ）。" : first + "（具体例）"
+            body = ["id": UUID().uuidString, "draftId": id, "createdAt": ISO8601DateFormatter().string(from: Date()), "language": "ja",
+                    "bodySnapshot": text, "score": 62, "summary": "結論は伝わります。具体的なエピソードを足すと、説得力が増します。",
+                    "strengths": ["結論が最初に書かれている"],
+                    "issues": first.isEmpty ? [] : [["category": "wording", "quote": first, "problem": "もう少し具体的に書けます。", "suggestion": fixed]]] as [String: Any]
         default: body = [:] as [String: Any]
         }
         let data = (try? JSONSerialization.data(withJSONObject: body)) ?? Data()

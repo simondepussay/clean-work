@@ -124,6 +124,7 @@ export function buildMessages(draft: Pick<Draft, "question" | "body" | "charLimi
 
 ## 出力
 - 指摘は重要なものから最大8件。各指摘の quote は ES 本文からそのまま抜き出した文字列（一字一句同じ）にする。
+- 同じ文・同じ箇所への指摘は1件にまとめる（quote が重なる指摘を複数出さない）。構成・表現・STAR・企業との一致など複数の観点があれば、1つの suggestion にすべて反映し、problem で観点をまとめて説明する。
 - problem、summary、strengths は${LANGUAGE_NAMES[language]}で書く。
 - suggestion には quote を置き換える日本語の文だけを書く（「〜に直してください」などの説明は書かない）。そのままコピーして使える形にする。
 - score は0〜100の整数（提出できる水準なら70以上）。
@@ -188,11 +189,19 @@ export const reviewSchema = {
 
 /** Garde-fous sur la réponse : citations réellement présentes, limites de taille, note bornée. */
 export function sanitize(result: ReviewResult, body: string): ReviewResult & { discarded: number } {
-  const seen = new Set<string>();
+  // Une seule remarque par passage : deux corrections du même passage (ou de passages qui se
+  // chevauchent) ne peuvent pas être appliquées l'une après l'autre. L'IA les classe de la plus
+  // importante à la moins importante : on garde la première.
+  const taken: [number, number][] = [];
   const kept = result.issues
     .filter((i) => i.quote.trim() !== "" && body.includes(i.quote))
-    // Même passage, même correction : une seule remarque.
-    .filter((i) => !seen.has(`${i.quote}\u0000${i.suggestion}`) && seen.add(`${i.quote}\u0000${i.suggestion}`))
+    .filter((i) => {
+      const start = body.indexOf(i.quote);
+      const end = start + i.quote.length;
+      if (taken.some(([s, e]) => start < e && s < end)) return false;
+      taken.push([start, end]);
+      return true;
+    })
     .slice(0, 8);
   return {
     score: Math.max(0, Math.min(100, Math.round(result.score))),

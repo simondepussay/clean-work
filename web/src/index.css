@@ -206,6 +206,8 @@ label.inline { flex-direction: row; align-items: center; gap: 6px; margin: 0; }
 .issues { padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
 .issues p { margin: 4px 0; }
 .issues .tag { font-size: 12px; border: 1px solid var(--muted); border-radius: 999px; padding: 1px 8px; }
+.issues .done { color: var(--muted); }
+.issues .done svg { vertical-align: -2px; }
 mark { background: color-mix(in srgb, var(--bordeaux) 25%, transparent); color: inherit; text-decoration: line-through; }
 ins { background: color-mix(in srgb, var(--blue-700) 25%, transparent); text-decoration: none; }
 .help-bar { display: flex; justify-content: flex-end; margin-top: 16px; }

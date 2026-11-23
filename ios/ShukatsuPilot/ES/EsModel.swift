@@ -63,7 +63,6 @@ final class EsEditorModel {
     private(set) var usage: Usage?
     private(set) var reviewing = false
     private(set) var refusal: ReviewRefusal?
-    private(set) var applied: Set<Int> = []
 
     private let api: APIClient
     private let onSaved: (Draft) -> Void
@@ -131,7 +130,6 @@ final class EsEditorModel {
             case .success(let review):
                 history.insert(review, at: 0)
                 shown = 0
-                applied = []
             case .failure(let why):
                 refusal = why
             }
@@ -141,15 +139,53 @@ final class EsEditorModel {
         usage = try? await api.usage()
     }
 
-    /// Remplace le passage cité par la correction proposée (première occurrence).
+    enum IssueState: Equatable {
+        case applied, open, gone
+        /// Une autre remarque sur la même phrase est appliquée : on peut remplacer sa correction par celle-ci.
+        case alternative(current: String)
+    }
+
+    /// Où en est une remarque par rapport au texte actuel : correction déjà dans le texte,
+    /// passage encore à corriger, autre proposition appliquée sur la même phrase,
+    /// ou ni l'un ni l'autre (le texte a changé depuis la relecture).
+    func state(of issue: Review.Issue) -> IssueState {
+        if Self.has(issue.suggestion, in: input.body) { return .applied }
+        if Self.has(issue.quote, in: input.body) { return .open }
+        let squeezed = { (s: String) in s.filter { !$0.isWhitespace } }
+        if let other = review?.issues.first(where: { $0 != issue && squeezed($0.quote) == squeezed(issue.quote) && Self.has($0.suggestion, in: input.body) }) {
+            return .alternative(current: other.suggestion)
+        }
+        return .gone
+    }
+
+    /// Applique la correction : remplace le passage cité, ou la proposition déjà appliquée sur la même phrase.
     func apply(_ index: Int) {
-        guard let issue = review?.issues[index], let range = input.body.range(of: issue.quote) else { return }
+        guard let issue = review?.issues[index] else { return }
+        let from: String
+        switch state(of: issue) {
+        case .open: from = issue.quote
+        case .alternative(let current): from = current
+        default: return
+        }
+        guard let range = Self.locate(from, in: input.body) else { return }
         input.body.replaceSubrange(range, with: issue.suggestion)
-        applied.insert(index)
+    }
+
+    private static func has(_ passage: String, in body: String) -> Bool {
+        !passage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && locate(passage, in: body) != nil
+    }
+
+    /// Le passage tel quel, sinon le même en ignorant les espaces et retours à la ligne
+    /// (l'IA en recopie parfois un de plus ou de moins).
+    static func locate(_ passage: String, in body: String) -> Range<String.Index>? {
+        if !passage.isEmpty, let range = body.range(of: passage, options: .literal) { return range }
+        let chars = passage.filter { !$0.isWhitespace }
+        guard !chars.isEmpty else { return nil }
+        let pattern = chars.map { NSRegularExpression.escapedPattern(for: String($0)) }.joined(separator: "\\s*")
+        return body.range(of: pattern, options: .regularExpression)
     }
 
     func show(_ index: Int) {
         shown = index
-        applied = []
     }
 }

@@ -294,6 +294,24 @@ export function installDemoApi() {
       return new Response(JSON.stringify({ application: demoApp, remaining: { today: 4, month: 29 } }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (demoApp && method === "PUT") return new Response(JSON.stringify(demoApp), { status: 200, headers: { "content-type": "application/json" } });
+    // ES : enregistrées pendant la démo, et relues par une « IA » d'exemple (première phrase).
+    if ((method === "POST" && url === "/api/drafts") || (method === "PUT" && url.startsWith("/api/drafts/"))) {
+      const draft = { ...(drafts as Record<string, unknown>[]).find((d) => url.endsWith(`/${d.id}`)), ...sent, id: url.split("/").at(-1) === "drafts" ? crypto.randomUUID() : url.split("/").at(-1), updatedAt: new Date().toISOString() };
+      (drafts as Record<string, unknown>[]).splice(0, drafts.length, draft, ...(drafts as Record<string, unknown>[]).filter((d) => d.id !== draft.id));
+      return new Response(JSON.stringify(draft), { status: method === "POST" ? 201 : 200, headers: { "content-type": "application/json" } });
+    }
+    if (method === "GET" && /^\/api\/drafts\/[^/]+\/reviews$/.test(url)) return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
+    if (method === "POST" && /^\/api\/drafts\/[^/]+\/review$/.test(url)) {
+      const draft = (drafts as Record<string, unknown>[]).find((d) => d.id === url.split("/").at(-2));
+      const body = String(draft?.body ?? "");
+      const first = body.split(/(?<=。)/)[0];
+      await new Promise((r) => setTimeout(r, 400));
+      return new Response(JSON.stringify({
+        id: crypto.randomUUID(), draftId: draft?.id, createdAt: new Date().toISOString(), language: sent.language ?? "ja", bodySnapshot: body,
+        score: 62, summary: "結論は伝わります。具体的なエピソードを足すと、説得力が増します。", strengths: ["結論が最初に書かれている"],
+        issues: first ? [{ category: "wording", quote: first, problem: "もう少し具体的に書けます。", suggestion: first.replace(/。?$/, "（具体例：授業で作ったアプリ）。") }] : [],
+      }), { status: 201, headers: { "content-type": "application/json" } });
+    }
     const echo = { id: crypto.randomUUID(), done: false, createdAt: "", updatedAt: "", ...plans.find((p) => url.endsWith(p.id)), ...sent };
     const prefix = Object.keys(routes).find((k) => k.endsWith("*") && key.startsWith(k.slice(0, -1)));
     const body = key in routes ? routes[key] : prefix ? routes[prefix] : method === "GET" ? [] : echo;

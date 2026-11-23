@@ -128,6 +128,19 @@ describe("sanitize : doublons", () => {
     const twice = { ...answer, issues: [answer.issues[0], { ...answer.issues[0], category: "wording" as const }, answer.issues[1]] };
     expect(sanitize(twice, body).issues.map((i) => i.quote)).toEqual(["御社", "なので"]);
   });
+
+  it("une seule remarque par phrase, même si les corrections diffèrent ou que les passages se chevauchent", () => {
+    const text = "Webデザインとデータベースです。作ったものが動くまで確かめるのが好きです。";
+    const issue = (quote: string, suggestion: string) => ({ category: "wording" as const, quote, problem: "p", suggestion });
+    const r = sanitize({ ...answer, issues: [
+      issue("Webデザインとデータベースです。", "A"),
+      issue("作ったものが動くまで確かめるのが好きです。", "B"),
+      issue("Webデザインとデータベースです。", "C"),
+      issue("確かめるのが好き", "D"),
+    ] }, text);
+    expect(r.issues.map((i) => i.suggestion)).toEqual(["A", "B"]);
+    expect(r.discarded).toBe(2);
+  });
 });
 
 describe("costJpy", () => {
