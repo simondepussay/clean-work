@@ -158,6 +158,23 @@ final class EsEditorModelTests: XCTestCase {
         XCTAssertEqual(model.state(of: issues[0]), .alternative(current: "貴社のサービス向上に貢献します。"))
     }
 
+    func testSuggestionsWithBlanksAreAdviceOnly() async {
+        let advice = #"{"id":"r3","createdAt":"t","bodySnapshot":"アプリを作りました。","score":60,"summary":"s","strengths":[],"issues":[{"category":"star","quote":"アプリを作りました。","problem":"p","suggestion":"○○機能を持つアプリを作りました。"},{"category":"star","quote":"アプリを作りました。","problem":"p","suggestion":"アプリを作りました。"}],"mixedLanguage":true}"#
+        StubURLProtocol.handler = { request in
+            request.url!.path.hasSuffix("/review") ? (201, Data(advice.utf8)) : (200, Data(#"{"today":9,"month":29}"#.utf8))
+        }
+        let draft = Draft(id: "d1", kind: "free", question: "Q", body: "アプリを作りました。", updatedAt: "t")
+        let model = EsEditorModel(api: api(), draft: draft, input: nil)
+        await model.runReview(language: .fr)
+        let issues = model.review!.issues
+
+        XCTAssertEqual(model.review?.mixedLanguage, true, "le signalement du serveur est lu")
+        XCTAssertEqual(model.state(of: issues[0]), .advice, "un trou à remplir n'est pas applicable")
+        XCTAssertEqual(model.state(of: issues[1]), .advice, "une proposition identique au passage n'est pas « déjà appliquée »")
+        model.apply(0)
+        XCTAssertEqual(model.input.body, "アプリを作りました。", "le texte ne change pas")
+    }
+
     func testDailyLimitIsExplainedWithTheResumeDate() async {
         StubURLProtocol.handler = { request in
             request.url!.path.hasSuffix("/review")

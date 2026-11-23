@@ -141,6 +141,8 @@ final class EsEditorModel {
 
     enum IssueState: Equatable {
         case applied, open, gone
+        /// Conseil seul : la proposition contient un trou à remplir ou une consigne, rien à appliquer.
+        case advice
         /// Une autre remarque sur la même phrase est appliquée : on peut remplacer sa correction par celle-ci.
         case alternative(current: String)
     }
@@ -149,10 +151,11 @@ final class EsEditorModel {
     /// passage encore à corriger, autre proposition appliquée sur la même phrase,
     /// ou ni l'un ni l'autre (le texte a changé depuis la relecture).
     func state(of issue: Review.Issue) -> IssueState {
+        // En premier : une proposition identique au passage serait sinon toujours « déjà appliquée ».
+        if Self.isAdvice(issue) { return .advice }
         if Self.has(issue.suggestion, in: input.body) { return .applied }
         if Self.has(issue.quote, in: input.body) { return .open }
-        let squeezed = { (s: String) in s.filter { !$0.isWhitespace } }
-        if let other = review?.issues.first(where: { $0 != issue && squeezed($0.quote) == squeezed(issue.quote) && Self.has($0.suggestion, in: input.body) }) {
+        if let other = review?.issues.first(where: { $0 != issue && !Self.isAdvice($0) && Self.squeezed($0.quote) == Self.squeezed(issue.quote) && Self.has($0.suggestion, in: input.body) }) {
             return .alternative(current: other.suggestion)
         }
         return .gone
@@ -169,6 +172,17 @@ final class EsEditorModel {
         }
         guard let range = Self.locate(from, in: input.body) else { return }
         input.body.replaceSubrange(range, with: issue.suggestion)
+    }
+
+    private static func squeezed(_ s: String) -> String { s.filter { !$0.isWhitespace } }
+
+    /// Trou (« ○○ », « （数値を記入） », « （例：…） ») ou consigne (« 〜を明記します ») : pas une phrase
+    /// prête à coller. Le serveur les remplace déjà par le passage lui-même ; ce test sert aux
+    /// relectures enregistrées avant ce changement.
+    private static let placeholder = /[○〇◯□＿_]{2}|[ＸX]{2}|記入|[（(]例[:：）)]|書き加え|書き足し|明記し|入れてください|書いてください|加えてください|追加してください|具体的に書/
+
+    static func isAdvice(_ issue: Review.Issue) -> Bool {
+        squeezed(issue.suggestion) == squeezed(issue.quote) || issue.suggestion.contains(placeholder)
     }
 
     private static func has(_ passage: String, in body: String) -> Bool {

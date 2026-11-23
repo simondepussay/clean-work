@@ -185,6 +185,8 @@ export type ReviewIssue = { category: string; quote: string; problem: string; su
 export type Review = {
   id: string; draftId: string; createdAt: string; language: string; bodySnapshot: string;
   score: number; summary: string; strengths: string[]; issues: ReviewIssue[];
+  /** Explications restées dans plusieurs langues malgré une seconde tentative du serveur. */
+  mixedLanguage?: boolean;
 };
 export type Usage = { today: number; month: number };
 export type ReviewOutcome =

@@ -17,19 +17,32 @@ const same = (a: string, b: string) => a.replace(/\s/g, "") === b.replace(/\s/g,
 type Issue = { quote: string; suggestion: string };
 
 /**
+ * Proposition à trous (« ○○ », « （数値を記入） », « （例：…） ») ou consigne (« 〜を明記します ») :
+ * pas une phrase prête à coller. Le serveur les remplace déjà par le passage lui-même ; ce test sert
+ * aux relectures enregistrées avant ce changement.
+ */
+const PLACEHOLDER = /[○〇◯□＿_]{2}|[ＸX]{2}|記入|[（(]例[:：）)]|書き加え|書き足し|明記し|入れてください|書いてください|加えてください|追加してください|具体的に書/;
+
+/** Conseil seul : rien à appliquer, seule l'explication compte. */
+const isAdvice = (issue: Issue) => same(issue.suggestion, issue.quote) || PLACEHOLDER.test(issue.suggestion);
+
+/**
  * Où en est une remarque de l'IA par rapport au texte actuel :
  * - « applied » : sa correction est déjà dans le texte ;
  * - « open » : le passage à corriger est encore là ;
  * - « alternative » : une autre remarque sur la même phrase a été appliquée (`current`) ;
  *   on peut remplacer sa correction par celle-ci ;
- * - « gone » : ni l'un ni l'autre (le texte a changé depuis la relecture).
+ * - « gone » : ni l'un ni l'autre (le texte a changé depuis la relecture) ;
+ * - « advice » : conseil seul, sans texte à appliquer (vérifié en premier : une proposition
+ *   identique au passage serait sinon toujours « déjà appliquée »).
  */
-export type IssueState = { state: "applied" | "open" | "gone" } | { state: "alternative"; current: string };
+export type IssueState = { state: "applied" | "open" | "gone" | "advice" } | { state: "alternative"; current: string };
 
 export function issueState(body: string, issue: Issue, all: Issue[] = []): IssueState {
+  if (isAdvice(issue)) return { state: "advice" };
   if (has(body, issue.suggestion)) return { state: "applied" };
   if (has(body, issue.quote)) return { state: "open" };
-  const other = all.find((o) => o !== issue && same(o.quote, issue.quote) && has(body, o.suggestion));
+  const other = all.find((o) => o !== issue && !isAdvice(o) && same(o.quote, issue.quote) && has(body, o.suggestion));
   return other ? { state: "alternative", current: other.suggestion } : { state: "gone" };
 }
 

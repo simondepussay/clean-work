@@ -126,6 +126,13 @@ export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
         <div className="result">
           <p className="score"><strong>{review.score}</strong> / 100 <span className="muted">{new Date(review.createdAt).toLocaleString(LOCALE[tr.lang])}</span></p>
           <p>{review.summary}</p>
+          {review.mixedLanguage && (
+            <p className="notice">{tr({
+              ja: "説明の一部に、選んだ言語以外の言語が混ざっています。",
+              en: "Some explanations are partly in another language.",
+              fr: "Certaines explications sont en partie dans une autre langue.",
+            })}</p>
+          )}
           {review.strengths.length > 0 && (
             <ul className="strengths">{review.strengths.map((s) => <li key={s}><CheckIcon size={15} /> {s}</li>)}</ul>
           )}
@@ -140,6 +147,16 @@ export function ReviewPanel({ draftId, body, language, prepare, onApply }: {
                   <li key={i} className="done">
                     {tag} <CheckIcon size={15} /> {tr({ ja: "適用済み", en: "Applied", fr: "Appliqué" })}
                     <p><ins>{issue.suggestion}</ins></p>
+                  </li>
+                );
+              }
+              if (state === "advice") {
+                // Conseil seul : le passage concerné et ce qu'il faut y ajouter, sans bouton.
+                return (
+                  <li key={i}>
+                    {tag}
+                    <p><mark>{issue.quote}</mark></p>
+                    <p className="muted">{issue.problem}</p>
                   </li>
                 );
               }

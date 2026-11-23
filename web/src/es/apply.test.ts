@@ -44,4 +44,12 @@ describe("issueState", () => {
     expect(swapped).toBe("得意科目は 貴社のサービス向上に貢献します。");
     expect(issueState(swapped, a, [a, b])).toEqual({ state: "alternative", current: b.suggestion });
   });
+
+  it("une proposition à trous ou identique au passage est un conseil seul", () => {
+    const body = "アプリを作りました。";
+    expect(issueState(body, { quote: body, suggestion: body }).state).toBe("advice");
+    expect(issueState(body, { quote: body, suggestion: "○○機能を持つアプリを作りました。" }).state).toBe("advice");
+    expect(issueState(body, { quote: body, suggestion: "アプリを作りました（成果を記入）。" }).state).toBe("advice");
+    expect(issueState(body, { quote: body, suggestion: "授業でアプリを作りました。" }).state).toBe("open");
+  });
 });

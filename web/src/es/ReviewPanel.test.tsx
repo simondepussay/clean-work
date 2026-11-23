@@ -76,6 +76,24 @@ describe("ReviewPanel", () => {
     expect(onApply).toHaveBeenCalledWith("貴社で働きたいです", "貴社に貢献したいです");
   });
 
+  it("une proposition à trous s'affiche comme conseil, sans bouton", async () => {
+    const advice = { ...review, issues: [{ category: "star", quote: "御社で働きたい", problem: "Ajoutez un chiffre.", suggestion: "御社で○○を働きたい" }] };
+    api({ status: 201, body: advice });
+    renderPanel();
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
+    expect(await screen.findByText("Ajoutez un chiffre.")).toBeInTheDocument();
+    expect(screen.queryByText("御社で○○を働きたい")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^適用$/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/適用済み/)).not.toBeInTheDocument();
+  });
+
+  it("signale des explications restées dans plusieurs langues", async () => {
+    api({ status: 201, body: { ...review, mixedLanguage: true } });
+    renderPanel();
+    await userEvent.click(screen.getByRole("button", { name: /AI添削/ }));
+    expect(await screen.findByText(/選んだ言語以外/)).toBeInTheDocument();
+  });
+
   it("prévient quand le passage n'est plus dans le texte", async () => {
     api({ status: 201, body: review });
     renderPanel(vi.fn(), vi.fn(async () => "d1"), "全く別の文章です");

@@ -285,6 +285,8 @@ export type Review = {
   issues: { category: string; quote: string; problem: string; suggestion: string }[];
   /** Citations écartées parce qu'introuvables dans le texte (le modèle les a inventées). */
   discarded: number;
+  /** Explications encore dans plusieurs langues après la seconde tentative (absent avant ce champ). */
+  mixedLanguage?: boolean;
 };
 
 // ------------------------------------------------------------------ agenda : événements et objectifs

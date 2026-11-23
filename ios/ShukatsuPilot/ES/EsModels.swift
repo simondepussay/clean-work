@@ -66,6 +66,8 @@ struct Review: Codable, Equatable, Identifiable {
     let summary: String
     let strengths: [String]
     let issues: [Issue]
+    /// Explications restées dans plusieurs langues malgré une seconde tentative du serveur.
+    var mixedLanguage: Bool? = nil
 }
 
 /// Relectures restantes (S16).

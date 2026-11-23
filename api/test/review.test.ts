@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { reviewHandlers } from "../src/functions/review";
 import type { IdentityVerifier } from "../src/lib/identity";
 import { Repository } from "../src/lib/repository";
-import { AzureOpenAIReviewer, buildMessages, costJpy, sanitize, type ReviewModel, type ReviewResult } from "../src/lib/review";
+import { AzureOpenAIReviewer, buildMessages, costJpy, mixedLanguage, sanitize, type ReviewModel, type ReviewResult } from "../src/lib/review";
 import { MemoryStore } from "../src/lib/store";
 
 const now = () => new Date("2026-10-20T10:00:00Z");
@@ -143,6 +143,45 @@ describe("sanitize : doublons", () => {
   });
 });
 
+describe("sanitize : propositions à trous", () => {
+  const text = "アプリを作りました。利用者が増えました。データを分析しました。";
+  const issue = (quote: string, suggestion: string) => ({ category: "structure" as const, quote, problem: "p", suggestion });
+
+  it("une proposition à remplir devient un conseil seul (la proposition est le passage lui-même)", () => {
+    const r = sanitize({ ...answer, issues: [
+      issue("アプリを作りました。", "○○機能を持つアプリを作りました。"),
+      issue("利用者が増えました。", "利用者が増えました（改善前後の利用率を具体的な数値で記入）。"),
+      issue("データを分析しました。", "データを分析し、改善点を明記します。"),
+    ] }, text);
+    expect(r.issues.map((i) => i.suggestion)).toEqual(["アプリを作りました。", "利用者が増えました。", "データを分析しました。"]);
+    expect(r.issues.map((i) => i.problem)).toEqual(["p", "p", "p"]);
+  });
+
+  it("garde les propositions prêtes à coller", () => {
+    const r = sanitize({ ...answer, issues: [issue("アプリを作りました。", "授業でスマートフォン向けのアプリを作りました。")] }, text);
+    expect(r.issues[0].suggestion).toBe("授業でスマートフォン向けのアプリを作りました。");
+  });
+});
+
+describe("mixedLanguage", () => {
+  it("en français ou anglais : du japonais hors citation est un mélange, une citation 「」 non", () => {
+    expect(mixedLanguage({ ...answer, summary: "« 御社 » est oral ; écrivez 「貴社」." }, "fr")).toBe(false);
+    expect(mixedLanguage({ ...answer, summary: "Bon début. 結論を先に書きましょう。" }, "fr")).toBe(true);
+    expect(mixedLanguage({ ...answer, strengths: ["Clear", "数字があります。"] }, "en")).toBe(true);
+    expect(mixedLanguage({ ...answer, summary: "In an ES, write 貴社, not 御社." }, "en")).toBe(false);
+  });
+
+  it("en japonais : une phrase en anglais est un mélange, un sigle non", () => {
+    const ja = { ...answer, summary: "STARの「結果」が足りません。", strengths: ["結論が先にある"], issues: [{ ...answer.issues[0], problem: "PREP法で書きます。" }] };
+    expect(mixedLanguage(ja, "ja")).toBe(false);
+    expect(mixedLanguage({ ...ja, summary: "The conclusion should come first." }, "ja")).toBe(true);
+  });
+
+  it("le signalement de l'IA suffit", () => {
+    expect(mixedLanguage({ ...answer, mixedLanguage: true }, "fr")).toBe(true);
+  });
+});
+
 describe("costJpy", () => {
   it("compte les jetons d'entrée et de sortie au prix du modèle", () => {
     // 2000 × 0,25 $ + 1500 × 2 $ par million = 0,0035 $ → 0,525 ¥
@@ -171,6 +210,33 @@ describe("POST /api/drafts/{id}/review", () => {
     await post();
     expect((await get("usage")).jsonBody).toEqual({ today: 9, month: 29 });
     expect(store.all("usage", "_global")[0]).toMatchObject({ costJpy: expect.closeTo(0.525, 6) });
+  });
+
+  it("langues mélangées : relance une fois, garde la bonne réponse et compte les deux coûts", async () => {
+    const mixed = { ...answer, issues: [{ ...answer.issues[0], problem: "書き言葉では貴社を使います。" }] };
+    const replies = [mixed, answer];
+    const model = fakeModel(async () => ({ result: replies.shift()!, usage: { inputTokens: 2000, outputTokens: 1500 } }));
+    const { post, get, store } = await setup(model);
+    const res = await post();
+    expect(model.review).toHaveBeenCalledTimes(2);
+    expect(res.jsonBody).toMatchObject({ mixedLanguage: false, summary: answer.summary });
+    expect((await get("usage")).jsonBody).toEqual({ today: 9, month: 29 });
+    expect(store.all("usage", "_global")[0]).toMatchObject({ costJpy: expect.closeTo(1.05, 6) });
+  });
+
+  it("encore mélangées après la seconde tentative : la relecture le signale", async () => {
+    const model = fakeModel(async () => ({ result: { ...answer, mixedLanguage: true }, usage: { inputTokens: 1, outputTokens: 1 } }));
+    const { post } = await setup(model);
+    const res = await post();
+    expect(model.review).toHaveBeenCalledTimes(2);
+    expect(res.jsonBody).toMatchObject({ mixedLanguage: true });
+  });
+
+  it("une seule tentative quand les langues ne sont pas mélangées", async () => {
+    const model = fakeModel();
+    const { post } = await setup(model);
+    expect(await post()).toMatchObject({ status: 201, jsonBody: { mixedLanguage: false } });
+    expect(model.review).toHaveBeenCalledTimes(1);
   });
 
   it("rend la place si le modèle échoue", async () => {

@@ -226,6 +226,12 @@ private struct ReviewSection: View {
             Section {
                 Text("\(review.score) / 100").font(.title.bold())
                 Text(review.summary)
+                if review.mixedLanguage == true {
+                    Text(tr("説明の一部に、選んだ言語以外の言語が混ざっています。",
+                            "Some explanations are partly in another language.",
+                            "Certaines explications sont en partie dans une autre langue."))
+                        .font(.callout).foregroundStyle(.orange)
+                }
                 ForEach(review.strengths, id: \.self) { Text("✓ \($0)").foregroundStyle(.green) }
             }
             Section(tr("指摘", "Issues", "Remarques")) {
@@ -237,6 +243,10 @@ private struct ReviewSection: View {
                         if state == .applied {
                             Label(tr("適用済み", "Applied", "Appliqué"), systemImage: "checkmark").font(.subheadline).foregroundStyle(.secondary)
                             Text(issue.suggestion).foregroundStyle(.green)
+                        } else if state == .advice {
+                            // Conseil seul : le passage concerné et ce qu'il faut y ajouter, sans bouton.
+                            Text(issue.quote)
+                            Text(issue.problem).font(.callout).foregroundStyle(.secondary)
                         } else {
                             Text(issue.quote).strikethrough().foregroundStyle(.red)
                             Text("→ \(issue.suggestion)").foregroundStyle(.green)

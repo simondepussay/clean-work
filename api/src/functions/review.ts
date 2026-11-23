@@ -5,11 +5,15 @@ import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
 import { containers, type Application, type Review } from "../lib/models";
 import { Repository } from "../lib/repository";
-import { buildMessages, costJpy, draftPurpose, explanationLanguages, reviewModelFromEnv, sanitize, type ReviewModel } from "../lib/review";
+import { buildMessages, costJpy, draftPurpose, explanationLanguages, languageRetry, mixedLanguage, reviewModelFromEnv, sanitize, type ModelUsage, type ReviewModel } from "../lib/review";
 import { SkillsService } from "../lib/skills";
 import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 import { UsageLimiter } from "../lib/usage";
+
+/** Temps total laissé aux appels au modèle, et minimum pour qu'une seconde tentative vaille le coup. */
+const RETRY_DEADLINE_MS = 40_000;
+const MIN_RETRY_MS = 15_000;
 
 type Deps = { verifier?: () => IdentityVerifier | null; model?: () => ReviewModel | null; store?: () => DocStore; now?: () => Date };
 
@@ -50,21 +54,44 @@ export function reviewHandlers(deps: Deps = {}) {
       .filter((d) => (draft.applicationId ? d.applicationId !== draft.applicationId : true) && d.company && d.company !== (application?.company ?? draft.company))
       .map((d) => ({ company: d.company!, body: d.body }));
 
-    let output;
+    let output, messages;
+    const started = Date.now();
     try {
       const skills = (await new SkillsService(store()).get(user.userId)).levels;
-      output = await ai.review(buildMessages(draft, language, { application, otherMotivations, skills }));
+      messages = buildMessages(draft, language, { application, otherMotivations, skills });
+      output = await ai.review(messages);
     } catch (e) {
       await reserved.reservation.release();
       ctx.error("relecture : échec du modèle", e);
       return { status: 502, jsonBody: { error: "ai_failed" } };
     }
+    const usages: ModelUsage[] = [output.usage];
 
-    const cost = costJpy(output.usage);
+    // Langues mélangées dans les explications (signalé par l'IA ou trouvé par le code) : une
+    // seconde tentative, si le temps le permet (les fonctions s'arrêtent à 45 s). Elle ne compte
+    // pas comme une relecture de plus pour l'étudiant ; son coût entre dans le budget.
+    let mixed = mixedLanguage(output.result, language);
+    const left = RETRY_DEADLINE_MS - (Date.now() - started);
+    if (mixed && left >= MIN_RETRY_MS) {
+      try {
+        const retry = await ai.review([...messages, languageRetry(language)], { timeoutMs: left });
+        usages.push(retry.usage);
+        if (!mixedLanguage(retry.result, language)) {
+          output = retry;
+          mixed = false;
+        }
+      } catch (e) {
+        ctx.warn("relecture : seconde tentative (langues) échouée, on garde la première", e);
+      }
+    }
+    if (mixed) ctx.warn(`relecture : langues mélangées dans les explications (${language})`);
+
+    const usage = usages.reduce((a, u) => ({ inputTokens: a.inputTokens + u.inputTokens, outputTokens: a.outputTokens + u.outputTokens }));
+    const cost = costJpy(usage);
     await limiter.recordCost(cost);
     const { discarded, ...result } = sanitize(output.result, draft.body);
     if (discarded > 0) ctx.warn(`relecture : ${discarded} citation(s) introuvable(s) écartée(s)`);
-    ctx.log(`relecture : ${output.usage.inputTokens}+${output.usage.outputTokens} jetons, ${cost.toFixed(2)} ¥`);
+    ctx.log(`relecture : ${usages.length} appel(s), ${usage.inputTokens}+${usage.outputTokens} jetons, ${cost.toFixed(2)} ¥`);
 
     const saved: Review = {
       id: randomUUID(),
@@ -76,6 +103,8 @@ export function reviewHandlers(deps: Deps = {}) {
       bodySnapshot: draft.body,
       discarded,
       ...result,
+      // Encore mélangées après la seconde tentative : les applications le disent à l'étudiant.
+      mixedLanguage: mixed,
     };
     await repo.saveReview(saved);
     await award(store(), user.userId, [{ kind: "review", key: saved.id }], now);
