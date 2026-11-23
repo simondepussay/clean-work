@@ -37,6 +37,16 @@ describe("/api/applications : やりとり et フォローアップ", () => {
 });
 
 describe("/api/applications", () => {
+  it("crée une candidature envoyée par l'iPhone : champs vides à null", async () => {
+    // L'app iPhone envoie toujours 業界, type, 法人番号 et adresse, null quand ils sont vides.
+    const res = await api()("u1", "POST", undefined, {
+      company: "楽天グループ", status: "interested", steps: [], industry: null, companyType: null, corporateNumber: null, location: null,
+    });
+    expect(res.status).toBe(201);
+    expect(res.jsonBody).not.toHaveProperty("industry");
+    expect(res.jsonBody).not.toHaveProperty("corporateNumber");
+  });
+
   it("crée une candidature au statut « interested » par défaut", async () => {
     const res = await api()("u1", "POST", undefined, { company: "楽天グループ", position: "エンジニア" });
     expect(res.status).toBe(201);

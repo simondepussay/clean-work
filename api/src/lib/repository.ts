@@ -51,7 +51,10 @@ export class Repository {
   }
 
   async createApplication(userId: string, input: unknown) {
-    const data = applicationInputSchema.parse(input);
+    // null = champ vide, comme pour la mise à jour : l'app iPhone envoie toujours 業界, type,
+    // 法人番号 et adresse, null s'ils ne sont pas remplis (sinon : 400 et rien n'est enregistré).
+    const fields = Object.entries(input && typeof input === "object" ? input : {}).filter(([, v]) => v !== null);
+    const data = applicationInputSchema.parse(Object.fromEntries(fields));
     const at = this.now().toISOString();
     const app: Application = {
       ...data,

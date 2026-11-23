@@ -312,6 +312,8 @@ struct ApplicationEditor: View {
             dismiss()
         } catch APIError.invalid(let found) {
             issues = found
+            // Un refus sur un champ sans message dans le formulaire : on le dit quand même.
+            failed = found.contains { !["company", "url", "notes"].contains($0.path) }
             // Le champ en erreur est peut-être dans un autre volet : on l'ouvre.
             if let first = found.first { pane = ["steps", "followUps", "events"].contains { first.path.hasPrefix($0) } ? .selection : .info }
         } catch {
