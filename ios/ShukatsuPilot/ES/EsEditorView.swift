@@ -4,6 +4,10 @@ import SwiftUI
 struct EsEditorView: View {
     @State var model: EsEditorModel
     let list: EsModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmLeave = false
+    /// Partir seulement une fois le menu fermé : un dismiss() pendant sa fermeture est ignoré par iOS.
+    @State private var leaving = false
 
     var body: some View {
         Form {
@@ -70,9 +74,30 @@ struct EsEditorView: View {
 
             ReviewSection(model: model, lang: list.language)
         }
+        // Refus sans case dédiée, ou serveur injoignable : on le dit, en haut, à côté du bouton.
+        .safeAreaInset(edge: .top) {
+            if let notice = saveNotice {
+                Text(notice).font(.callout).foregroundStyle(.white).padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.cwBordeaux, in: RoundedRectangle(cornerRadius: 10)).padding(.horizontal)
+            }
+        }
         .navigationTitle(model.input.question.isEmpty ? "ES" : model.input.question)
         .cleanList()
+        // Quitter avec des modifications non enregistrées : on demande d'abord.
+        .navigationBarBackButtonHidden(model.hasChanges)
+        .confirmationDialog(tr("保存していない変更があります", "You have unsaved changes", "Vous avez des modifications non enregistrées"), isPresented: $confirmLeave, titleVisibility: .visible) {
+            Button(tr("保存して戻る", "Save and go back", "Enregistrer et revenir")) { Task { if await model.save() != nil { dismiss() } } }
+            Button(tr("保存せずに戻る", "Go back without saving", "Revenir sans enregistrer"), role: .destructive) { leaving = true }
+            Button(tr("編集を続ける", "Keep editing", "Continuer"), role: .cancel) {}
+        }
+        .onChange(of: confirmLeave) { _, shown in if !shown && leaving { leaving = false; dismiss() } }
         .toolbar {
+            if model.hasChanges {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { confirmLeave = true } label: { Image(systemName: "chevron.left") }
+                        .accessibilityLabel(tr("戻る", "Back", "Retour"))
+                }
+            }
             ToolbarItem(placement: .confirmationAction) {
                 Button(model.status == .saved ? tr("保存済み ✓", "Saved ✓", "Enregistré ✓") : tr("保存", "Save", "Enregistrer")) { Task { await model.save() } }
                     .disabled(model.status == .saving)
@@ -82,6 +107,16 @@ struct EsEditorView: View {
             model.applications = list.applications
             await model.load()
         }
+    }
+
+    /// Message d'échec d'enregistrement quand aucune case du formulaire ne l'affiche déjà.
+    private var saveNotice: String? {
+        if model.status == .failed { return tr("保存できませんでした。通信を確認して、もう一度お試しください。", "Could not save. Check your connection and try again.", "Enregistrement impossible. Vérifiez la connexion et réessayez.") }
+        // Question et limite ont leur message sous la case, en haut ; le reste (un texte trop long,
+        // souvent loin en bas) s'affiche ici, une seule fois.
+        let shown = ["charLimit", "question"]
+        let other = model.issues.filter { !shown.contains($0.path) }
+        return other.isEmpty ? nil : tr("保存できませんでした", "Could not save", "Enregistrement impossible") + "：" + other.map { apiMessage($0.message) }.joined(separator: "、")
     }
 
     private var counter: String {

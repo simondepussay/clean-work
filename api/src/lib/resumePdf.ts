@@ -40,19 +40,30 @@ export type ResumeOptions = {
 
 
 
+/**
+ * Rubriques qui ne rentrent pas dans les 2 pages A4 (texte coupé, lignes hors de la page) :
+ * l'app prévient l'étudiant au lieu de rendre un PDF incomplet sans rien dire.
+ */
+export type CutSection = "address" | "history" | "certifications" | "appeal" | "gakuchika" | "selfPr" | "wishes";
+
 export async function renderResume(profile: Profile, options: ResumeOptions): Promise<Uint8Array> {
+  return (await renderResumeChecked(profile, options)).pdf;
+}
+
+export async function renderResumeChecked(profile: Profile, options: ResumeOptions): Promise<{ pdf: Uint8Array; cut: CutSection[] }> {
   const { doc, page } = await newDocument(`履歴書 ${profile.nameKanji}`);
   const history = historyRows(profile, options.era);
+  const cut = new Set<CutSection>();
   const page1 = page();
-  const firstRows = drawPage1(page1, profile, options, history);
+  const firstRows = drawPage1(page1, profile, options, history, cut);
   const page2 = page();
-  drawPage2(page2, profile, options, history.slice(firstRows));
-  return doc.save();
+  drawPage2(page2, profile, options, history.slice(firstRows), cut);
+  return { pdf: await doc.save(), cut: [...cut] };
 }
 
 // ------------------------------------------------------------------ page 1
 
-function drawPage1(c: Canvas, p: Profile, o: ResumeOptions, history: Row[]): number {
+function drawPage1(c: Canvas, p: Profile, o: ResumeOptions, history: Row[], cut: Set<CutSection>): number {
   c.text("履　歴　書", M, 52, 22);
   if (o.template === "student") c.text("（新卒用）", M + 118, 50, 9, { color: GREY });
   if (o.template === "baito") c.text("（アルバイト・パート用）", M + 118, 50, 9, { color: GREY });
@@ -96,7 +107,7 @@ function drawPage1(c: Canvas, p: Profile, o: ResumeOptions, history: Row[]): num
     c.hline(M, block + 16, leftW, { dash: true });
     if (i === 0) {
       c.text(`${title}　〒${p.postalCode ?? ""}`, M + 4, block + 28, 8);
-      c.wrap(p.address ?? "", M + 8, block + 30, leftW - 14, 10, 2);
+      if (c.wrap(p.address ?? "", M + 8, block + 30, leftW - 14, 10, 2)) cut.add("address");
       c.label("電話", M + leftW, block, 14);
       c.fit(p.phone ?? "", M + leftW + 6, block + 12, 138, 18, 9);
       c.hline(M + leftW, block + 31, 150);
@@ -120,32 +131,39 @@ function drawPage1(c: Canvas, p: Profile, o: ResumeOptions, history: Row[]): num
 
 // ------------------------------------------------------------------ page 2
 
-function drawPage2(c: Canvas, p: Profile, o: ResumeOptions, historyRest: Row[]) {
+function drawPage2(c: Canvas, p: Profile, o: ResumeOptions, historyRest: Row[], cut: Set<CutSection>) {
   let top = 40;
   if (historyRest.length > 0) {
     const rows = Math.max(historyRest.length, 3);
     drawTable(c, top, rows, "学歴・職歴（続き）", historyRest);
     top += 20 + rows * 24 + 16;
+    if (top > BOTTOM) cut.add("history");
   }
   const certs = certificationRows(p, o.era);
   const certRows = Math.max(certs.length, o.template && o.template !== "standard" ? 4 : 6);
   drawTable(c, top, certRows, "免許・資格", certs);
   top += 20 + certRows * 24 + 16;
+  if (top > BOTTOM && certs.length > 0) cut.add("certifications");
 
-  if (o.template === "student") return drawStudent(c, o, top);
-  if (o.template === "baito") return drawBaito(c, o, top);
+  // Plus de place pour les cases de texte : celles qui ont un contenu sont perdues.
+  const texts: [CutSection, string | undefined][] = [["appeal", o.appeal], ["gakuchika", o.template === "student" ? o.gakuchika : undefined],
+    ["selfPr", o.template === "student" ? o.selfPr : undefined], ["wishes", o.wishes]];
+  if (top > BOTTOM - 100) for (const [k, v] of texts) if (v?.trim()) cut.add(k);
+
+  if (o.template === "student") return drawStudent(c, o, top, cut);
+  if (o.template === "baito") return drawBaito(c, o, top, cut);
 
   const free = A4.height - 60 - top;
   const appealH = Math.max(150, Math.round(free * 0.62));
   c.box(M, top, W, appealH);
   c.text("志望の動機、特技、好きな学科、アピールポイントなど", M + 6, top + 14, 8);
-  c.wrap(o.appeal ?? "", M + 8, top + 24, W - 16, 10, Math.floor((appealH - 28) / 16), 16);
+  if (c.wrap(o.appeal ?? "", M + 8, top + 24, W - 16, 10, Math.floor((appealH - 28) / 16), 16)) cut.add("appeal");
   top += appealH + 12;
 
   const wishesH = Math.max(80, A4.height - 60 - top);
   c.box(M, top, W, wishesH);
   c.text("本人希望記入欄（特に給料・職種・勤務時間・勤務地・その他についての希望などがあれば記入）", M + 6, top + 14, 8);
-  c.wrap(o.wishes ?? "貴社の規定に従います。", M + 8, top + 24, W - 16, 10, Math.floor((wishesH - 28) / 16), 16);
+  if (c.wrap(o.wishes ?? "貴社の規定に従います。", M + 8, top + 24, W - 16, 10, Math.floor((wishesH - 28) / 16), 16)) cut.add("wishes");
 
   c.text("※「性別」欄：記載は任意です。未記載とすることも可能です。", M, A4.height - 36, 7, { color: GREY });
 }
@@ -154,30 +172,32 @@ const BOTTOM = A4.height - 48;
 const WISHES_TITLE = "本人希望記入欄（特に給料・職種・勤務時間・勤務地・その他についての希望などがあれば記入）";
 
 /** Un cadre avec un titre en haut à gauche et un texte qui va à la ligne. */
-function textBox(c: Canvas, top: number, h: number, title: string, body: string) {
+function textBox(c: Canvas, top: number, h: number, title: string, body: string): boolean {
   c.box(M, top, W, h);
   c.text(title, M + 6, top + 14, 8);
-  c.wrap(body, M + 8, top + 24, W - 16, 10, Math.max(1, Math.floor((h - 28) / 16)), 16);
+  const clipped = c.wrap(body, M + 8, top + 24, W - 16, 10, Math.max(1, Math.floor((h - 28) / 16)), 16);
+  // Une case poussée hors de la page (trop de lignes au-dessus) est perdue elle aussi.
+  return clipped || (top + h > A4.height - 20 && body.trim() !== "");
 }
 
 /** 新卒用 : trois grandes cases, puis le 本人希望. */
-function drawStudent(c: Canvas, o: ResumeOptions, top: number) {
+function drawStudent(c: Canvas, o: ResumeOptions, top: number, cut: Set<CutSection>) {
   const gap = 10;
   const wishesH = 64;
   const each = Math.max(90, Math.floor((BOTTOM - top - wishesH - 3 * gap) / 3));
-  for (const [title, body] of [
-    ["志望動機", o.appeal ?? ""],
-    ["学生時代に力を入れたこと", o.gakuchika ?? ""],
-    ["自己PR", o.selfPr ?? ""],
+  for (const [key, title, body] of [
+    ["appeal", "志望動機", o.appeal ?? ""],
+    ["gakuchika", "学生時代に力を入れたこと", o.gakuchika ?? ""],
+    ["selfPr", "自己PR", o.selfPr ?? ""],
   ] as const) {
-    textBox(c, top, each, title, body);
+    if (textBox(c, top, each, title, body)) cut.add(key);
     top += each + gap;
   }
-  textBox(c, top, Math.max(wishesH, BOTTOM - top), WISHES_TITLE, o.wishes ?? "貴社の規定に従います。");
+  if (textBox(c, top, Math.max(wishesH, BOTTOM - top), WISHES_TITLE, o.wishes ?? "貴社の規定に従います。")) cut.add("wishes");
 }
 
 /** アルバイト・パート用 : 通勤時間, 勤務可能な曜日・時間帯, puis motivation et 本人希望. */
-function drawBaito(c: Canvas, o: ResumeOptions, top: number) {
+function drawBaito(c: Canvas, o: ResumeOptions, top: number, cut: Set<CutSection>) {
   // 通勤時間 (à gauche) et 最寄り駅 (à droite)
   const half = W / 2;
   c.box(M, top, W, 40);
@@ -206,9 +226,9 @@ function drawBaito(c: Canvas, o: ResumeOptions, top: number) {
 
   const wishesH = 80;
   const appealH = Math.max(110, BOTTOM - top - wishesH - 10);
-  textBox(c, top, appealH, "志望動機・自己PR・特技など", o.appeal ?? "");
+  if (textBox(c, top, appealH, "志望動機・自己PR・特技など", o.appeal ?? "")) cut.add("appeal");
   top += appealH + 10;
-  textBox(c, top, Math.max(wishesH, BOTTOM - top), WISHES_TITLE, o.wishes ?? "");
+  if (textBox(c, top, Math.max(wishesH, BOTTOM - top), WISHES_TITLE, o.wishes ?? "")) cut.add("wishes");
 }
 
 /** Tableau année / mois / texte, avec une ligne d'en-tête et `rows` lignes. */

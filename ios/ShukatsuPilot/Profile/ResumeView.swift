@@ -13,6 +13,8 @@ struct ResumeView: View {
     @State private var busy = false
     @State private var message: String?
     @State private var preview: URL?
+    /// PDF prêt mais incomplet : on prévient avant de l'ouvrir.
+    @State private var pending: (url: URL, cut: [String])?
 
     var body: some View {
         Form {
@@ -121,11 +123,45 @@ struct ResumeView: View {
         .cleanList()
         .task { drafts = (try? await api.drafts()) ?? [] }
         .quickLookPreview($preview)
+        .alert(tr("PDFに入りきらない項目があります", "Some sections don't fit in the PDF", "Certaines rubriques ne rentrent pas dans le PDF"),
+               isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } })) {
+            Button(tr("PDFを見る", "View the PDF", "Voir le PDF")) { preview = pending?.url; pending = nil }
+            Button(tr("直す", "Edit first", "Corriger d'abord"), role: .cancel) { pending = nil }
+        } message: {
+            Text(Self.cutMessage(pending?.cut ?? []))
+        }
+    }
+
+    /// Rubriques coupées (codes du serveur) → phrase pour l'étudiant.
+    static func cutMessage(_ cut: [String]) -> String {
+        let names: [String: String] = [
+            "address": tr("住所", "Address", "Adresse"), "history": tr("学歴・職歴", "Education and work", "Études et expériences"),
+            "certifications": tr("免許・資格", "Certifications", "Certifications"), "appeal": tr("志望動機", "Motivation", "Motivation"),
+            "gakuchika": tr("学生時代に力を入れたこと", "Gakuchika", "Gakuchika"), "selfPr": tr("自己PR", "Self-PR", "Auto-présentation"),
+            "wishes": tr("本人希望記入欄", "Your requests", "Vos souhaits"),
+        ]
+        let list = cut.map { names[$0] ?? $0 }.joined(separator: tr("、", ", ", ", "))
+        return tr("「\(list)」の一部が入りきりません。プロフィールの行（学歴・職歴・資格）や文章を短くしてください。",
+                  "Part of \(list) doesn't fit. Shorten the text, or remove rows from your profile (education, work, certifications).",
+                  "Une partie de : \(list) ne rentre pas. Raccourcissez le texte ou retirez des lignes de votre profil (études, expériences, certifications).")
+    }
+
+    /// Limites du serveur (resume.ts, workHistory.ts), vérifiées avant l'envoi pour dire quelle case est trop longue.
+    /// Comptées comme le serveur (unités UTF-16 de JavaScript).
+    private var tooLong: String? {
+        let fields: [(String, String?, Int)] = kind == .resume
+            ? [(tr("志望動機", "Motivation", "Motivation"), options.appeal, 1500), (tr("本人希望記入欄", "Your requests", "Vos souhaits"), options.wishes, 500)]
+              + (options.template == .student ? [(tr("学生時代に力を入れたこと", "Gakuchika", "Gakuchika"), options.gakuchika, 1500), (tr("自己PR", "Self-PR", "Auto-présentation"), options.selfPr, 1500)] : [])
+            : [(tr("職務要約", "Summary", "Résumé"), work.summary, 800), (tr("活かせる経験・知識・スキル", "Skills", "Compétences"), work.skills, 1500), (tr("自己PR", "Self-PR", "Auto-présentation"), work.selfPr, 1500)]
+        guard let (name, text, max) = fields.first(where: { ($0.1?.utf16.count ?? 0) > $0.2 }) else { return nil }
+        let n = text?.count ?? 0
+        return tr("「\(name)」は\(max)字以内にしてください（今 \(n)字）", "“\(name)” must be \(max) characters or fewer (now \(n))", "« \(name) » : \(max) caractères maximum (actuellement \(n))")
     }
 
     private func generate() async {
-        busy = true
         message = nil
+        if let tooLong { message = tooLong; return }
+        busy = true
         defer { busy = false }
         do {
             work.era = options.era
@@ -135,7 +171,7 @@ struct ResumeView: View {
                 // Fichier temporaire au nom japonais : c'est ce nom que verra le destinataire en partageant.
                 let url = FileManager.default.temporaryDirectory.appending(path: pdf.filename)
                 try pdf.data.write(to: url, options: .atomic)
-                preview = url
+                if pdf.cut.isEmpty { preview = url } else { pending = (url, pdf.cut) }
             case .failure(.profileMissing):
                 message = tr("先にプロフィールを保存してください", "Save your profile first", "Enregistrez d'abord votre profil")
             case .failure(.noWork):

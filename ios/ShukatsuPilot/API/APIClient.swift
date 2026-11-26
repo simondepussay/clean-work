@@ -181,18 +181,21 @@ struct APIClient {
     enum ResumeError: Error, Equatable { case profileMissing, noWork, invalid, failed }
 
     /// Le PDF et son nom de fichier (japonais), ou la raison de l'échec.
-    func resume(_ options: ResumeOptions) async throws -> Result<(data: Data, filename: String), ResumeError> {
+    /// Le PDF, son nom, et les rubriques coupées faute de place (en-tête X-Resume-Cut : « history,appeal »…).
+    func resume(_ options: ResumeOptions) async throws -> Result<(data: Data, filename: String, cut: [String]), ResumeError> {
         try await pdf("api/resume", options.forSending, filename: "履歴書.pdf")
     }
 
-    func workHistory(_ options: WorkHistoryOptions) async throws -> Result<(data: Data, filename: String), ResumeError> {
+    func workHistory(_ options: WorkHistoryOptions) async throws -> Result<(data: Data, filename: String, cut: [String]), ResumeError> {
         try await pdf("api/work-history", options, filename: "職務経歴書.pdf")
     }
 
-    private func pdf(_ path: String, _ options: some Encodable, filename: String) async throws -> Result<(data: Data, filename: String), ResumeError> {
-        let (data, status) = try await raw("POST", path, body: try JSONEncoder().encode(options))
-        switch status {
-        case 200: return .success((data, filename))
+    private func pdf(_ path: String, _ options: some Encodable, filename: String) async throws -> Result<(data: Data, filename: String, cut: [String]), ResumeError> {
+        let (data, response) = try await exchange("POST", path, body: try JSONEncoder().encode(options))
+        switch response.statusCode {
+        case 200:
+            let cut = (response.value(forHTTPHeaderField: "X-Resume-Cut") ?? "").split(separator: ",").map(String.init)
+            return .success((data, filename, cut))
         case 401: throw APIError.unauthorized
         case 404: return .failure(.profileMissing)
         case 400:
@@ -273,6 +276,12 @@ struct APIClient {
 
     /// Requête brute : données et code HTTP, sans interprétation.
     private func raw(_ method: String, _ path: String, body: Data? = nil) async throws -> (Data, Int) {
+        let (data, response) = try await exchange(method, path, body: body)
+        return (data, response.statusCode)
+    }
+
+    /// Comme `raw`, avec la réponse entière (en-têtes compris).
+    private func exchange(_ method: String, _ path: String, body: Data? = nil) async throws -> (Data, HTTPURLResponse) {
         // Un « ?… » éventuel est une requête, pas une partie du chemin (sinon il serait encodé).
         let parts = path.split(separator: "?", maxSplits: 1).map(String.init)
         var url = baseURL.appending(path: parts[0])
@@ -295,7 +304,7 @@ struct APIClient {
         if method != "GET", (200..<300).contains(http.statusCode) {
             await MainActor.run { NotificationCenter.default.post(name: .cwScoreMaybeChanged, object: nil) }
         }
-        return (data, http.statusCode)
+        return (data, http)
     }
 
     /// Pour les extensions (NewFeatures.swift) : même gestion des erreurs que les autres appels.

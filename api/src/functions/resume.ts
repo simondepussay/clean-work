@@ -4,7 +4,7 @@ import type { IdentityVerifier } from "../lib/identity";
 import { withUser } from "../lib/http";
 import { messages } from "../lib/models";
 import { Repository } from "../lib/repository";
-import { renderResume, WEEKDAYS } from "../lib/resumePdf";
+import { renderResumeChecked, WEEKDAYS } from "../lib/resumePdf";
 import { award } from "../lib/score";
 import { getStore, type DocStore } from "../lib/store";
 
@@ -33,7 +33,7 @@ export function resumeHandler(deps: { verifier?: () => IdentityVerifier | null; 
     const profile = await new Repository(store).getProfile(user.userId);
     if (!profile) return { status: 404, jsonBody: { error: "profile_missing" } };
 
-    const pdf = await renderResume(profile, { ...options, date: todayInJapan(deps.now?.()) });
+    const { pdf, cut } = await renderResumeChecked(profile, { ...options, date: todayInJapan(deps.now?.()) });
     const filename = `履歴書_${profile.nameKanji.replace(/\s+/g, "")}.pdf`;
     await award(store, user.userId, [{ kind: "document", key: `resume_${todayInJapan(deps.now?.())}` }], deps.now);
     return {
@@ -43,6 +43,9 @@ export function resumeHandler(deps: { verifier?: () => IdentityVerifier | null; 
         // Nom ASCII pour les vieux navigateurs, nom japonais (RFC 5987) pour les autres.
         "Content-Disposition": `attachment; filename="rirekisho.pdf"; filename*=UTF-8''${encodeURIComponent(filename)}`,
         "Cache-Control": "no-store",
+        // Rubriques coupées faute de place (ex. « history,appeal ») : l'app prévient l'étudiant.
+        "X-Resume-Cut": cut.join(","),
+        "Access-Control-Expose-Headers": "X-Resume-Cut",
       },
     };
   }, deps.verifier);

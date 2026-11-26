@@ -4,6 +4,8 @@ import Foundation
 final class StubURLProtocol: URLProtocol {
     nonisolated(unsafe) static var handler: ((URLRequest) -> (Int, Data))?
     nonisolated(unsafe) static var lastRequest: URLRequest?
+    /// En-têtes de la prochaine réponse.
+    nonisolated(unsafe) static var headers: [String: String]?
 
     static func session() -> URLSession {
         let config = URLSessionConfiguration.ephemeral
@@ -17,7 +19,7 @@ final class StubURLProtocol: URLProtocol {
     override func startLoading() {
         Self.lastRequest = request
         let (status, data) = Self.handler?(request) ?? (500, Data())
-        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: Self.headers)!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: data)
         client?.urlProtocolDidFinishLoading(self)

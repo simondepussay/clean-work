@@ -116,7 +116,7 @@ extension APIClient {
     }
 
     func weather(date: String, location: String?) async -> DayWeather? {
-        let loc = location.flatMap { $0.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) }.map { "&location=\($0)" } ?? ""
+        let loc = location.flatMap(Self.queryValue).map { "&location=\($0)" } ?? ""
         return await optional(DayWeather.self, "api/weather?date=\(date)\(loc)")
     }
 
@@ -128,8 +128,14 @@ extension APIClient {
 
     /// nil : service non configuré ou en panne (le bloc est alors masqué) ; [] : rien trouvé.
     func searchCompanies(_ name: String) async -> [CompanyMatch]? {
-        guard let q = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return nil }
+        guard let q = Self.queryValue(name) else { return nil }
         return await optional([CompanyMatch].self, "api/company/search?name=\(q)")
+    }
+
+    /// Valeur d'un paramètre d'URL : « & », « + », « = » et « ? » sont encodés aussi
+    /// (`.urlQueryAllowed` les laisse : « H&M » devenait « H », « +» un espace).
+    static func queryValue(_ value: String) -> String? {
+        value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&+=?#")))
     }
 
     func companyFacts(_ corporateNumber: String) async -> CompanyFacts? {

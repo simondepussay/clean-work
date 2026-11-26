@@ -104,6 +104,13 @@ struct ApplicationEditor: View {
     /// 企業研究 : écrite par le serveur, gardée ici pour la retrouver en rouvrant l'écran.
     @State private var research: CompanyResearch?
     @State private var pane = Pane.selection
+    /// Ce qui était enregistré à l'ouverture : sert à savoir s'il y a des modifications à perdre.
+    @State private var original = JobApplicationInput()
+    @State private var confirmClose = false
+    /// Fermer seulement une fois le menu fermé : un dismiss() pendant sa fermeture est ignoré par iOS.
+    @State private var leaving = false
+
+    private var hasChanges: Bool { input != original }
 
     var body: some View {
         Form {
@@ -131,10 +138,25 @@ struct ApplicationEditor: View {
         .navigationTitle(app?.company ?? tr("新しい応募", "New application", "Nouvelle candidature"))
         .cleanList()
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button(tr("閉じる", "Close", "Fermer")) { dismiss() } }
+            ToolbarItem(placement: .cancellationAction) {
+                Button(tr("閉じる", "Close", "Fermer")) { if hasChanges { confirmClose = true } else { dismiss() } }
+            }
             ToolbarItem(placement: .confirmationAction) { Button(tr("保存", "Save", "Enregistrer")) { Task { await save() } } }
         }
-        .onAppear { if let app, input == JobApplicationInput() { input = JobApplicationInput(app); debriefs = app.debriefs ?? []; offerDone = app.offerChecklist ?? []; research = app.research } }
+        // Glisser la feuille vers le bas ne doit pas non plus perdre les modifications.
+        .interactiveDismissDisabled(hasChanges)
+        .confirmationDialog(tr("保存していない変更があります", "You have unsaved changes", "Vous avez des modifications non enregistrées"), isPresented: $confirmClose, titleVisibility: .visible) {
+            Button(tr("保存して閉じる", "Save and close", "Enregistrer et fermer")) { Task { await save() } }
+            Button(tr("保存せずに閉じる", "Close without saving", "Fermer sans enregistrer"), role: .destructive) { leaving = true }
+            Button(tr("編集を続ける", "Keep editing", "Continuer"), role: .cancel) {}
+        }
+        .onChange(of: confirmClose) { _, shown in if !shown && leaving { leaving = false; dismiss() } }
+        .onAppear {
+            if let app, input == JobApplicationInput() {
+                input = JobApplicationInput(app); debriefs = app.debriefs ?? []; offerDone = app.offerChecklist ?? []; research = app.research
+                original = input
+            }
+        }
     }
 
     /// Les trois volets d'une candidature enregistrée (mêmes noms que sur le site).
@@ -594,7 +616,14 @@ private struct DebriefsView: View {
     @discardableResult
     private func save() async -> Bool {
         message = nil
-        guard let saved = try? await api.saveDebriefs(applicationId: application.id, debriefs) else {
+        let saved: JobApplication
+        do {
+            saved = try await api.saveDebriefs(applicationId: application.id, debriefs)
+        } catch APIError.invalid(let issues) where !issues.isEmpty {
+            // La raison (« 1500文字以内… ») plutôt qu'un simple échec.
+            message = tr("保存できませんでした", "Could not save", "Enregistrement impossible") + "\n" + issues.map { apiMessage($0.message) }.joined(separator: "\n")
+            return false
+        } catch {
             message = tr("保存できませんでした", "Could not save", "Enregistrement impossible")
             return false
         }

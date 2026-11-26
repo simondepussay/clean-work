@@ -87,8 +87,11 @@ export class Canvas {
   }
 
   /** Texte sur plusieurs lignes ; au plus `maxLines` lignes. */
-  wrap(text: string, x: number, top: number, w: number, size: number, maxLines: number, lineHeight = size * 1.5) {
-    this.lines(text, w, size).slice(0, maxLines).forEach((l, i) => this.text(l, x, top + size + i * lineHeight, size));
+  /** Écrit au plus `maxLines` lignes ; renvoie vrai si le texte a dû être coupé. */
+  wrap(text: string, x: number, top: number, w: number, size: number, maxLines: number, lineHeight = size * 1.5): boolean {
+    const all = this.lines(text, w, size);
+    all.slice(0, Math.max(0, maxLines)).forEach((l, i) => this.text(l, x, top + size + i * lineHeight, size));
+    return all.length > Math.max(0, maxLines);
   }
 
   box(x: number, top: number, w: number, h: number, opts: { dash?: boolean; fill?: boolean } = {}) {

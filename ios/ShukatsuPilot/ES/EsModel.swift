@@ -56,6 +56,9 @@ final class EsEditorModel {
         didSet { if status == .saved && input != oldValue { status = .idle } }
     }
     private(set) var draftId: String?
+    /// Dernière version acceptée par le serveur (ou celle de départ) : ce qui serait perdu en quittant.
+    private(set) var savedInput: DraftInput
+    var hasChanges: Bool { input != savedInput }
     private(set) var status: Status = .idle
     private(set) var issues: [Issue] = []
     private(set) var history: [Review] = []
@@ -70,7 +73,11 @@ final class EsEditorModel {
     init(api: APIClient, draft: Draft?, input: DraftInput? = nil, onSaved: @escaping (Draft) -> Void = { _ in }) {
         self.api = api
         self.draftId = draft?.id
-        self.input = input ?? draft.map(DraftInput.init) ?? DraftInput()
+        let start = input ?? draft.map(DraftInput.init) ?? DraftInput()
+        self.input = start
+        // Nouvelle ES vide : rien à perdre tant qu'on n'écrit rien. Une copie (« 別パターン ») a
+        // déjà un texte qui n'est enregistré nulle part : la quitter le perdrait.
+        self.savedInput = draft != nil || start.body.isEmpty ? start : DraftInput()
         self.onSaved = onSaved
         if draft != nil { status = .saved }
     }
@@ -98,16 +105,20 @@ final class EsEditorModel {
     func save() async -> String? {
         status = .saving
         input.applicationId = linkedApplication?.id
+        // Ce qui part au serveur : un texte modifié pendant l'envoi (collage, frappe sur un réseau
+        // lent) n'est pas enregistré, et ne doit donc pas s'afficher « 保存済み ».
+        let sent = input
         do {
             let draft: Draft
             if let draftId {
-                draft = try await api.updateDraft(draftId, input)
+                draft = try await api.updateDraft(draftId, sent)
             } else {
-                draft = try await api.createDraft(input)
+                draft = try await api.createDraft(sent)
             }
             draftId = draft.id
             issues = []
-            status = .saved
+            savedInput = sent
+            status = input == sent ? .saved : .idle
             onSaved(draft)
             return draft.id
         } catch APIError.invalid(let found) {

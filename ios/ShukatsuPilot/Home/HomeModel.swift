@@ -188,6 +188,9 @@ final class HomeModel {
             plans.append(plan)
             message = nil
             return true
+        } catch APIError.invalid(let issues) where !issues.isEmpty {
+            message = issues.map { apiMessage($0.message) }.joined(separator: "\n")
+            return false
         } catch {
             message = tr("追加できませんでした", "Could not add", "Ajout impossible")
             return false
